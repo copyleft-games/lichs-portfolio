@@ -61,6 +61,19 @@ GAME_OBJECTS += $(OBJDIR)/src/achievement/lp-achievement-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-prestige-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-megaproject.o
 
+# Phase 6: UI
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-theme.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-widget-exposure-meter.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-widget-synergy-indicator.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-portfolio.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-world-map.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-agents.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-intelligence.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-slumber.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-ledger.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-megaprojects.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-dialog-event.o
+
 # =============================================================================
 # Test Sources
 # =============================================================================
@@ -85,6 +98,9 @@ LINKED_TESTS += test-simulation.c
 
 # Phase 5: Progression tests
 LINKED_TESTS += test-progression.c
+
+# Phase 6: UI tests
+LINKED_TESTS += test-ui.c
 
 # =============================================================================
 # Test Binaries

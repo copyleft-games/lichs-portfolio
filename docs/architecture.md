@@ -1275,6 +1275,336 @@ GObject
 
 ---
 
+## Phase 6 Implementation Status
+
+Phase 6 implements the user interface system including theme configuration, custom widgets, screens, and dialogs.
+
+### Theme Configuration
+
+```
+lp-theme.h/.c
+├── Purpose: Configure dark fantasy aesthetic for LrgTheme singleton
+├── Dark Fantasy Color Palette:
+│   ├── Primary: #2d1b4e (Deep purple)
+│   ├── Secondary: #e8e0d5 (Bone white)
+│   ├── Accent: #c9a227 (Gold)
+│   ├── Background: #0a0a0f (Near black)
+│   ├── Surface: #1a1025 (Dark purple)
+│   ├── Text: #d4d0c8 (Off-white)
+│   ├── Text Secondary: #8a8580 (Muted gray)
+│   ├── Border: #3d2b5e (Dark purple border)
+│   ├── Error: #9e2a2a (Blood red)
+│   └── Success: #2a9e4a (Emerald)
+│
+├── Game-Specific Colors:
+│   ├── Gold (#c9a227) - Wealth display
+│   ├── Danger (#9e2a2a) - Blood red warnings
+│   ├── Hidden (#1a3a5c) - Dark blue stealth
+│   ├── Scrutiny (#c9b327) - Yellow exposure
+│   ├── Suspicion (#c97327) - Orange exposure
+│   ├── Hunt (#c94a27) - Red-orange exposure
+│   ├── Crusade (#c92727) - Bright red exposure
+│   ├── Synergy (#27c9c9) - Cyan synergy
+│   └── Inactive (#3a3a3a) - Dark gray disabled
+│
+└── API:
+    ├── lp_theme_configure_default() - Configure LrgTheme
+    ├── lp_theme_get_gold_color()
+    ├── lp_theme_get_danger_color()
+    ├── lp_theme_get_hidden_color()
+    ├── lp_theme_get_scrutiny_color()
+    ├── lp_theme_get_suspicion_color()
+    ├── lp_theme_get_hunt_color()
+    ├── lp_theme_get_crusade_color()
+    ├── lp_theme_get_synergy_color()
+    └── lp_theme_get_inactive_color()
+```
+
+### Custom Widgets
+
+#### Exposure Meter Widget
+
+```
+LpWidgetExposureMeter (final, extends LrgWidget)
+├── Purpose: Display player's current exposure level with color-coded fill
+├── Properties:
+│   ├── value (guint 0-100) - Current exposure percentage
+│   ├── level (LpExposureLevel) - Derived from value thresholds
+│   ├── show-label (gboolean) - Display level label
+│   ├── show-percentage (gboolean) - Display percentage text
+│   └── orientation (LrgOrientation) - Horizontal or vertical
+│
+├── Level Thresholds:
+│   ├── 0-24: LP_EXPOSURE_LEVEL_HIDDEN (blue)
+│   ├── 25-49: LP_EXPOSURE_LEVEL_SCRUTINY (yellow)
+│   ├── 50-74: LP_EXPOSURE_LEVEL_SUSPICION (orange)
+│   ├── 75-99: LP_EXPOSURE_LEVEL_HUNT (red-orange)
+│   └── 100: LP_EXPOSURE_LEVEL_CRUSADE (bright red)
+│
+├── Visual Features:
+│   ├── Background bar with surface color
+│   ├── Fill bar with level-appropriate color
+│   ├── Threshold markers at 25%, 50%, 75%
+│   ├── Border color matches current level
+│   └── Optional label and percentage display
+│
+└── Signals:
+    └── level-changed (old_level, new_level) - Threshold crossed
+```
+
+#### Synergy Indicator Widget
+
+```
+LpWidgetSynergyIndicator (final, extends LrgWidget)
+├── Purpose: Display active synergies and total bonus
+├── Properties:
+│   ├── synergy-count (guint) - Number of active synergies (read-only)
+│   ├── total-bonus (gdouble) - Bonus multiplier (read-only)
+│   ├── show-details (gboolean) - Show synergy list
+│   └── compact (gboolean) - Compact display mode
+│
+├── Display Modes:
+│   ├── Normal: "◇ Synergies: N (xM.M)"
+│   └── Compact: "◇ xM.M"
+│
+├── Visual Features:
+│   ├── Diamond icon (filled when active, outline when none)
+│   ├── Synergy color (cyan) when active
+│   ├── Inactive color when no synergies
+│   └── Optional detailed list of individual synergies
+│
+├── Manager Integration:
+│   ├── Connects to LpSynergyManager singleton
+│   ├── Listens to synergies-changed signal
+│   └── Auto-updates on manager changes
+│
+└── API:
+    ├── lp_widget_synergy_indicator_new()
+    ├── lp_widget_synergy_indicator_get_synergy_count()
+    ├── lp_widget_synergy_indicator_get_total_bonus()
+    └── lp_widget_synergy_indicator_refresh()
+```
+
+### Screen Classes
+
+All screens extend `LrgContainer` and implement keyboard navigation.
+
+#### Portfolio Screen
+
+```
+LpScreenPortfolio (final, extends LrgContainer)
+├── Purpose: Main portfolio management and investment display
+├── Properties:
+│   ├── portfolio (LpPortfolio*) - Portfolio to display
+│   ├── view-mode (LpPortfolioViewMode) - Current view mode
+│   └── selected-investment (LpInvestment*) - Selected item
+│
+├── View Modes:
+│   ├── LP_PORTFOLIO_VIEW_LIST - Investment list view
+│   ├── LP_PORTFOLIO_VIEW_ALLOCATION - Asset allocation chart
+│   └── LP_PORTFOLIO_VIEW_PERFORMANCE - Performance history
+│
+├── Child Widgets:
+│   ├── LpWidgetExposureMeter - Exposure display
+│   └── LpWidgetSynergyIndicator - Synergy display (compact)
+│
+├── Keyboard Navigation:
+│   ├── Up/Down - Select investment
+│   ├── Tab - Cycle view mode
+│   ├── B - Buy investment dialog
+│   └── S - Sell selected investment
+│
+└── Signals:
+    ├── investment-selected (LpInvestment*)
+    ├── buy-requested
+    └── sell-requested (LpInvestment*)
+```
+
+#### World Map Screen
+
+```
+LpScreenWorldMap (final, extends LrgContainer)
+├── Purpose: Display kingdoms, regions, and world state
+├── Properties:
+│   ├── simulation (LpWorldSimulation*) - World to display
+│   └── selected-kingdom (LpKingdom*) - Selected kingdom
+│
+├── Features:
+│   ├── Kingdom map visualization (placeholder)
+│   ├── Current year display
+│   └── Region selection support
+│
+└── Signals:
+    ├── kingdom-selected (LpKingdom*)
+    └── region-clicked (LpRegion*)
+```
+
+#### Agents Screen
+
+```
+LpScreenAgents (final, extends LrgContainer)
+├── Purpose: Agent list and management
+├── Properties:
+│   ├── manager (LpAgentManager*) - Agent manager
+│   └── selected-agent (LpAgent*) - Selected agent
+│
+├── Features:
+│   ├── Agent count display
+│   └── Agent list (placeholder)
+│
+└── Signals:
+    ├── agent-selected (LpAgent*)
+    └── recruit-requested
+```
+
+#### Intelligence Screen
+
+```
+LpScreenIntelligence (final, extends LrgContainer)
+├── Purpose: Reports, predictions, and competitor info
+└── Features: Placeholder for intelligence reports
+```
+
+#### Slumber Screen
+
+```
+LpScreenSlumber (final, extends LrgContainer)
+├── Purpose: Slumber duration and configuration
+├── Properties:
+│   └── duration (guint) - Selected slumber duration (min 25 years)
+│
+├── Duration Presets: 25, 50, 100, 250, 500 years
+│
+├── Keyboard Navigation:
+│   ├── 1-5 - Select preset
+│   ├── Left/Right - Cycle presets
+│   └── Enter - Confirm slumber
+│
+└── Signals:
+    └── slumber-confirmed (guint duration)
+```
+
+#### Ledger Screen
+
+```
+LpScreenLedger (final, extends LrgContainer)
+├── Purpose: View discovered secrets
+├── Properties:
+│   └── ledger (LpLedger*) - Ledger to display
+│
+├── Features:
+│   ├── Discovery count display
+│   └── Secret list (placeholder)
+│
+└── API:
+    └── lp_screen_ledger_refresh()
+```
+
+#### Megaprojects Screen
+
+```
+LpScreenMegaprojects (final, extends LrgContainer)
+├── Purpose: View and manage multi-century projects
+└── Features: Placeholder for megaproject management
+```
+
+### Event Dialog
+
+```
+LpDialogEvent (final, extends LrgContainer)
+├── Purpose: Display events with narrative and choices
+├── Properties:
+│   ├── event (LpEvent*) - Event to display
+│   └── selected-choice (gint) - Selected choice index
+│
+├── Visual Features:
+│   ├── Dimmed background overlay
+│   ├── Centered dialog box
+│   ├── Event title and description
+│   ├── Numbered choice buttons
+│   └── Selection highlight
+│
+├── Keyboard Navigation:
+│   ├── 1-4 - Select choice directly
+│   ├── Up/Down - Navigate choices
+│   ├── Enter - Confirm selection
+│   └── Escape - Dismiss dialog
+│
+└── Signals:
+    ├── choice-confirmed (gint index)
+    └── dismissed
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-5 types)
+│
+├── LrgWidget (from libregnum)
+│   ├── LpWidgetExposureMeter (final) [Phase 6]
+│   └── LpWidgetSynergyIndicator (final) [Phase 6]
+│
+└── LrgContainer (from libregnum, extends LrgWidget)
+    ├── LpScreenPortfolio (final) [Phase 6]
+    ├── LpScreenWorldMap (final) [Phase 6]
+    ├── LpScreenAgents (final) [Phase 6]
+    ├── LpScreenIntelligence (final) [Phase 6]
+    ├── LpScreenSlumber (final) [Phase 6]
+    ├── LpScreenLedger (final) [Phase 6]
+    ├── LpScreenMegaprojects (final) [Phase 6]
+    └── LpDialogEvent (final) [Phase 6]
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Theme | ui/lp-theme.h/.c | Dark fantasy colors |
+| Exposure Meter | ui/lp-widget-exposure-meter.h/.c | Level display widget |
+| Synergy Indicator | ui/lp-widget-synergy-indicator.h/.c | Bonus display widget |
+| Portfolio Screen | ui/lp-screen-portfolio.h/.c | Investment management |
+| World Map Screen | ui/lp-screen-world-map.h/.c | Kingdom display |
+| Agents Screen | ui/lp-screen-agents.h/.c | Agent management |
+| Intelligence Screen | ui/lp-screen-intelligence.h/.c | Reports (skeleton) |
+| Slumber Screen | ui/lp-screen-slumber.h/.c | Duration selection |
+| Ledger Screen | ui/lp-screen-ledger.h/.c | Discovery viewing |
+| Megaprojects Screen | ui/lp-screen-megaprojects.h/.c | Projects (skeleton) |
+| Event Dialog | ui/lp-dialog-event.h/.c | Event choices |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-ui.c | Theme, widgets, screens, dialogs |
+
+### Key Design Decisions
+
+1. **LrgWidget Extension**: Custom widgets extend `LrgWidget` to integrate with libregnum's rendering and event systems.
+
+2. **LrgContainer for Screens**: Screens extend `LrgContainer` to support child widget management and layout.
+
+3. **Keyboard-First Navigation**: All screens support keyboard navigation for accessibility and game controller compatibility.
+
+4. **Theme Colors**: Exposure levels map to specific colors that convey urgency (blue→yellow→orange→red).
+
+5. **Manager Integration**: Widgets connect to singleton managers (Exposure, Synergy) for automatic updates.
+
+6. **Modular Views**: Portfolio screen supports multiple view modes for different perspectives on investments.
+
+7. **Dialog Overlay**: Event dialog renders over other content with a dimmed background for modal presentation.
+
+### Deferred to Later Phases
+
+- Detailed allocation chart rendering (Phase 6+)
+- Performance graph visualization (Phase 6+)
+- Map visualization with regions (Phase 6+)
+- Agent list with details (Phase 6+)
+- Megaproject phase visualization (Phase 6+)
+- Feedback effects (Phase 6.5)
+
+---
+
 ## Related Documents
 
 - [Game Design Document](../design/GAME.md) - Full game design

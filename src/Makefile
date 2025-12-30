@@ -69,8 +69,18 @@ SOURCES += states/lp-state-simulating.c
 SOURCES += states/lp-state-pause.c
 SOURCES += states/lp-state-settings.c
 
-# UI (Phase 6+)
-# SOURCES += ui/lp-theme.c
+# UI (Phase 6)
+SOURCES += ui/lp-theme.c
+SOURCES += ui/lp-widget-exposure-meter.c
+SOURCES += ui/lp-widget-synergy-indicator.c
+SOURCES += ui/lp-screen-portfolio.c
+SOURCES += ui/lp-screen-world-map.c
+SOURCES += ui/lp-screen-agents.c
+SOURCES += ui/lp-screen-intelligence.c
+SOURCES += ui/lp-screen-slumber.c
+SOURCES += ui/lp-screen-ledger.c
+SOURCES += ui/lp-screen-megaprojects.c
+SOURCES += ui/lp-dialog-event.c
 
 # =============================================================================
 # Object Files
@@ -211,6 +221,35 @@ $(OBJDIR)/src/states/lp-state-pause.o: states/lp-state-pause.c \
 	states/lp-state-pause.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-settings.o: states/lp-state-settings.c \
 	states/lp-state-settings.h lp-log.h lp-types.h
+
+# UI (Phase 6)
+$(OBJDIR)/src/ui/lp-theme.o: ui/lp-theme.c ui/lp-theme.h lp-log.h
+$(OBJDIR)/src/ui/lp-widget-exposure-meter.o: ui/lp-widget-exposure-meter.c \
+	ui/lp-widget-exposure-meter.h ui/lp-theme.h core/lp-exposure-manager.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/ui/lp-widget-synergy-indicator.o: ui/lp-widget-synergy-indicator.c \
+	ui/lp-widget-synergy-indicator.h ui/lp-theme.h core/lp-synergy-manager.h \
+	lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-portfolio.o: ui/lp-screen-portfolio.c \
+	ui/lp-screen-portfolio.h ui/lp-theme.h ui/lp-widget-exposure-meter.h \
+	ui/lp-widget-synergy-indicator.h investment/lp-portfolio.h investment/lp-investment.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/ui/lp-screen-world-map.o: ui/lp-screen-world-map.c \
+	ui/lp-screen-world-map.h ui/lp-theme.h simulation/lp-world-simulation.h \
+	simulation/lp-kingdom.h simulation/lp-region.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-agents.o: ui/lp-screen-agents.c \
+	ui/lp-screen-agents.h ui/lp-theme.h agent/lp-agent-manager.h agent/lp-agent.h \
+	lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-intelligence.o: ui/lp-screen-intelligence.c \
+	ui/lp-screen-intelligence.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-slumber.o: ui/lp-screen-slumber.c \
+	ui/lp-screen-slumber.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-ledger.o: ui/lp-screen-ledger.c \
+	ui/lp-screen-ledger.h ui/lp-theme.h core/lp-ledger.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-screen-megaprojects.o: ui/lp-screen-megaprojects.c \
+	ui/lp-screen-megaprojects.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-dialog-event.o: ui/lp-dialog-event.c \
+	ui/lp-dialog-event.h ui/lp-theme.h simulation/lp-event.h lp-log.h lp-types.h
 
 # =============================================================================
 # Directory Creation
