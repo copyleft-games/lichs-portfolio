@@ -1,0 +1,9 @@
+# Hostile Takeover Achievement
+# Own 100% of a kingdom's debt
+
+id: hostile_takeover
+name: "Hostile Takeover"
+description: "Own 100% of a kingdom's debt"
+hidden: false
+points: 40
+# No progress tracking - instant unlock when condition met

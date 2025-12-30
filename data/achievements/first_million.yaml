@@ -1,0 +1,11 @@
+# First Million Achievement
+# Reach 1,000,000 gold pieces
+
+id: first_million
+name: "First Million"
+description: "Reach 1,000,000 gold pieces"
+hidden: false
+points: 10
+progress:
+  target: 1000000
+  format: "gold"

@@ -1,0 +1,9 @@
+# Transcendence Achievement
+# Complete your first prestige cycle
+
+id: transcendence
+name: "Transcendence"
+description: "Complete your first prestige cycle"
+hidden: false
+points: 100
+# No progress tracking - instant unlock on first prestige

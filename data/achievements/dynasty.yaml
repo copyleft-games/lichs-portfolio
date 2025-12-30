@@ -1,0 +1,11 @@
+# Dynasty Achievement
+# Have an agent family reach the 5th generation
+
+id: dynasty
+name: "Dynasty"
+description: "Have an agent family reach the 5th generation"
+hidden: false
+points: 30
+progress:
+  target: 5
+  format: "generation"

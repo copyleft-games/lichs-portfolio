@@ -2030,7 +2030,221 @@ GObject
 | 6 | test-ui.c | 20 |
 | 6.5 | test-feedback.c | 19 |
 | 7 | test-save-load.c | 17 |
-| **Total** | **12 test files** | **236 tests** |
+| 8 | test-achievement.c | 26 |
+| **Total** | **13 test files** | **262 tests** |
+
+---
+
+## Phase 8 Implementation Status
+
+Phase 8 implements the achievement system with Steam integration support (optional).
+
+### Achievement Manager (Enhanced)
+
+```
+LpAchievementManager (singleton, implements LrgSaveable)
+├── Purpose: Track achievements, emit unlock notifications, sync with Steam
+├── Backend: Wraps LrgAchievementManager from libregnum
+│
+├── Built-in Achievements (8 total):
+│   ├── first_million - Reach 1,000,000 gold (progress: 1000000)
+│   ├── centennial - Complete a 100-year slumber (progress: 100)
+│   ├── dynasty - Agent family reaches 5th generation (progress: 5)
+│   ├── hostile_takeover - Own 100% of a kingdom's debt (instant)
+│   ├── patient_investor - Hold investment for 500 years (progress: 500)
+│   ├── dark_awakening - Unlock dark investments (hidden, instant)
+│   ├── soul_trader - Complete first soul trade (hidden, instant)
+│   └── transcendence - Complete first prestige cycle (instant)
+│
+├── Progress-Based Achievements:
+│   ├── Target value stored in LrgAchievementProgress
+│   ├── Auto-unlock when progress reaches target
+│   └── Percentage tracking for UI display
+│
+├── Statistics Tracking:
+│   ├── total_gold_earned
+│   ├── total_years_slumbered
+│   ├── max_family_generation
+│   ├── max_investment_years
+│   └── prestige_count
+│
+├── Game Event Hooks:
+│   ├── lp_achievement_manager_on_gold_changed() - Update first_million
+│   ├── lp_achievement_manager_on_slumber_complete() - Update centennial
+│   ├── lp_achievement_manager_on_family_succession() - Update dynasty
+│   ├── lp_achievement_manager_on_investment_held() - Update patient_investor
+│   ├── lp_achievement_manager_on_dark_unlock() - Unlock dark_awakening
+│   ├── lp_achievement_manager_on_soul_trade() - Unlock soul_trader
+│   ├── lp_achievement_manager_on_prestige() - Unlock transcendence
+│   └── lp_achievement_manager_on_kingdom_debt_owned() - Unlock hostile_takeover
+│
+├── Popup Integration:
+│   ├── lp_achievement_manager_set_popup() - Set notification widget
+│   ├── Uses weak reference to avoid circular dependencies
+│   └── Shows LpAchievementPopup on unlock
+│
+├── API:
+│   ├── lp_achievement_manager_get_default() - Singleton accessor
+│   ├── lp_achievement_manager_load_definitions() - Register achievements
+│   ├── lp_achievement_manager_get_achievement() - Get by ID
+│   ├── lp_achievement_manager_get_all() - List all achievements
+│   ├── lp_achievement_manager_unlock() - Manually unlock
+│   ├── lp_achievement_manager_is_unlocked() - Check status
+│   ├── lp_achievement_manager_get_unlocked_count()
+│   ├── lp_achievement_manager_get_total_count()
+│   ├── lp_achievement_manager_get_completion_percentage()
+│   ├── lp_achievement_manager_get_progress() - Raw progress value
+│   ├── lp_achievement_manager_get_progress_percentage() - 0-100
+│   ├── lp_achievement_manager_set_progress()
+│   ├── lp_achievement_manager_increment_progress()
+│   ├── lp_achievement_manager_set_stat()
+│   ├── lp_achievement_manager_get_stat()
+│   ├── lp_achievement_manager_increment_stat()
+│   └── lp_achievement_manager_reset() - Reset all (for testing)
+│
+└── Signals:
+    ├── achievement-unlocked (achievement_id) - Re-emitted from backend
+    └── progress-updated (achievement_id, percentage) - Progress change
+```
+
+### Steam Bridge
+
+```
+LpSteamBridge (singleton)
+├── Purpose: Optional Steam integration with graceful degradation
+├── Conditional Compilation: STEAM_BUILD define enables Steam SDK
+│
+├── Availability:
+│   ├── Without STEAM_BUILD: All methods are no-ops returning TRUE
+│   ├── With STEAM_BUILD but Steam not running: Graceful fallback
+│   └── With STEAM_BUILD and Steam running: Full functionality
+│
+├── Initialization:
+│   ├── lp_steam_bridge_get_default() - Singleton accessor
+│   ├── lp_steam_bridge_initialize() - Connect to Steam SDK
+│   ├── lp_steam_bridge_shutdown() - Disconnect from Steam
+│   ├── lp_steam_bridge_is_available() - Check if Steam connected
+│   └── lp_steam_bridge_run_callbacks() - Process Steam callbacks
+│
+├── Achievement Sync:
+│   ├── lp_steam_bridge_sync_achievement() - Sync single achievement
+│   ├── lp_steam_bridge_sync_all_achievements() - Sync all unlocked
+│   ├── lp_steam_bridge_clear_achievement() - Clear (for testing)
+│   └── lp_steam_bridge_store_stats() - Push to Steam servers
+│
+├── Cloud Save (placeholder):
+│   ├── lp_steam_bridge_cloud_write() - Write to Steam Cloud
+│   ├── lp_steam_bridge_cloud_read() - Read from Steam Cloud
+│   └── lp_steam_bridge_cloud_exists() - Check file exists
+│
+├── User Info:
+│   ├── lp_steam_bridge_get_user_name() - Steam display name
+│   └── lp_steam_bridge_get_user_id() - Steam user ID
+│
+└── Design:
+    ├── Returns TRUE for no-ops to indicate graceful degradation
+    ├── Logs warnings for Steam failures but doesn't crash
+    ├── Cloud methods return FALSE when unavailable (caller uses local)
+    └── Uses LrgSteamClient and LrgSteamAchievements from libregnum
+```
+
+### Achievement Data Files
+
+Achievement definitions stored in `data/achievements/*.yaml`:
+
+```yaml
+# Example: data/achievements/first_million.yaml
+id: first_million
+name: "First Million"
+description: "Reach 1,000,000 gold pieces"
+hidden: false
+points: 10
+progress:
+  target: 1000000
+  format: "gold"
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-7 types)
+│
+├── LpAchievementManager (singleton, implements LrgSaveable) [Phase 8]
+│   ├── Wraps: LrgAchievementManager from libregnum
+│   ├── Holds: LpAchievementPopup* (weak reference)
+│   └── Connects: achievement-unlocked, achievement-progress signals
+│
+└── LpSteamBridge (singleton) [Phase 8]
+    ├── Wraps: LrgSteamClient (conditional)
+    └── Wraps: LrgSteamAchievements (conditional)
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Achievement Manager | achievement/lp-achievement-manager.h/.c | Full implementation |
+| Steam Bridge | steam/lp-steam-bridge.h/.c | Optional integration |
+| Achievement Data | data/achievements/*.yaml | 8 definitions |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-achievement.c | Manager, definitions, unlock, progress, stats, hooks, steam bridge |
+
+**Test Count:** 26 tests covering:
+- Achievement manager singleton, type, saveable interface
+- Achievement definitions (count, get by ID, hidden flag, points)
+- Unlock operations (basic, count, completion percentage)
+- Progress tracking (set, increment, auto-unlock)
+- Statistics management
+- Game event hooks (gold, slumber, family, prestige, dark unlock, kingdom debt)
+- Reset functionality
+- Steam bridge (singleton, type, unavailable, graceful fallback, user info)
+
+### Build System Updates
+
+#### Makefile Integration
+
+```makefile
+# src/Makefile - Phase 8 additions
+SOURCES += steam/lp-steam-bridge.c
+
+# Steam SDK conditional
+ifdef STEAM
+CFLAGS += -DSTEAM_BUILD
+LDFLAGS += $(STEAM_SDK_LIBS)
+endif
+
+# tests/Makefile - Phase 8 additions
+GAME_OBJECTS += $(OBJDIR)/src/steam/lp-steam-bridge.o
+LINKED_TESTS += test-achievement.c
+```
+
+### Key Design Decisions
+
+1. **Wrapper Pattern**: `LpAchievementManager` wraps `LrgAchievementManager` to add game-specific event hooks while leveraging libregnum's achievement tracking.
+
+2. **Built-in Definitions**: Achievements are registered programmatically rather than loaded from YAML to ensure consistency and avoid parsing errors.
+
+3. **Graceful Degradation**: All Steam bridge methods work without Steam SDK compiled in, returning success for no-ops.
+
+4. **Weak Reference for Popup**: Achievement popup widget is held via weak reference to avoid circular dependencies with UI layer.
+
+5. **Signal Forwarding**: Backend signals are caught and re-emitted on the game's manager for UI consumption.
+
+6. **Event Hook Pattern**: Game systems call dedicated hook methods rather than directly modifying achievements, centralizing achievement logic.
+
+7. **Conditional Compilation**: Steam-specific code is wrapped in `#ifdef STEAM_BUILD` to produce clean non-Steam builds.
+
+### Deferred Features
+
+- YAML achievement definition loading (currently uses built-in)
+- Steam Leaderboards integration
+- Steam Rich Presence
+- Additional achievement types (accumulation, combo, etc.)
 
 ---
 

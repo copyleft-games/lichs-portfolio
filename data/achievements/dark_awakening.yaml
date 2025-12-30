@@ -1,0 +1,9 @@
+# Dark Awakening Achievement (Hidden)
+# Unlock dark investments
+
+id: dark_awakening
+name: "Dark Awakening"
+description: "Unlock dark investments"
+hidden: true
+points: 25
+# No progress tracking - instant unlock when dark investments unlocked

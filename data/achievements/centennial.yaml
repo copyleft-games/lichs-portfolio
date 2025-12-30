@@ -1,0 +1,11 @@
+# Centennial Achievement
+# Complete a 100-year slumber
+
+id: centennial
+name: "Centennial"
+description: "Complete a 100-year slumber"
+hidden: false
+points: 20
+progress:
+  target: 100
+  format: "years"

@@ -1,0 +1,11 @@
+# Patient Investor Achievement
+# Hold a single investment for 500 years
+
+id: patient_investor
+name: "Patient Investor"
+description: "Hold a single investment for 500 years"
+hidden: false
+points: 50
+progress:
+  target: 500
+  format: "years"

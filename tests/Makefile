@@ -85,6 +85,9 @@ GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
 GAME_OBJECTS += $(OBJDIR)/src/save/lp-save-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/save/lp-settings-manager.o
 
+# Phase 8: Steam Integration
+GAME_OBJECTS += $(OBJDIR)/src/steam/lp-steam-bridge.o
+
 # =============================================================================
 # Test Sources
 # =============================================================================
@@ -118,6 +121,9 @@ LINKED_TESTS += test-feedback.c
 
 # Phase 7: Save/Settings tests
 LINKED_TESTS += test-save-load.c
+
+# Phase 8: Achievement tests
+LINKED_TESTS += test-achievement.c
 
 # =============================================================================
 # Test Binaries

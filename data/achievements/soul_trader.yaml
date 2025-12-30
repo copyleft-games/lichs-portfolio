@@ -1,0 +1,9 @@
+# Soul Trader Achievement (Hidden)
+# Complete your first soul trade
+
+id: soul_trader
+name: "Soul Trader"
+description: "Complete your first soul trade"
+hidden: true
+points: 35
+# No progress tracking - instant unlock on first soul trade

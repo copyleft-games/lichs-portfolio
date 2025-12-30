@@ -93,6 +93,9 @@ SOURCES += feedback/lp-slumber-visualization.c
 SOURCES += save/lp-save-manager.c
 SOURCES += save/lp-settings-manager.c
 
+# Steam Integration (Phase 8)
+SOURCES += steam/lp-steam-bridge.c
+
 # =============================================================================
 # Object Files
 # =============================================================================
@@ -211,9 +214,9 @@ $(OBJDIR)/src/agent/lp-agent-manager.o: agent/lp-agent-manager.c \
 	agent/lp-agent-manager.h agent/lp-agent.h agent/lp-agent-individual.h \
 	agent/lp-agent-family.h agent/lp-trait.h lp-log.h lp-types.h lp-enums.h
 
-# Achievement
+# Achievement (Phase 8)
 $(OBJDIR)/src/achievement/lp-achievement-manager.o: achievement/lp-achievement-manager.c \
-	achievement/lp-achievement-manager.h lp-log.h lp-types.h
+	achievement/lp-achievement-manager.h feedback/lp-achievement-popup.h lp-log.h lp-types.h
 
 # States
 $(OBJDIR)/src/states/lp-state-main-menu.o: states/lp-state-main-menu.c \
@@ -280,6 +283,10 @@ $(OBJDIR)/src/save/lp-save-manager.o: save/lp-save-manager.c \
 	save/lp-save-manager.h core/lp-game-data.h lp-log.h lp-types.h
 $(OBJDIR)/src/save/lp-settings-manager.o: save/lp-settings-manager.c \
 	save/lp-settings-manager.h lp-log.h lp-types.h
+
+# Steam Integration (Phase 8)
+$(OBJDIR)/src/steam/lp-steam-bridge.o: steam/lp-steam-bridge.c \
+	steam/lp-steam-bridge.h achievement/lp-achievement-manager.h lp-log.h lp-types.h
 
 # =============================================================================
 # Directory Creation
