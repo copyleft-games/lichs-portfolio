@@ -46,6 +46,15 @@ GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-individual.o
 GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-family.o
 GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-world-simulation.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-region.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-kingdom.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-economic.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-political.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-magical.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-personal.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-generator.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-competitor.o
 GAME_OBJECTS += $(OBJDIR)/src/achievement/lp-achievement-manager.o
 
 # =============================================================================
@@ -66,6 +75,9 @@ LINKED_TESTS += test-investment.c
 
 # Phase 3: Agent tests
 LINKED_TESTS += test-agent.c
+
+# Phase 4: Simulation tests
+LINKED_TESTS += test-simulation.c
 
 # =============================================================================
 # Test Binaries

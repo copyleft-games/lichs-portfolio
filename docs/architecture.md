@@ -298,10 +298,15 @@ GObject
 │   ├── LpStatePause [Phase 1 skeleton]
 │   └── LpStateSettings [Phase 1 skeleton]
 │
-├── LpKingdom [Phase 4+]
-├── LpRegion [Phase 4+]
-├── LpEvent (derivable) [Phase 4+]
-└── LpCompetitor [Phase 5+]
+├── LpRegion (implements LrgSaveable) [Phase 4]
+├── LpKingdom (implements LrgSaveable) [Phase 4]
+├── LpEvent (derivable, implements LrgSaveable) [Phase 4]
+│   ├── LpEventEconomic (final)
+│   ├── LpEventPolitical (final)
+│   ├── LpEventMagical (final)
+│   └── LpEventPersonal (final)
+├── LpEventGenerator (singleton) [Phase 4]
+└── LpCompetitor (implements LrgSaveable) [Phase 4]
 ```
 
 ## Build System
@@ -617,6 +622,363 @@ typedef enum {
 - Bound agents (Phase 3+)
 - Agent recruitment UI (Phase 6)
 - Agent management screens (Phase 6)
+
+---
+
+## Phase 4 Implementation Status
+
+Phase 4 implements the world simulation with kingdoms, regions, events, and immortal competitors.
+
+### Region System
+
+```
+LpRegion (final, implements LrgSaveable)
+├── Properties:
+│   ├── id (gchar*) - Unique identifier
+│   ├── name (gchar*) - Display name
+│   ├── geography-type (LpGeographyType) - Terrain type
+│   ├── owning-kingdom-id (gchar*) - Current owner
+│   ├── population (guint) - Population size
+│   ├── resource-modifier (gdouble) - Resource production bonus
+│   └── trade-connected (gboolean) - Connected to trade network
+│
+├── Geography Types:
+│   ├── COASTAL (trade bonus)
+│   ├── INLAND (agriculture bonus)
+│   ├── MOUNTAIN (mining bonus)
+│   ├── FOREST (lumber bonus)
+│   ├── DESERT (magical bonus)
+│   └── SWAMP (dark arts bonus)
+│
+└── Signals:
+    ├── ownership-changed (old_id, new_id)
+    └── devastated
+```
+
+### Kingdom System
+
+```
+LpKingdom (final, implements LrgSaveable)
+├── Core Attributes (0-100):
+│   ├── stability - Government stability (low = collapse risk)
+│   ├── prosperity - Economic health
+│   ├── military - War capability
+│   ├── culture - Resistance to change
+│   └── tolerance - Magic/undead acceptance
+│
+├── State Properties:
+│   ├── ruler-name (gchar*) - Current ruler
+│   ├── dynasty-years (guint) - Years of current dynasty
+│   ├── is-collapsed (gboolean) - Kingdom has collapsed
+│   ├── at-war-with-id (gchar*) - Current enemy
+│   └── regions (GPtrArray) - Controlled region IDs
+│
+├── Diplomatic Relations (GHashTable):
+│   ├── ALLIANCE - Military allies
+│   ├── NEUTRAL - Default state
+│   ├── RIVALRY - Economic competition
+│   ├── WAR - Active conflict
+│   └── VASSALAGE - Subordinate relationship
+│
+├── Methods:
+│   ├── lp_kingdom_tick_year() - Annual attribute changes
+│   ├── lp_kingdom_roll_collapse() - Check for collapse
+│   ├── lp_kingdom_roll_war() - Check for war initiation
+│   └── lp_kingdom_roll_crusade() - Check for anti-undead crusade
+│
+└── Signals:
+    ├── attribute-changed (attr, old, new)
+    ├── collapsed
+    ├── war-declared (enemy_id)
+    ├── war-ended (enemy_id)
+    └── crusade-launched
+```
+
+### Event System
+
+```
+LpEvent (derivable base class, implements LrgSaveable)
+├── Virtual Methods:
+│   ├── apply_effects() - Apply event to world state
+│   ├── get_choices() - Get player choices (nullable)
+│   ├── get_investment_modifier() - Modify investment returns
+│   ├── get_narrative_text() - Generate description text
+│   └── can_occur() - Check if event can trigger
+│
+├── Properties:
+│   ├── id, name, description (gchar*)
+│   ├── event-type (LpEventType)
+│   ├── severity (LpEventSeverity)
+│   ├── year-occurred (guint64)
+│   ├── affects-region-id, affects-kingdom-id (gchar*)
+│   ├── duration-years (guint, 0 = instant)
+│   └── is-active (gboolean)
+│
+├── Severity Levels:
+│   ├── MINOR - Local impact
+│   ├── MODERATE - Regional impact
+│   ├── MAJOR - Kingdom-wide impact
+│   └── CATASTROPHIC - World-changing
+│
+├── LpEventEconomic (final)
+│   ├── market-modifier (gdouble) - Market adjustment factor
+│   └── affected-asset-class (LpAssetClass)
+│
+├── LpEventPolitical (final)
+│   ├── stability-impact (gint) - Kingdom stability change
+│   └── causes-war (gboolean)
+│
+├── LpEventMagical (final)
+│   ├── exposure-impact (gint) - Lich exposure change
+│   └── affects-dark-investments (gboolean)
+│
+└── LpEventPersonal (final)
+    ├── target-agent-id (gchar*) - Affected agent
+    ├── is-betrayal (gboolean) - Agent betrayal event
+    └── is-death (gboolean) - Agent death event
+```
+
+### LpEventChoice (GBoxed)
+
+```c
+struct _LpEventChoice {
+    gchar    *id;              /* Choice identifier */
+    gchar    *text;            /* Display text */
+    gchar    *consequence;     /* Result description */
+    gboolean  requires_gold;   /* Needs gold to select */
+    guint64   gold_cost;       /* Gold cost if required */
+    gboolean  requires_agent;  /* Needs available agent */
+};
+```
+
+### Event Generator
+
+```
+LpEventGenerator (singleton)
+├── Properties:
+│   ├── base-yearly-event-chance (gdouble, default 0.3)
+│   ├── base-decade-event-chance (gdouble, default 0.7)
+│   └── base-era-event-chance (gdouble, default 0.9)
+│
+├── Methods:
+│   ├── lp_event_generator_get_default() - Singleton accessor
+│   ├── lp_event_generator_generate_yearly_events() -> GList
+│   ├── lp_event_generator_generate_decade_events() -> GList
+│   └── lp_event_generator_generate_era_events() -> GList
+│
+└── Event Creation:
+    ├── lp_event_generator_create_economic_event()
+    ├── lp_event_generator_create_political_event()
+    ├── lp_event_generator_create_magical_event()
+    └── lp_event_generator_create_personal_event()
+```
+
+### Competitor System
+
+```
+LpCompetitor (final, implements LrgSaveable)
+├── Properties:
+│   ├── id, name (gchar*)
+│   ├── competitor-type (LpCompetitorType)
+│   ├── stance (LpCompetitorStance)
+│   ├── power-level, aggression, greed, cunning (gint 0-100)
+│   ├── territory-region-ids (GPtrArray)
+│   ├── wealth (LrgBigNumber*)
+│   ├── is-active (gboolean)
+│   └── is-known (gboolean) - Discovered by player
+│
+├── Competitor Types:
+│   ├── DRAGON - Hoards wealth, territorial
+│   ├── VAMPIRE - Political influence, blood bonds
+│   ├── LICH - Fellow undead, magical competition
+│   ├── FAE - Trickster, long-term schemes
+│   └── DEMON - Corruption, soul contracts
+│
+├── Stance Toward Player:
+│   ├── UNKNOWN - Not yet encountered
+│   ├── WARY - Cautious observation
+│   ├── NEUTRAL - Neither friend nor foe
+│   ├── FRIENDLY - Potential ally
+│   ├── HOSTILE - Active opposition
+│   └── ALLIED - Formal alliance
+│
+├── AI Components:
+│   ├── behavior_tree (LrgBehaviorTree*) - Decision making
+│   └── blackboard (LrgBlackboard*) - State storage
+│
+├── Methods:
+│   ├── lp_competitor_tick_year() - Annual AI decisions
+│   ├── lp_competitor_react_to_event() - Respond to world events
+│   ├── lp_competitor_expand_territory() - Territorial expansion
+│   └── lp_competitor_get_player_threat_level() - Calculate threat
+│
+└── Signals:
+    ├── discovered - Player learns of competitor
+    ├── stance-changed (old, new)
+    ├── territory-expanded (region_id)
+    ├── territory-lost (region_id)
+    ├── destroyed
+    ├── alliance-proposed
+    └── conflict-declared
+```
+
+### World Simulation (Enhanced)
+
+```
+LpWorldSimulation (final, implements LrgSaveable)
+├── New Collections:
+│   ├── kingdoms (GPtrArray of LpKingdom*)
+│   ├── regions (GPtrArray of LpRegion*)
+│   ├── competitors (GPtrArray of LpCompetitor*)
+│   └── active_events (GPtrArray of LpEvent*)
+│
+├── Components:
+│   └── event_generator (LpEventGenerator*) - Event generation
+│
+├── New Methods:
+│   ├── lp_world_simulation_add_kingdom()
+│   ├── lp_world_simulation_get_kingdom_by_id()
+│   ├── lp_world_simulation_remove_kingdom()
+│   ├── lp_world_simulation_add_region()
+│   ├── lp_world_simulation_get_region_by_id()
+│   ├── lp_world_simulation_add_competitor()
+│   ├── lp_world_simulation_get_competitor_by_id()
+│   └── lp_world_simulation_get_known_competitors()
+│
+├── Updated advance_year Flow:
+│   1. Increment year
+│   2. Update economic cycle
+│   3. Tick all kingdoms (attribute drift, war checks)
+│   4. Tick all competitors (AI decisions)
+│   5. Generate yearly events
+│   6. Generate decade events (year % 10 == 0)
+│   7. Generate era events (year % 100 == 0)
+│   8. Apply events to world state
+│   9. Emit signals for major changes
+│   10. Return events list
+│
+└── New Signals:
+    ├── kingdom-collapsed (kingdom_id)
+    ├── war-started (kingdom1_id, kingdom2_id)
+    ├── war-ended (kingdom1_id, kingdom2_id)
+    └── competitor-discovered (competitor_id)
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-3 types unchanged)
+│
+├── LpRegion (final, implements LrgSaveable) [Phase 4]
+├── LpKingdom (final, implements LrgSaveable) [Phase 4]
+│
+├── LpEvent (derivable, implements LrgSaveable) [Phase 4]
+│   ├── LpEventEconomic (final)
+│   ├── LpEventPolitical (final)
+│   ├── LpEventMagical (final)
+│   └── LpEventPersonal (final)
+│
+├── LpEventGenerator (singleton) [Phase 4]
+│
+└── LpCompetitor (final, implements LrgSaveable) [Phase 4]
+    └── Uses: LrgBehaviorTree, LrgBlackboard
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| LpRegion | simulation/lp-region.h/.c | Geography, trade routes |
+| LpKingdom | simulation/lp-kingdom.h/.c | 5 core attributes, diplomacy |
+| LpEvent | simulation/lp-event.h/.c | Derivable base, LpEventChoice |
+| LpEventEconomic | simulation/lp-event-economic.h/.c | Market events |
+| LpEventPolitical | simulation/lp-event-political.h/.c | Political events |
+| LpEventMagical | simulation/lp-event-magical.h/.c | Magical events |
+| LpEventPersonal | simulation/lp-event-personal.h/.c | Agent events |
+| LpEventGenerator | simulation/lp-event-generator.h/.c | Weighted generation |
+| LpCompetitor | simulation/lp-competitor.h/.c | AI with behavior tree |
+| LpWorldSimulation | simulation/lp-world-simulation.h/.c | Full integration |
+
+### New Enumerations
+
+```c
+/* Region geography types */
+typedef enum {
+    LP_GEOGRAPHY_TYPE_COASTAL,
+    LP_GEOGRAPHY_TYPE_INLAND,
+    LP_GEOGRAPHY_TYPE_MOUNTAIN,
+    LP_GEOGRAPHY_TYPE_FOREST,
+    LP_GEOGRAPHY_TYPE_DESERT,
+    LP_GEOGRAPHY_TYPE_SWAMP
+} LpGeographyType;
+
+/* Kingdom diplomatic relations */
+typedef enum {
+    LP_KINGDOM_RELATION_ALLIANCE,
+    LP_KINGDOM_RELATION_NEUTRAL,
+    LP_KINGDOM_RELATION_RIVALRY,
+    LP_KINGDOM_RELATION_WAR,
+    LP_KINGDOM_RELATION_VASSALAGE
+} LpKingdomRelation;
+
+/* Immortal competitor types */
+typedef enum {
+    LP_COMPETITOR_TYPE_DRAGON,
+    LP_COMPETITOR_TYPE_VAMPIRE,
+    LP_COMPETITOR_TYPE_LICH,
+    LP_COMPETITOR_TYPE_FAE,
+    LP_COMPETITOR_TYPE_DEMON
+} LpCompetitorType;
+
+/* Competitor stance toward player */
+typedef enum {
+    LP_COMPETITOR_STANCE_UNKNOWN,
+    LP_COMPETITOR_STANCE_WARY,
+    LP_COMPETITOR_STANCE_NEUTRAL,
+    LP_COMPETITOR_STANCE_FRIENDLY,
+    LP_COMPETITOR_STANCE_HOSTILE,
+    LP_COMPETITOR_STANCE_ALLIED
+} LpCompetitorStance;
+
+/* Event severity levels */
+typedef enum {
+    LP_EVENT_SEVERITY_MINOR,
+    LP_EVENT_SEVERITY_MODERATE,
+    LP_EVENT_SEVERITY_MAJOR,
+    LP_EVENT_SEVERITY_CATASTROPHIC
+} LpEventSeverity;
+```
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-simulation.c | Regions, kingdoms, events, generator, competitors, world simulation |
+
+### Key Design Decisions
+
+1. **Behavior Tree AI**: Competitors use libregnum's `LrgBehaviorTree` and `LrgBlackboard` for flexible decision-making that can be data-driven.
+
+2. **Event Polymorphism**: Base `LpEvent` class with virtual methods allows different event types to implement custom logic while sharing common infrastructure.
+
+3. **Kingdom Attributes**: The 5 core attributes (stability, prosperity, military, culture, tolerance) drive all kingdom behavior and event probabilities.
+
+4. **Discovery Mechanics**: Competitors start unknown (`is-known = FALSE`) and are revealed through events or player investigation.
+
+5. **Weighted Event Generation**: Events use weighted probabilities influenced by world state, ensuring dynamic and contextual event selection.
+
+6. **Singleton Event Generator**: Single generator instance ensures consistent event creation and probability management.
+
+### Deferred to Later Phases
+
+- Region conquest mechanics (Phase 4+)
+- Detailed diplomatic actions (Phase 4+)
+- Competitor alliance negotiation UI (Phase 6)
+- Event choice interface (Phase 6)
+- Map visualization (Phase 6)
+
+---
 
 ## Related Documents
 

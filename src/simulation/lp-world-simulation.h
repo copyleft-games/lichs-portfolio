@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
  * The World Simulation manages the state of kingdoms, regions,
- * and generates world events during slumber periods.
+ * competitors, and generates world events during slumber periods.
  *
- * In Phase 1, this is a skeleton that tracks only the current year
- * and provides basic tick functionality.
+ * Phase 4 implements full kingdom/region management, event generation,
+ * and immortal competitor AI.
  */
 
 #ifndef LP_WORLD_SIMULATION_H
@@ -92,7 +92,7 @@ lp_world_simulation_set_current_year (LpWorldSimulation *self,
                                       guint64            year);
 
 /* ==========================================================================
- * Kingdom/Region Access (Skeleton - Phase 4+)
+ * Kingdom Management
  * ========================================================================== */
 
 /**
@@ -100,8 +100,6 @@ lp_world_simulation_set_current_year (LpWorldSimulation *self,
  * @self: an #LpWorldSimulation
  *
  * Gets all kingdoms in the world.
- *
- * Note: Skeleton implementation returns empty array in Phase 1.
  *
  * Returns: (transfer none) (element-type LpKingdom): Array of kingdoms
  */
@@ -119,8 +117,182 @@ lp_world_simulation_get_kingdoms (LpWorldSimulation *self);
 guint
 lp_world_simulation_get_kingdom_count (LpWorldSimulation *self);
 
+/**
+ * lp_world_simulation_add_kingdom:
+ * @self: an #LpWorldSimulation
+ * @kingdom: (transfer full): the kingdom to add
+ *
+ * Adds a kingdom to the simulation.
+ */
+void
+lp_world_simulation_add_kingdom (LpWorldSimulation *self,
+                                 LpKingdom         *kingdom);
+
+/**
+ * lp_world_simulation_get_kingdom_by_id:
+ * @self: an #LpWorldSimulation
+ * @id: the kingdom ID
+ *
+ * Gets a kingdom by its ID.
+ *
+ * Returns: (transfer none) (nullable): The kingdom, or %NULL if not found
+ */
+LpKingdom *
+lp_world_simulation_get_kingdom_by_id (LpWorldSimulation *self,
+                                       const gchar       *id);
+
+/**
+ * lp_world_simulation_remove_kingdom:
+ * @self: an #LpWorldSimulation
+ * @id: the kingdom ID
+ *
+ * Removes a kingdom from the simulation.
+ *
+ * Returns: %TRUE if removed
+ */
+gboolean
+lp_world_simulation_remove_kingdom (LpWorldSimulation *self,
+                                    const gchar       *id);
+
 /* ==========================================================================
- * Economic State (Skeleton - Phase 4+)
+ * Region Management
+ * ========================================================================== */
+
+/**
+ * lp_world_simulation_get_regions:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets all regions in the world.
+ *
+ * Returns: (transfer none) (element-type LpRegion): Array of regions
+ */
+GPtrArray *
+lp_world_simulation_get_regions (LpWorldSimulation *self);
+
+/**
+ * lp_world_simulation_get_region_count:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets the number of regions.
+ *
+ * Returns: Number of regions
+ */
+guint
+lp_world_simulation_get_region_count (LpWorldSimulation *self);
+
+/**
+ * lp_world_simulation_add_region:
+ * @self: an #LpWorldSimulation
+ * @region: (transfer full): the region to add
+ *
+ * Adds a region to the simulation.
+ */
+void
+lp_world_simulation_add_region (LpWorldSimulation *self,
+                                LpRegion          *region);
+
+/**
+ * lp_world_simulation_get_region_by_id:
+ * @self: an #LpWorldSimulation
+ * @id: the region ID
+ *
+ * Gets a region by its ID.
+ *
+ * Returns: (transfer none) (nullable): The region, or %NULL if not found
+ */
+LpRegion *
+lp_world_simulation_get_region_by_id (LpWorldSimulation *self,
+                                      const gchar       *id);
+
+/* ==========================================================================
+ * Competitor Management
+ * ========================================================================== */
+
+/**
+ * lp_world_simulation_get_competitors:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets all immortal competitors in the world.
+ *
+ * Returns: (transfer none) (element-type LpCompetitor): Array of competitors
+ */
+GPtrArray *
+lp_world_simulation_get_competitors (LpWorldSimulation *self);
+
+/**
+ * lp_world_simulation_get_competitor_count:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets the number of competitors.
+ *
+ * Returns: Number of competitors
+ */
+guint
+lp_world_simulation_get_competitor_count (LpWorldSimulation *self);
+
+/**
+ * lp_world_simulation_add_competitor:
+ * @self: an #LpWorldSimulation
+ * @competitor: (transfer full): the competitor to add
+ *
+ * Adds a competitor to the simulation.
+ */
+void
+lp_world_simulation_add_competitor (LpWorldSimulation *self,
+                                    LpCompetitor      *competitor);
+
+/**
+ * lp_world_simulation_get_competitor_by_id:
+ * @self: an #LpWorldSimulation
+ * @id: the competitor ID
+ *
+ * Gets a competitor by its ID.
+ *
+ * Returns: (transfer none) (nullable): The competitor, or %NULL if not found
+ */
+LpCompetitor *
+lp_world_simulation_get_competitor_by_id (LpWorldSimulation *self,
+                                          const gchar       *id);
+
+/**
+ * lp_world_simulation_get_known_competitors:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets competitors that have been discovered by the player.
+ *
+ * Returns: (transfer container) (element-type LpCompetitor): List of known competitors
+ */
+GList *
+lp_world_simulation_get_known_competitors (LpWorldSimulation *self);
+
+/* ==========================================================================
+ * Event Management
+ * ========================================================================== */
+
+/**
+ * lp_world_simulation_get_active_events:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets currently active (ongoing) events.
+ *
+ * Returns: (transfer none) (element-type LpEvent): Array of active events
+ */
+GPtrArray *
+lp_world_simulation_get_active_events (LpWorldSimulation *self);
+
+/**
+ * lp_world_simulation_get_event_generator:
+ * @self: an #LpWorldSimulation
+ *
+ * Gets the event generator.
+ *
+ * Returns: (transfer none): The event generator
+ */
+LpEventGenerator *
+lp_world_simulation_get_event_generator (LpWorldSimulation *self);
+
+/* ==========================================================================
+ * Economic State
  * ========================================================================== */
 
 /**

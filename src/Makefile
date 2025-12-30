@@ -26,8 +26,17 @@ SOURCES += core/lp-exposure-manager.c
 SOURCES += core/lp-synergy-manager.c
 SOURCES += core/lp-ledger.c
 
-# Simulation (Phase 1 skeleton)
+# Simulation (Phase 4)
 SOURCES += simulation/lp-world-simulation.c
+SOURCES += simulation/lp-region.c
+SOURCES += simulation/lp-kingdom.c
+SOURCES += simulation/lp-event.c
+SOURCES += simulation/lp-event-economic.c
+SOURCES += simulation/lp-event-political.c
+SOURCES += simulation/lp-event-magical.c
+SOURCES += simulation/lp-event-personal.c
+SOURCES += simulation/lp-event-generator.c
+SOURCES += simulation/lp-competitor.c
 
 # Investment (Phase 2)
 SOURCES += investment/lp-investment.c
@@ -115,9 +124,33 @@ $(OBJDIR)/src/core/lp-synergy-manager.o: core/lp-synergy-manager.c \
 $(OBJDIR)/src/core/lp-ledger.o: core/lp-ledger.c core/lp-ledger.h \
 	lp-log.h lp-enums.h lp-types.h
 
-# Simulation
+# Simulation (Phase 4)
 $(OBJDIR)/src/simulation/lp-world-simulation.o: simulation/lp-world-simulation.c \
-	simulation/lp-world-simulation.h lp-log.h lp-types.h
+	simulation/lp-world-simulation.h simulation/lp-kingdom.h simulation/lp-region.h \
+	simulation/lp-event.h simulation/lp-event-generator.h simulation/lp-competitor.h \
+	lp-log.h lp-types.h
+$(OBJDIR)/src/simulation/lp-region.o: simulation/lp-region.c simulation/lp-region.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-kingdom.o: simulation/lp-kingdom.c simulation/lp-kingdom.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event.o: simulation/lp-event.c simulation/lp-event.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event-economic.o: simulation/lp-event-economic.c \
+	simulation/lp-event-economic.h simulation/lp-event.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event-political.o: simulation/lp-event-political.c \
+	simulation/lp-event-political.h simulation/lp-event.h simulation/lp-kingdom.h \
+	lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event-magical.o: simulation/lp-event-magical.c \
+	simulation/lp-event-magical.h simulation/lp-event.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event-personal.o: simulation/lp-event-personal.c \
+	simulation/lp-event-personal.h simulation/lp-event.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-event-generator.o: simulation/lp-event-generator.c \
+	simulation/lp-event-generator.h simulation/lp-event.h simulation/lp-event-economic.h \
+	simulation/lp-event-political.h simulation/lp-event-magical.h simulation/lp-event-personal.h \
+	simulation/lp-world-simulation.h lp-types.h lp-enums.h
+$(OBJDIR)/src/simulation/lp-competitor.o: simulation/lp-competitor.c \
+	simulation/lp-competitor.h simulation/lp-event.h simulation/lp-world-simulation.h \
+	lp-log.h lp-types.h lp-enums.h
 
 # Investment
 $(OBJDIR)/src/investment/lp-investment.o: investment/lp-investment.c \

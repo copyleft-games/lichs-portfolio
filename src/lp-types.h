@@ -44,21 +44,24 @@ typedef struct _LpPrestigeManagerClass  LpPrestigeManagerClass;
 
 typedef struct _LpWorldSimulation       LpWorldSimulation;
 
-/* Derivable types for future phases */
+/* Final types */
 typedef struct _LpKingdom               LpKingdom;
-typedef struct _LpKingdomClass          LpKingdomClass;
-
 typedef struct _LpRegion                LpRegion;
-typedef struct _LpRegionClass           LpRegionClass;
+typedef struct _LpEventGenerator        LpEventGenerator;
+typedef struct _LpCompetitor            LpCompetitor;
 
+/* Derivable base class for events */
 typedef struct _LpEvent                 LpEvent;
 typedef struct _LpEventClass            LpEventClass;
 
-typedef struct _LpEventGenerator        LpEventGenerator;
-typedef struct _LpEventGeneratorClass   LpEventGeneratorClass;
+/* Final event subtypes */
+typedef struct _LpEventEconomic         LpEventEconomic;
+typedef struct _LpEventPolitical        LpEventPolitical;
+typedef struct _LpEventMagical          LpEventMagical;
+typedef struct _LpEventPersonal         LpEventPersonal;
 
-typedef struct _LpCompetitor            LpCompetitor;
-typedef struct _LpCompetitorClass       LpCompetitorClass;
+/* Boxed types */
+typedef struct _LpEventChoice           LpEventChoice;
 
 /* ==========================================================================
  * Investment Types (src/investment/)

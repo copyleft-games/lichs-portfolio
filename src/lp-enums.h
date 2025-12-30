@@ -211,6 +211,138 @@ typedef enum
 GType lp_knowledge_level_get_type (void) G_GNUC_CONST;
 #define LP_TYPE_KNOWLEDGE_LEVEL (lp_knowledge_level_get_type ())
 
+/* ==========================================================================
+ * LpGeographyType - Region geography classifications
+ * ========================================================================== */
+
+/**
+ * LpGeographyType:
+ * @LP_GEOGRAPHY_TYPE_COASTAL: Coastal region (trade bonus)
+ * @LP_GEOGRAPHY_TYPE_INLAND: Inland plains (agriculture bonus)
+ * @LP_GEOGRAPHY_TYPE_MOUNTAIN: Mountain terrain (mining bonus)
+ * @LP_GEOGRAPHY_TYPE_FOREST: Forest territory (lumber bonus)
+ * @LP_GEOGRAPHY_TYPE_DESERT: Desert wasteland (magical bonus)
+ * @LP_GEOGRAPHY_TYPE_SWAMP: Swampland (hidden, dark arts bonus)
+ *
+ * Types of regional geography affecting resources and trade.
+ */
+typedef enum
+{
+    LP_GEOGRAPHY_TYPE_COASTAL,
+    LP_GEOGRAPHY_TYPE_INLAND,
+    LP_GEOGRAPHY_TYPE_MOUNTAIN,
+    LP_GEOGRAPHY_TYPE_FOREST,
+    LP_GEOGRAPHY_TYPE_DESERT,
+    LP_GEOGRAPHY_TYPE_SWAMP
+} LpGeographyType;
+
+GType lp_geography_type_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_GEOGRAPHY_TYPE (lp_geography_type_get_type ())
+
+/* ==========================================================================
+ * LpKingdomRelation - Diplomatic relations between kingdoms
+ * ========================================================================== */
+
+/**
+ * LpKingdomRelation:
+ * @LP_KINGDOM_RELATION_ALLIANCE: Allied kingdoms
+ * @LP_KINGDOM_RELATION_NEUTRAL: Neutral stance
+ * @LP_KINGDOM_RELATION_RIVALRY: Economic/political rivalry
+ * @LP_KINGDOM_RELATION_WAR: Active warfare
+ * @LP_KINGDOM_RELATION_VASSALAGE: One is vassal of other
+ *
+ * Diplomatic relations between kingdoms.
+ */
+typedef enum
+{
+    LP_KINGDOM_RELATION_ALLIANCE,
+    LP_KINGDOM_RELATION_NEUTRAL,
+    LP_KINGDOM_RELATION_RIVALRY,
+    LP_KINGDOM_RELATION_WAR,
+    LP_KINGDOM_RELATION_VASSALAGE
+} LpKingdomRelation;
+
+GType lp_kingdom_relation_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_KINGDOM_RELATION (lp_kingdom_relation_get_type ())
+
+/* ==========================================================================
+ * LpCompetitorType - Types of immortal competitors
+ * ========================================================================== */
+
+/**
+ * LpCompetitorType:
+ * @LP_COMPETITOR_TYPE_DRAGON: Ancient dragon with hoard
+ * @LP_COMPETITOR_TYPE_VAMPIRE: Elder vampire with network
+ * @LP_COMPETITOR_TYPE_LICH: Rival lich
+ * @LP_COMPETITOR_TYPE_FAE: Fae lord with holdings
+ * @LP_COMPETITOR_TYPE_DEMON: Bound demon with cultists
+ *
+ * Types of immortal competitors in the world.
+ */
+typedef enum
+{
+    LP_COMPETITOR_TYPE_DRAGON,
+    LP_COMPETITOR_TYPE_VAMPIRE,
+    LP_COMPETITOR_TYPE_LICH,
+    LP_COMPETITOR_TYPE_FAE,
+    LP_COMPETITOR_TYPE_DEMON
+} LpCompetitorType;
+
+GType lp_competitor_type_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_COMPETITOR_TYPE (lp_competitor_type_get_type ())
+
+/* ==========================================================================
+ * LpCompetitorStance - Competitor attitude toward player
+ * ========================================================================== */
+
+/**
+ * LpCompetitorStance:
+ * @LP_COMPETITOR_STANCE_UNKNOWN: Not yet encountered
+ * @LP_COMPETITOR_STANCE_WARY: Cautious observation
+ * @LP_COMPETITOR_STANCE_NEUTRAL: No strong feelings
+ * @LP_COMPETITOR_STANCE_FRIENDLY: Potential ally
+ * @LP_COMPETITOR_STANCE_HOSTILE: Active opposition
+ * @LP_COMPETITOR_STANCE_ALLIED: Formal alliance
+ *
+ * How a competitor views the player.
+ */
+typedef enum
+{
+    LP_COMPETITOR_STANCE_UNKNOWN,
+    LP_COMPETITOR_STANCE_WARY,
+    LP_COMPETITOR_STANCE_NEUTRAL,
+    LP_COMPETITOR_STANCE_FRIENDLY,
+    LP_COMPETITOR_STANCE_HOSTILE,
+    LP_COMPETITOR_STANCE_ALLIED
+} LpCompetitorStance;
+
+GType lp_competitor_stance_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_COMPETITOR_STANCE (lp_competitor_stance_get_type ())
+
+/* ==========================================================================
+ * LpEventSeverity - Event impact level
+ * ========================================================================== */
+
+/**
+ * LpEventSeverity:
+ * @LP_EVENT_SEVERITY_MINOR: Small impact, common
+ * @LP_EVENT_SEVERITY_MODERATE: Medium impact
+ * @LP_EVENT_SEVERITY_MAJOR: Significant impact
+ * @LP_EVENT_SEVERITY_CATASTROPHIC: World-changing impact, rare
+ *
+ * Severity level of world events.
+ */
+typedef enum
+{
+    LP_EVENT_SEVERITY_MINOR,
+    LP_EVENT_SEVERITY_MODERATE,
+    LP_EVENT_SEVERITY_MAJOR,
+    LP_EVENT_SEVERITY_CATASTROPHIC
+} LpEventSeverity;
+
+GType lp_event_severity_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_EVENT_SEVERITY (lp_event_severity_get_type ())
+
 G_END_DECLS
 
 #endif /* LP_ENUMS_H */

@@ -210,3 +210,134 @@ lp_knowledge_level_get_type (void)
 
     return g_type_id;
 }
+
+/* ==========================================================================
+ * LpGeographyType
+ * ========================================================================== */
+
+GType
+lp_geography_type_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_GEOGRAPHY_TYPE_COASTAL,  "LP_GEOGRAPHY_TYPE_COASTAL",  "coastal" },
+            { LP_GEOGRAPHY_TYPE_INLAND,   "LP_GEOGRAPHY_TYPE_INLAND",   "inland" },
+            { LP_GEOGRAPHY_TYPE_MOUNTAIN, "LP_GEOGRAPHY_TYPE_MOUNTAIN", "mountain" },
+            { LP_GEOGRAPHY_TYPE_FOREST,   "LP_GEOGRAPHY_TYPE_FOREST",   "forest" },
+            { LP_GEOGRAPHY_TYPE_DESERT,   "LP_GEOGRAPHY_TYPE_DESERT",   "desert" },
+            { LP_GEOGRAPHY_TYPE_SWAMP,    "LP_GEOGRAPHY_TYPE_SWAMP",    "swamp" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpGeographyType", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpKingdomRelation
+ * ========================================================================== */
+
+GType
+lp_kingdom_relation_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_KINGDOM_RELATION_ALLIANCE,  "LP_KINGDOM_RELATION_ALLIANCE",  "alliance" },
+            { LP_KINGDOM_RELATION_NEUTRAL,   "LP_KINGDOM_RELATION_NEUTRAL",   "neutral" },
+            { LP_KINGDOM_RELATION_RIVALRY,   "LP_KINGDOM_RELATION_RIVALRY",   "rivalry" },
+            { LP_KINGDOM_RELATION_WAR,       "LP_KINGDOM_RELATION_WAR",       "war" },
+            { LP_KINGDOM_RELATION_VASSALAGE, "LP_KINGDOM_RELATION_VASSALAGE", "vassalage" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpKingdomRelation", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpCompetitorType
+ * ========================================================================== */
+
+GType
+lp_competitor_type_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_COMPETITOR_TYPE_DRAGON,  "LP_COMPETITOR_TYPE_DRAGON",  "dragon" },
+            { LP_COMPETITOR_TYPE_VAMPIRE, "LP_COMPETITOR_TYPE_VAMPIRE", "vampire" },
+            { LP_COMPETITOR_TYPE_LICH,    "LP_COMPETITOR_TYPE_LICH",    "lich" },
+            { LP_COMPETITOR_TYPE_FAE,     "LP_COMPETITOR_TYPE_FAE",     "fae" },
+            { LP_COMPETITOR_TYPE_DEMON,   "LP_COMPETITOR_TYPE_DEMON",   "demon" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpCompetitorType", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpCompetitorStance
+ * ========================================================================== */
+
+GType
+lp_competitor_stance_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_COMPETITOR_STANCE_UNKNOWN,  "LP_COMPETITOR_STANCE_UNKNOWN",  "unknown" },
+            { LP_COMPETITOR_STANCE_WARY,     "LP_COMPETITOR_STANCE_WARY",     "wary" },
+            { LP_COMPETITOR_STANCE_NEUTRAL,  "LP_COMPETITOR_STANCE_NEUTRAL",  "neutral" },
+            { LP_COMPETITOR_STANCE_FRIENDLY, "LP_COMPETITOR_STANCE_FRIENDLY", "friendly" },
+            { LP_COMPETITOR_STANCE_HOSTILE,  "LP_COMPETITOR_STANCE_HOSTILE",  "hostile" },
+            { LP_COMPETITOR_STANCE_ALLIED,   "LP_COMPETITOR_STANCE_ALLIED",   "allied" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpCompetitorStance", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpEventSeverity
+ * ========================================================================== */
+
+GType
+lp_event_severity_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_EVENT_SEVERITY_MINOR,       "LP_EVENT_SEVERITY_MINOR",       "minor" },
+            { LP_EVENT_SEVERITY_MODERATE,    "LP_EVENT_SEVERITY_MODERATE",    "moderate" },
+            { LP_EVENT_SEVERITY_MAJOR,       "LP_EVENT_SEVERITY_MAJOR",       "major" },
+            { LP_EVENT_SEVERITY_CATASTROPHIC, "LP_EVENT_SEVERITY_CATASTROPHIC", "catastrophic" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpEventSeverity", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
