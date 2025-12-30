@@ -440,6 +440,65 @@ lp_phylactery_get_save_id (LrgSaveable *saveable)
     return "phylactery";
 }
 
+/*
+ * save_unlock_tree_state:
+ * @tree: The unlock tree to save
+ * @context: The save context
+ *
+ * Saves the unlock state of a tree by storing the list of unlocked node IDs.
+ */
+static void
+save_unlock_tree_state (LrgUnlockTree  *tree,
+                        LrgSaveContext *context)
+{
+    g_autoptr(GPtrArray) unlocked = NULL;
+    guint i;
+
+    unlocked = lrg_unlock_tree_get_unlocked (tree);
+
+    lrg_save_context_write_uint (context, "count", unlocked->len);
+
+    for (i = 0; i < unlocked->len; i++)
+    {
+        LrgUnlockNode *node = g_ptr_array_index (unlocked, i);
+        const gchar *node_id = lrg_unlock_node_get_id (node);
+        g_autofree gchar *key = g_strdup_printf ("node-%u", i);
+        lrg_save_context_write_string (context, key, node_id);
+    }
+}
+
+/*
+ * load_unlock_tree_state:
+ * @tree: The unlock tree to load into
+ * @context: The save context
+ *
+ * Loads the unlock state of a tree by restoring the list of unlocked node IDs.
+ */
+static void
+load_unlock_tree_state (LrgUnlockTree  *tree,
+                        LrgSaveContext *context)
+{
+    guint count;
+    guint i;
+
+    /* Reset the tree before loading */
+    lrg_unlock_tree_reset (tree);
+
+    count = lrg_save_context_read_uint (context, "count", 0);
+
+    for (i = 0; i < count; i++)
+    {
+        g_autofree gchar *key = g_strdup_printf ("node-%u", i);
+        g_autofree gchar *node_id = lrg_save_context_read_string (context, key, NULL);
+
+        if (node_id != NULL)
+        {
+            /* Force unlock without currency check since we're restoring state */
+            lrg_unlock_tree_unlock (tree, node_id);
+        }
+    }
+}
+
 static gboolean
 lp_phylactery_save (LrgSaveable    *saveable,
                     LrgSaveContext *context,
@@ -447,31 +506,33 @@ lp_phylactery_save (LrgSaveable    *saveable,
 {
     LpPhylactery *self;
 
+    (void)error;  /* Not used but required by interface */
+
     self = LP_PHYLACTERY (saveable);
 
     lrg_save_context_write_uint (context, "points", self->points);
     lrg_save_context_write_uint (context, "total-points-earned",
                                  self->total_points_earned);
 
-    /* Save each upgrade tree */
+    /* Save each upgrade tree's unlock state */
     lrg_save_context_begin_section (context, "temporal-tree");
-    lrg_saveable_save (LRG_SAVEABLE (self->temporal_tree), context, error);
+    save_unlock_tree_state (self->temporal_tree, context);
     lrg_save_context_end_section (context);
 
     lrg_save_context_begin_section (context, "network-tree");
-    lrg_saveable_save (LRG_SAVEABLE (self->network_tree), context, error);
+    save_unlock_tree_state (self->network_tree, context);
     lrg_save_context_end_section (context);
 
     lrg_save_context_begin_section (context, "divination-tree");
-    lrg_saveable_save (LRG_SAVEABLE (self->divination_tree), context, error);
+    save_unlock_tree_state (self->divination_tree, context);
     lrg_save_context_end_section (context);
 
     lrg_save_context_begin_section (context, "resilience-tree");
-    lrg_saveable_save (LRG_SAVEABLE (self->resilience_tree), context, error);
+    save_unlock_tree_state (self->resilience_tree, context);
     lrg_save_context_end_section (context);
 
     lrg_save_context_begin_section (context, "dark-arts-tree");
-    lrg_saveable_save (LRG_SAVEABLE (self->dark_arts_tree), context, error);
+    save_unlock_tree_state (self->dark_arts_tree, context);
     lrg_save_context_end_section (context);
 
     return TRUE;
@@ -484,40 +545,42 @@ lp_phylactery_load (LrgSaveable    *saveable,
 {
     LpPhylactery *self;
 
+    (void)error;  /* Not used but required by interface */
+
     self = LP_PHYLACTERY (saveable);
 
     self->points = lrg_save_context_read_uint (context, "points", 0);
     self->total_points_earned = lrg_save_context_read_uint (
         context, "total-points-earned", 0);
 
-    /* Load each upgrade tree */
+    /* Load each upgrade tree's unlock state */
     if (lrg_save_context_enter_section (context, "temporal-tree"))
     {
-        lrg_saveable_load (LRG_SAVEABLE (self->temporal_tree), context, error);
+        load_unlock_tree_state (self->temporal_tree, context);
         lrg_save_context_leave_section (context);
     }
 
     if (lrg_save_context_enter_section (context, "network-tree"))
     {
-        lrg_saveable_load (LRG_SAVEABLE (self->network_tree), context, error);
+        load_unlock_tree_state (self->network_tree, context);
         lrg_save_context_leave_section (context);
     }
 
     if (lrg_save_context_enter_section (context, "divination-tree"))
     {
-        lrg_saveable_load (LRG_SAVEABLE (self->divination_tree), context, error);
+        load_unlock_tree_state (self->divination_tree, context);
         lrg_save_context_leave_section (context);
     }
 
     if (lrg_save_context_enter_section (context, "resilience-tree"))
     {
-        lrg_saveable_load (LRG_SAVEABLE (self->resilience_tree), context, error);
+        load_unlock_tree_state (self->resilience_tree, context);
         lrg_save_context_leave_section (context);
     }
 
     if (lrg_save_context_enter_section (context, "dark-arts-tree"))
     {
-        lrg_saveable_load (LRG_SAVEABLE (self->dark_arts_tree), context, error);
+        load_unlock_tree_state (self->dark_arts_tree, context);
         lrg_save_context_leave_section (context);
     }
 

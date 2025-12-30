@@ -89,6 +89,10 @@ SOURCES += feedback/lp-synergy-effect.c
 SOURCES += feedback/lp-achievement-popup.c
 SOURCES += feedback/lp-slumber-visualization.c
 
+# Save/Settings (Phase 7)
+SOURCES += save/lp-save-manager.c
+SOURCES += save/lp-settings-manager.c
+
 # =============================================================================
 # Object Files
 # =============================================================================
@@ -271,6 +275,12 @@ $(OBJDIR)/src/feedback/lp-slumber-visualization.o: feedback/lp-slumber-visualiza
 	feedback/lp-slumber-visualization.h ui/lp-theme.h simulation/lp-event.h \
 	lp-log.h lp-types.h lp-enums.h
 
+# Save/Settings (Phase 7)
+$(OBJDIR)/src/save/lp-save-manager.o: save/lp-save-manager.c \
+	save/lp-save-manager.h core/lp-game-data.h lp-log.h lp-types.h
+$(OBJDIR)/src/save/lp-settings-manager.o: save/lp-settings-manager.c \
+	save/lp-settings-manager.h lp-log.h lp-types.h
+
 # =============================================================================
 # Directory Creation
 # =============================================================================
@@ -285,6 +295,7 @@ $(OBJDIR):
 	@$(MKDIR_P) $(OBJDIR)/src/states
 	@$(MKDIR_P) $(OBJDIR)/src/feedback
 	@$(MKDIR_P) $(OBJDIR)/src/achievement
+	@$(MKDIR_P) $(OBJDIR)/src/save
 	@$(MKDIR_P) $(OBJDIR)/src/steam
 
 $(BINDIR_OUT):

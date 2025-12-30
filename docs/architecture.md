@@ -232,6 +232,7 @@ data/events/*.yaml
 | src/states/ | Game states |
 | src/feedback/ | Visual feedback (particles, popups) |
 | src/achievement/ | Achievement tracking |
+| src/save/ | Save/load management, Settings persistence |
 | src/steam/ | Steam integration (optional) |
 
 ### Data Files (YAML)
@@ -1826,6 +1827,210 @@ GObject
 6. **Acceleration UX**: Slumber visualization supports hold-to-accelerate for player control over time passage.
 
 7. **Event Timeline**: Slumber visualization shows recent events with age-based fading for context during time passage.
+
+---
+
+## Phase 7 Implementation Status
+
+Phase 7 implements persistent storage systems for save/load functionality and game settings.
+
+### Save Manager
+
+```
+LpSaveManager (singleton)
+├── Purpose: Coordinate save/load operations for game state
+├── Properties:
+│   └── save-directory (gchar* read-only) - XDG data directory path
+│
+├── Save Format:
+│   ├── Format: YAML via LrgSaveContext
+│   ├── Version: LP_SAVE_VERSION (1)
+│   ├── Location: $XDG_DATA_HOME/lichs-portfolio/saves/
+│   └── Naming: save{N}.yaml (N = slot 0-9), autosave.yaml, quicksave.yaml
+│
+├── Save Structure:
+│   ├── save-timestamp (gint64) - Unix timestamp
+│   ├── save-version (guint) - Format version
+│   └── game-data: (section)
+│       ├── portfolio: (LpPortfolio)
+│       ├── agent-manager: (LpAgentManager)
+│       ├── phylactery: (LpPhylactery)
+│       ├── ledger: (LpLedger)
+│       └── world-simulation: (LpWorldSimulation)
+│
+├── Slot Management:
+│   ├── lp_save_manager_save_game() - Save to numbered slot
+│   ├── lp_save_manager_load_game() - Load from numbered slot
+│   ├── lp_save_manager_quicksave() - Save to quicksave slot
+│   ├── lp_save_manager_quickload() - Load from quicksave slot
+│   ├── lp_save_manager_autosave() - Save to autosave slot
+│   ├── lp_save_manager_slot_exists() - Check if slot has save
+│   ├── lp_save_manager_get_slot_info() - Get year/timestamp from slot
+│   └── lp_save_manager_delete_slot() - Remove a save
+│
+├── File Operations:
+│   ├── lp_save_manager_save_to_file() - Save to arbitrary path
+│   ├── lp_save_manager_load_from_file() - Load from arbitrary path
+│   └── lp_save_manager_ensure_directory() - Create save directory
+│
+└── Constants:
+    ├── LP_SAVE_VERSION (1) - Current save format version
+    └── LP_MAX_SAVE_SLOTS (10) - Maximum numbered slots
+```
+
+### Settings Manager
+
+```
+LpSettingsManager (singleton)
+├── Purpose: Manage and persist user preferences
+├── Properties (persisted in settings.yaml):
+│   │
+│   ├── Graphics Group:
+│   │   ├── fullscreen (gboolean) - Fullscreen mode (default: FALSE)
+│   │   ├── vsync (gboolean) - VSync enabled (default: TRUE)
+│   │   ├── window-width (gint) - Window width (default: 1280)
+│   │   └── window-height (gint) - Window height (default: 720)
+│   │
+│   ├── Audio Group:
+│   │   ├── master-volume (gfloat 0-1) - Master volume (default: 0.8)
+│   │   ├── music-volume (gfloat 0-1) - Music volume (default: 0.7)
+│   │   ├── sfx-volume (gfloat 0-1) - SFX volume (default: 1.0)
+│   │   └── muted (gboolean) - Audio muted (default: FALSE)
+│   │
+│   ├── Gameplay Group:
+│   │   ├── autosave-enabled (gboolean) - Autosave on (default: TRUE)
+│   │   ├── autosave-interval (guint) - Minutes (default: 5)
+│   │   ├── pause-on-events (gboolean) - Auto-pause (default: TRUE)
+│   │   └── show-notifications (gboolean) - In-game notifs (default: TRUE)
+│   │
+│   └── Accessibility Group:
+│       └── ui-scale (gfloat 0.75-2.0) - UI scaling (default: 1.0)
+│
+├── Settings Format:
+│   ├── Format: YAML via LrgSaveContext
+│   ├── Location: $XDG_CONFIG_HOME/lichs-portfolio/settings.yaml
+│   └── Auto-creates with defaults if missing
+│
+├── Persistence:
+│   ├── lp_settings_manager_load() - Load from disk
+│   ├── lp_settings_manager_save() - Save to disk
+│   └── lp_settings_manager_reset_to_defaults() - Reset all settings
+│
+└── Getters/Setters:
+    ├── Graphics: get/set_fullscreen, get/set_vsync, get/set_window_size
+    ├── Audio: get/set_master_volume, get/set_music_volume, etc.
+    ├── Gameplay: get/set_autosave_enabled, get/set_autosave_interval, etc.
+    └── Accessibility: get/set_ui_scale
+```
+
+### Phylactery Save Fix
+
+The phylactery upgrade trees (`LrgUnlockTree`) do not implement `LrgSaveable` directly. Save/load is handled manually:
+
+```c
+/* Saving: Store list of unlocked node IDs */
+static void
+save_unlock_tree_state (LrgUnlockTree  *tree,
+                        LrgSaveContext *context)
+{
+    g_autoptr(GPtrArray) unlocked = lrg_unlock_tree_get_unlocked (tree);
+    lrg_save_context_write_uint (context, "count", unlocked->len);
+
+    for (guint i = 0; i < unlocked->len; i++)
+    {
+        LrgUnlockNode *node = g_ptr_array_index (unlocked, i);
+        g_autofree gchar *key = g_strdup_printf ("node-%u", i);
+        lrg_save_context_write_string (context, key,
+                                       lrg_unlock_node_get_id (node));
+    }
+}
+
+/* Loading: Restore unlocked nodes by ID */
+static void
+load_unlock_tree_state (LrgUnlockTree  *tree,
+                        LrgSaveContext *context)
+{
+    lrg_unlock_tree_reset (tree);
+    guint count = lrg_save_context_read_uint (context, "count", 0);
+
+    for (guint i = 0; i < count; i++)
+    {
+        g_autofree gchar *key = g_strdup_printf ("node-%u", i);
+        g_autofree gchar *node_id = lrg_save_context_read_string (context, key, NULL);
+        if (node_id != NULL)
+            lrg_unlock_tree_unlock (tree, node_id);
+    }
+}
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-6.5 types)
+│
+├── LpSaveManager (singleton) [Phase 7]
+│   ├── Uses: LrgSaveContext for YAML serialization
+│   └── Coordinates: LpGameData and child LrgSaveable objects
+│
+└── LpSettingsManager (singleton) [Phase 7]
+    └── Uses: LrgSaveContext for YAML persistence
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Save Manager | save/lp-save-manager.h/.c | Save/load coordination |
+| Settings Manager | save/lp-settings-manager.h/.c | Settings persistence |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-save-load.c | Save/load operations, settings getters/setters |
+
+**Test Count:** 17 tests covering:
+- Save manager singleton
+- Save directory and slot path generation
+- Save/load round-trip verification
+- Settings manager singleton
+- All settings groups (graphics, audio, gameplay, accessibility)
+- Settings reset to defaults
+
+### Key Design Decisions
+
+1. **XDG Compliance**: Uses `g_get_user_data_dir()` for saves and `g_get_user_config_dir()` for settings, following XDG Base Directory specification.
+
+2. **LrgSaveContext Integration**: Both managers use libregnum's `LrgSaveContext` for consistent YAML serialization with section-based hierarchy.
+
+3. **Singleton Pattern**: Both managers use singleton pattern with weak pointer cleanup for proper lifecycle management.
+
+4. **Graceful Defaults**: Settings manager returns sensible defaults and auto-creates missing files rather than failing.
+
+5. **Unlock Tree Serialization**: Since `LrgUnlockTree` doesn't implement `LrgSaveable`, phylactery manually serializes the list of unlocked node IDs.
+
+6. **Slot Information**: Save manager provides slot metadata (year, timestamp) for UI display without loading full game state.
+
+7. **UI Scale Clamping**: UI scale is clamped to 0.75-2.0 range to prevent unusable extremes.
+
+### Total Test Count (All Phases)
+
+| Phase | Test File | Test Count |
+|-------|-----------|------------|
+| 0 | test-stub.c | 5 |
+| 1 | test-exposure.c | 13 |
+| 1 | test-portfolio.c | 9 |
+| 1 | test-ledger.c | 9 |
+| 1 | test-game-data.c | 5 |
+| 2 | test-investment.c | 31 |
+| 3 | test-agent.c | 24 |
+| 4 | test-simulation.c | 43 |
+| 5 | test-progression.c | 41 |
+| 6 | test-ui.c | 20 |
+| 6.5 | test-feedback.c | 19 |
+| 7 | test-save-load.c | 17 |
+| **Total** | **12 test files** | **236 tests** |
 
 ---
 

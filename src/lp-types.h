@@ -148,6 +148,13 @@ typedef struct _LpStateFirstAwakening   LpStateFirstAwakening;
 typedef struct _LpAchievementManager    LpAchievementManager;
 
 /* ==========================================================================
+ * Save Types (src/save/)
+ * ========================================================================== */
+
+typedef struct _LpSaveManager           LpSaveManager;
+typedef struct _LpSettingsManager       LpSettingsManager;
+
+/* ==========================================================================
  * Steam Types (src/steam/)
  * ========================================================================== */
 

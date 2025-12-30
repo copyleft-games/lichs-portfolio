@@ -81,6 +81,10 @@ GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-synergy-effect.o
 GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-achievement-popup.o
 GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
 
+# Phase 7: Save/Settings
+GAME_OBJECTS += $(OBJDIR)/src/save/lp-save-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/save/lp-settings-manager.o
+
 # =============================================================================
 # Test Sources
 # =============================================================================
@@ -111,6 +115,9 @@ LINKED_TESTS += test-ui.c
 
 # Phase 6.5: Feedback tests
 LINKED_TESTS += test-feedback.c
+
+# Phase 7: Save/Settings tests
+LINKED_TESTS += test-save-load.c
 
 # =============================================================================
 # Test Binaries
