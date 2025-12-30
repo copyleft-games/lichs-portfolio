@@ -423,6 +423,30 @@ typedef enum
 GType lp_echo_tree_get_type (void) G_GNUC_CONST;
 #define LP_TYPE_ECHO_TREE (lp_echo_tree_get_type ())
 
+/* ==========================================================================
+ * LpGrowthIntensity - Visual feedback intensity levels
+ * ========================================================================== */
+
+/**
+ * LpGrowthIntensity:
+ * @LP_GROWTH_INTENSITY_MINOR: Minor growth (<10%) - few sparkles
+ * @LP_GROWTH_INTENSITY_MODERATE: Moderate growth (10-50%) - coin shower
+ * @LP_GROWTH_INTENSITY_MAJOR: Major growth (50-200%) - gold burst
+ * @LP_GROWTH_INTENSITY_LEGENDARY: Legendary growth (>200%) - golden rain
+ *
+ * Intensity levels for portfolio growth visual effects.
+ */
+typedef enum
+{
+    LP_GROWTH_INTENSITY_MINOR,
+    LP_GROWTH_INTENSITY_MODERATE,
+    LP_GROWTH_INTENSITY_MAJOR,
+    LP_GROWTH_INTENSITY_LEGENDARY
+} LpGrowthIntensity;
+
+GType lp_growth_intensity_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_GROWTH_INTENSITY (lp_growth_intensity_get_type ())
+
 G_END_DECLS
 
 #endif /* LP_ENUMS_H */

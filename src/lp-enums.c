@@ -420,3 +420,28 @@ lp_echo_tree_get_type (void)
 
     return g_type_id;
 }
+
+/* ==========================================================================
+ * LpGrowthIntensity
+ * ========================================================================== */
+
+GType
+lp_growth_intensity_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_GROWTH_INTENSITY_MINOR,     "LP_GROWTH_INTENSITY_MINOR",     "minor" },
+            { LP_GROWTH_INTENSITY_MODERATE,  "LP_GROWTH_INTENSITY_MODERATE",  "moderate" },
+            { LP_GROWTH_INTENSITY_MAJOR,     "LP_GROWTH_INTENSITY_MAJOR",     "major" },
+            { LP_GROWTH_INTENSITY_LEGENDARY, "LP_GROWTH_INTENSITY_LEGENDARY", "legendary" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpGrowthIntensity", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}

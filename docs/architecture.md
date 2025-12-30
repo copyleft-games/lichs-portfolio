@@ -1601,7 +1601,231 @@ GObject
 - Map visualization with regions (Phase 6+)
 - Agent list with details (Phase 6+)
 - Megaproject phase visualization (Phase 6+)
-- Feedback effects (Phase 6.5)
+
+---
+
+## Phase 6.5 Implementation Status
+
+Phase 6.5 implements visual feedback systems to make "numbers going up" visible and satisfying - essential for idle game dopamine.
+
+### Floating Text Widget
+
+```
+LpFloatingText (final, extends LrgWidget)
+├── Purpose: Display gold change popups that drift upward and fade out
+├── Properties:
+│   ├── text (gchar*) - Text to display
+│   ├── lifetime (gfloat) - Duration in seconds (default: 2.0)
+│   ├── velocity-y (gfloat) - Upward speed (default: -50.0)
+│   └── alpha (gfloat read-only) - Current opacity 0.0-1.0
+│
+├── Animation:
+│   ├── Text floats upward (y += velocity_y * delta)
+│   ├── Alpha stays 1.0 for first 50% of lifetime
+│   └── Alpha fades to 0.0 over remaining 50%
+│
+├── API:
+│   ├── lp_floating_text_new() - Create with text, position, color
+│   ├── lp_floating_text_spawn_gold() - Convenience for gold changes
+│   ├── lp_floating_text_is_finished() - Check if animation complete
+│   └── lp_floating_text_update() - Advance animation
+│
+└── Colors:
+    ├── Positive amounts: Gold (#c9a227)
+    └── Negative amounts: Danger red (#9e2a2a)
+```
+
+### Growth Particles Widget
+
+```
+LpGrowthParticles (final, extends LrgWidget)
+├── Purpose: Visual celebration of portfolio growth using particles
+├── Properties:
+│   └── intensity (LpGrowthIntensity read-only) - Current intensity level
+│
+├── Intensity Levels:
+│   ├── LP_GROWTH_INTENSITY_MINOR - 10 particles, small (2-4 size)
+│   ├── LP_GROWTH_INTENSITY_MODERATE - 30 particles, medium (3-6 size)
+│   ├── LP_GROWTH_INTENSITY_MAJOR - 75 particles, large (4-8 size)
+│   └── LP_GROWTH_INTENSITY_LEGENDARY - 200 particles, full screen (5-10 size)
+│
+├── Particle Configuration:
+│   ├── Color: Gold (#c9a227) with fade to transparent
+│   ├── Direction: Upward burst
+│   ├── Uses libregnum LrgParticleSystem and LrgParticleEmitter
+│   └── One-shot bursts (no looping)
+│
+└── API:
+    ├── lp_growth_particles_new() - Create particle system
+    ├── lp_growth_particles_spawn() - Emit burst at position
+    ├── lp_growth_particles_is_alive() - Check for active particles
+    ├── lp_growth_particles_update() - Advance simulation
+    └── lp_growth_particles_clear() - Kill all particles
+```
+
+### Synergy Effect Widget
+
+```
+LpSynergyEffect (final, extends LrgWidget)
+├── Purpose: Visual feedback when synergies activate - lines connect investments
+├── Properties:
+│   ├── progress (gfloat read-only) - Animation progress 0.0-1.0
+│   └── is-complete (gboolean read-only) - Animation finished
+│
+├── Modes:
+│   ├── ACTIVATION - Cyan line draws from source to target with pulse
+│   └── COMPLETION - Expanding ring flash at center
+│
+├── Visual Features:
+│   ├── Line grows from source toward target (ease_out_quad)
+│   ├── Bright white pulse dot travels along line
+│   ├── Line fades during last 30% of animation
+│   └── Color: Synergy cyan (#27c9c9)
+│
+├── Durations:
+│   ├── Activation: 1.0 second
+│   └── Completion: 0.5 second
+│
+└── API:
+    ├── lp_synergy_effect_new() - Create effect widget
+    ├── lp_synergy_effect_play_activation() - Line from source to target
+    ├── lp_synergy_effect_play_completion() - Flash at center
+    ├── lp_synergy_effect_set_endpoints() - Configure line positions
+    └── lp_synergy_effect_update() - Advance animation
+```
+
+### Achievement Popup Widget
+
+```
+LpAchievementPopup (final, extends LrgContainer)
+├── Purpose: Celebration popup when achievements unlock
+├── Properties:
+│   ├── name (gchar* read-only) - Achievement name
+│   ├── description (gchar* read-only) - Achievement description
+│   ├── is-visible (gboolean read-only) - Currently showing
+│   └── auto-dismiss-time (gfloat) - Seconds before auto-hide (default: 5.0)
+│
+├── Animation States:
+│   ├── HIDDEN - Not visible
+│   ├── SLIDING_IN - Moving from right (0.3s, ease_out_cubic)
+│   ├── VISIBLE - Showing with pulsing gold border
+│   └── SLIDING_OUT - Moving to right (0.3s, ease_in_cubic)
+│
+├── Visual Layout:
+│   ├── "★ Achievement Unlocked!" header in gold
+│   ├── Separator line
+│   ├── Achievement name in primary text color
+│   ├── Achievement description in secondary color
+│   └── Pulsing gold border (alpha oscillates with sine wave)
+│
+├── Interaction:
+│   ├── Click anywhere to dismiss early
+│   └── Auto-dismiss after timeout
+│
+└── API:
+    ├── lp_achievement_popup_new() - Create popup
+    ├── lp_achievement_popup_show() - Display with name/description
+    ├── lp_achievement_popup_dismiss() - Start slide-out
+    └── lp_achievement_popup_update() - Advance animation
+```
+
+### Slumber Visualization Widget
+
+```
+LpSlumberVisualization (final, extends LrgContainer)
+├── Purpose: Make slumber phase visually interesting with timeline
+├── Properties:
+│   ├── current-year (guint64 read-only) - Year being displayed
+│   ├── target-year (guint64 read-only) - Final wake year
+│   ├── simulation-speed (gfloat read-only) - Years per second
+│   └── is-accelerating (gboolean read-only) - Fast-forward active
+│
+├── Visual Elements:
+│   ├── Year counter (48pt font, pulsing gold)
+│   ├── Progress bar (gold fill on surface background)
+│   ├── Event timeline (last 8 events with age-based fading)
+│   └── Acceleration prompt "Hold SPACE to accelerate"
+│
+├── Event Display:
+│   ├── Key events highlighted in gold
+│   ├── Dormant orders shown in cyan
+│   ├── Normal events in secondary color
+│   └── Older events fade toward 30% opacity
+│
+├── Acceleration:
+│   ├── Normal speed: 1.0x
+│   ├── Accelerated speed: 5.0x
+│   └── Hold SPACE or Enter to enable
+│
+└── API:
+    ├── lp_slumber_visualization_new() - Create visualization
+    ├── lp_slumber_visualization_start() - Begin with year range
+    ├── lp_slumber_visualization_stop() - End visualization
+    ├── lp_slumber_visualization_set_year() - Update year counter
+    ├── lp_slumber_visualization_add_event() - Add to timeline
+    ├── lp_slumber_visualization_accelerate() - Toggle fast-forward
+    └── lp_slumber_visualization_update() - Advance animation
+```
+
+### New Enumerations
+
+```c
+/* Growth particle intensity levels */
+typedef enum {
+    LP_GROWTH_INTENSITY_MINOR,      /* <10% growth - few sparkles */
+    LP_GROWTH_INTENSITY_MODERATE,   /* 10-50% growth - coin shower */
+    LP_GROWTH_INTENSITY_MAJOR,      /* 50-200% growth - gold burst */
+    LP_GROWTH_INTENSITY_LEGENDARY   /* >200% growth - golden rain */
+} LpGrowthIntensity;
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-6 types)
+│
+├── LrgWidget (from libregnum)
+│   ├── LpFloatingText (final) [Phase 6.5]
+│   ├── LpGrowthParticles (final) [Phase 6.5]
+│   └── LpSynergyEffect (final) [Phase 6.5]
+│
+└── LrgContainer (from libregnum)
+    ├── LpAchievementPopup (final) [Phase 6.5]
+    └── LpSlumberVisualization (final) [Phase 6.5]
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Floating Text | feedback/lp-floating-text.h/.c | Gold popup animation |
+| Growth Particles | feedback/lp-growth-particles.h/.c | Particle celebration |
+| Synergy Effect | feedback/lp-synergy-effect.h/.c | Line/pulse animation |
+| Achievement Popup | feedback/lp-achievement-popup.h/.c | Slide-in notification |
+| Slumber Visualization | feedback/lp-slumber-visualization.h/.c | Year/timeline display |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-feedback.c | All 5 feedback widgets with 19 test cases |
+
+### Key Design Decisions
+
+1. **libregnum Particle System**: Growth particles use `LrgParticleSystem` and `LrgParticleEmitter` from libregnum for efficient particle management.
+
+2. **Vector-Based Drawing**: Synergy effects use `GrlVector2` for float-precision line and circle drawing via `grl_draw_line_ex` and `grl_draw_circle_v`.
+
+3. **Easing Functions**: Animations use cubic and quadratic easing for smooth, professional-feeling motion.
+
+4. **Auto-Cleanup**: Floating text and particles are designed to be added to containers and auto-removed when finished.
+
+5. **Theme Integration**: All colors use the existing theme system (`lp_theme_get_gold_color`, `lp_theme_get_synergy_color`, etc.).
+
+6. **Acceleration UX**: Slumber visualization supports hold-to-accelerate for player control over time passage.
+
+7. **Event Timeline**: Slumber visualization shows recent events with age-based fading for context during time passage.
 
 ---
 

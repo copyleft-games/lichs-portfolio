@@ -82,6 +82,13 @@ SOURCES += ui/lp-screen-ledger.c
 SOURCES += ui/lp-screen-megaprojects.c
 SOURCES += ui/lp-dialog-event.c
 
+# Feedback Systems (Phase 6.5)
+SOURCES += feedback/lp-floating-text.c
+SOURCES += feedback/lp-growth-particles.c
+SOURCES += feedback/lp-synergy-effect.c
+SOURCES += feedback/lp-achievement-popup.c
+SOURCES += feedback/lp-slumber-visualization.c
+
 # =============================================================================
 # Object Files
 # =============================================================================
@@ -250,6 +257,19 @@ $(OBJDIR)/src/ui/lp-screen-megaprojects.o: ui/lp-screen-megaprojects.c \
 	ui/lp-screen-megaprojects.h ui/lp-theme.h lp-log.h lp-types.h
 $(OBJDIR)/src/ui/lp-dialog-event.o: ui/lp-dialog-event.c \
 	ui/lp-dialog-event.h ui/lp-theme.h simulation/lp-event.h lp-log.h lp-types.h
+
+# Feedback Systems (Phase 6.5)
+$(OBJDIR)/src/feedback/lp-floating-text.o: feedback/lp-floating-text.c \
+	feedback/lp-floating-text.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/feedback/lp-growth-particles.o: feedback/lp-growth-particles.c \
+	feedback/lp-growth-particles.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/feedback/lp-synergy-effect.o: feedback/lp-synergy-effect.c \
+	feedback/lp-synergy-effect.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/feedback/lp-achievement-popup.o: feedback/lp-achievement-popup.c \
+	feedback/lp-achievement-popup.h ui/lp-theme.h lp-log.h lp-types.h
+$(OBJDIR)/src/feedback/lp-slumber-visualization.o: feedback/lp-slumber-visualization.c \
+	feedback/lp-slumber-visualization.h ui/lp-theme.h simulation/lp-event.h \
+	lp-log.h lp-types.h lp-enums.h
 
 # =============================================================================
 # Directory Creation

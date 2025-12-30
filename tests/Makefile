@@ -74,6 +74,13 @@ GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-ledger.o
 GAME_OBJECTS += $(OBJDIR)/src/ui/lp-screen-megaprojects.o
 GAME_OBJECTS += $(OBJDIR)/src/ui/lp-dialog-event.o
 
+# Phase 6.5: Feedback Systems
+GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-floating-text.o
+GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-growth-particles.o
+GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-synergy-effect.o
+GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-achievement-popup.o
+GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
+
 # =============================================================================
 # Test Sources
 # =============================================================================
@@ -101,6 +108,9 @@ LINKED_TESTS += test-progression.c
 
 # Phase 6: UI tests
 LINKED_TESTS += test-ui.c
+
+# Phase 6.5: Feedback tests
+LINKED_TESTS += test-feedback.c
 
 # =============================================================================
 # Test Binaries

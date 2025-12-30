@@ -121,7 +121,9 @@ typedef struct _LpWidgetSynergyIndicator LpWidgetSynergyIndicator;
 
 typedef struct _LpFloatingText          LpFloatingText;
 typedef struct _LpGrowthParticles       LpGrowthParticles;
+typedef struct _LpSynergyEffect         LpSynergyEffect;
 typedef struct _LpAchievementPopup      LpAchievementPopup;
+typedef struct _LpSlumberVisualization  LpSlumberVisualization;
 
 /* ==========================================================================
  * State Types (src/states/)
