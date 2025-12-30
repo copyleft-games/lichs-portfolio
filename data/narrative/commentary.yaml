@@ -1,0 +1,106 @@
+# Malachar Commentary - Lich's Portfolio
+#
+# Copyright 2025 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Commentary lines for various game contexts.
+# Format: context name with list of possible lines.
+# A random line is selected each time.
+
+[greeting]
+lines=Ah, you've awakened. Much has transpired in your absence...
+lines=Another slumber ends. The world is older, but our patience is eternal.
+lines=Welcome back to the waking world, my eternal apprentice.
+lines=Time moves differently for us. Let us see what the mortals have wrought.
+lines=The years have passed like falling leaves. Our empire awaits.
+
+[slumber]
+lines=Time to rest. The world will continue turning without us.
+lines=Into the darkness we descend. When we wake, gold will have grown.
+lines=Sleep now. Our investments require no supervision.
+lines=The living measure their lives in heartbeats. We measure ours in centuries.
+lines=Let the mortals scurry. We shall dream of compound interest.
+
+[kingdom-collapse]
+lines=Another kingdom crumbles. Their vaults, however, remain quite intact.
+lines=Empires rise and fall. Our portfolio remains.
+lines=How fleeting mortal power is. Their loss, our opportunity.
+lines=The crown has fallen. The gold remains.
+lines=Another dynasty ends. We have seen a hundred such endings.
+
+[agent-death]
+lines=Mortals and their brief candles... At least this one left the accounts in order.
+lines=A loyal servant passes. Their successors will continue our work.
+lines=Death claims another. The ledgers, fortunately, are immortal.
+lines=So ends another generation. The work continues.
+lines=They serve briefly, but their contributions are eternal.
+
+[agent-betrayal]
+lines=Treachery. How disappointingly predictable.
+lines=They think to deceive one who has lived a thousand lives? Amusing.
+lines=Betrayal was always a risk. The consequences will be... educational.
+lines=Trust is a currency that must be carefully invested.
+lines=Another lesson in the folly of mortality.
+
+[competitor-defeat]
+lines=One fewer rival. The centuries grow lonely, but profitable.
+lines=They thought themselves eternal. They were merely old.
+lines=Another competitor falls. The game continues with fewer players.
+lines=Power abhors a vacuum. We shall fill it.
+lines=Their hoards are now... available for acquisition.
+
+[discovery]
+lines=They search for my phylactery. How... adorable.
+lines=Mortals grow suspicious. How tedious.
+lines=Someone has been asking questions. Let them ask.
+lines=They sense something ancient in their midst. They are not wrong.
+lines=Discovery is a risk. But we have prepared for this.
+
+[crusade]
+lines=They rally their armies. Let them exhaust themselves on shadows.
+lines=A crusade against the undead. How quaint.
+lines=Holy warriors march. Our investments in their supply chains prosper.
+lines=They seek to destroy what they do not understand.
+lines=Crusades are expensive. Someone must finance them. Perhaps us.
+
+[investment-success]
+lines=Gold begets gold. The living never understand compound interest.
+lines=Patience rewarded. As always.
+lines=The returns are satisfactory. Time is our greatest ally.
+lines=Another profitable venture. The portfolio grows.
+lines=Success breeds success. A lesson the living forget too quickly.
+
+[investment-failure]
+lines=Even immortals make mistakes. Fortunately, I have time to recover.
+lines=A setback. Nothing more. We have weathered worse.
+lines=Loss is temporary. Our patience is not.
+lines=The market teaches humility. We are humble enough to learn.
+lines=Every century brings failures. Every century brings more successes.
+
+[prestige]
+lines=Another cycle complete. We grow ever stronger.
+lines=The echoes of past lives strengthen our present.
+lines=Transcendence achieved. Again.
+lines=Each cycle refines our methods. Each cycle expands our reach.
+lines=We have died before. We shall rise again. Stronger.
+
+[first-investment]
+lines=Your first investment. The foundation of an eternal empire.
+lines=Thus begins the accumulation of true wealth.
+lines=A single gold piece, properly invested, can topple kingdoms.
+lines=The journey of a thousand years begins with a single investment.
+lines=Welcome to the game of centuries.
+
+[first-agent]
+lines=Your first servant. Many more will follow.
+lines=A mortal hand to do what ours cannot. Wise.
+lines=Agents are the fingers of our invisible hand.
+lines=Trust must be earned. Loyalty must be purchased.
+lines=Through mortal eyes, we shall watch the world.
+
+[first-slumber]
+lines=Time to experience the patience of eternity.
+lines=Your first slumber. Many will follow.
+lines=Sleep now, and wake to find your gold has grown.
+lines=The greatest power of the undead? Patience.
+lines=Let the years pass. Time is our ally, not our enemy.

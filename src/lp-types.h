@@ -33,6 +33,7 @@ typedef struct _LpSynergyManager        LpSynergyManager;
 typedef struct _LpSynergy               LpSynergy;
 typedef struct _LpLedger                LpLedger;
 typedef struct _LpMegaproject           LpMegaproject;
+typedef struct _LpStrings               LpStrings;
 
 /* Derivable types: both instance and class */
 typedef struct _LpPrestigeManager       LpPrestigeManager;
@@ -159,6 +160,25 @@ typedef struct _LpSettingsManager       LpSettingsManager;
  * ========================================================================== */
 
 typedef struct _LpSteamBridge           LpSteamBridge;
+
+/* ==========================================================================
+ * Narrative Types (src/narrative/)
+ * ========================================================================== */
+
+typedef struct _LpMalacharVoice         LpMalacharVoice;
+
+/* ==========================================================================
+ * Audio Types (src/audio/)
+ * ========================================================================== */
+
+typedef struct _LpAmbientAudio          LpAmbientAudio;
+typedef struct _LpUiSounds              LpUiSounds;
+
+/* ==========================================================================
+ * Tutorial Types (src/tutorial/)
+ * ========================================================================== */
+
+typedef struct _LpTutorialSequences     LpTutorialSequences;
 
 G_END_DECLS
 

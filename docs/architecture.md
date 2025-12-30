@@ -2248,6 +2248,315 @@ LINKED_TESTS += test-achievement.c
 
 ---
 
+## Phase 9 Implementation Status
+
+Phase 9 implements polish and content systems including localization, narrative commentary,
+procedural audio, UI sounds, and tutorial sequences.
+
+### Localization System
+
+```
+LpStrings (singleton)
+├── Purpose: Wrapper for LrgLocalization with game-specific helpers
+├── Locale File: data/locales/en.yaml (English base)
+│
+├── API:
+│   ├── lp_strings_get_default() - Singleton accessor
+│   ├── lp_str(key) - Get localized string by key
+│   ├── lp_str_format(key, ...) - Get formatted string with substitutions
+│   └── lp_str_plural(key, count) - Get pluralized string
+│
+├── Locale File Format:
+│   ├── YAML with hierarchical string keys
+│   ├── Placeholder substitution: {gold}, {years}, etc.
+│   └── Pluralization support: year.one, year.other
+│
+└── String Categories:
+    ├── ui.* - UI labels and buttons
+    ├── event.* - Event titles and descriptions
+    ├── malachar.* - Malachar commentary
+    ├── achievement.* - Achievement names/descriptions
+    └── tutorial.* - Tutorial step text
+```
+
+### Malachar Commentary System
+
+```
+LpMalacharVoice (singleton)
+├── Purpose: Generate Malachar's sardonic commentary for game events
+├── Data File: data/narrative/commentary.yaml
+│
+├── Commentary Contexts (LpCommentaryContext enum):
+│   ├── LP_COMMENTARY_GREETING - Wake greeting
+│   ├── LP_COMMENTARY_SLUMBER - Entering slumber
+│   ├── LP_COMMENTARY_KINGDOM_COLLAPSE - Kingdom falls
+│   ├── LP_COMMENTARY_AGENT_DEATH - Agent dies
+│   ├── LP_COMMENTARY_AGENT_BETRAYAL - Agent betrays
+│   ├── LP_COMMENTARY_COMPETITOR_DEFEAT - Rival eliminated
+│   ├── LP_COMMENTARY_DISCOVERY - Lich exposure increases
+│   ├── LP_COMMENTARY_CRUSADE - Holy crusade begins
+│   ├── LP_COMMENTARY_INVESTMENT_SUCCESS - Profitable return
+│   ├── LP_COMMENTARY_INVESTMENT_FAILURE - Loss incurred
+│   ├── LP_COMMENTARY_PRESTIGE - Prestige cycle complete
+│   ├── LP_COMMENTARY_FIRST_INVESTMENT - Tutorial milestone
+│   ├── LP_COMMENTARY_FIRST_AGENT - Tutorial milestone
+│   └── LP_COMMENTARY_FIRST_SLUMBER - Tutorial milestone
+│
+├── API:
+│   ├── lp_malachar_voice_get_default() - Singleton accessor
+│   ├── lp_malachar_voice_get_commentary(context) - Random line for context
+│   └── lp_malachar_voice_get_commentary_for_event(event) - Context from event
+│
+└── Design:
+    ├── Multiple lines per context for variety
+    ├── Random selection for replayability
+    └── Falls back gracefully if data not loaded
+```
+
+### Procedural Ambient Audio
+
+```
+LpAmbientAudio (final, extends LrgProceduralAudio)
+├── Purpose: Generate dark fantasy ambient drone for atmosphere
+├── Synthesis: Additive synthesis with LFO modulation
+│
+├── Audio Characteristics:
+│   ├── Base frequency: 55 Hz (A1) - Dark, low drone
+│   ├── Harmonics: 2nd, 3rd, 5th intervals (low amplitude)
+│   ├── LFO: 0.1 Hz for breathing effect (0.7-1.0 amplitude)
+│   ├── Optional wind noise layer (filtered noise)
+│   └── Tension parameter adds tritone dissonance
+│
+├── Properties:
+│   ├── intensity (0.0-1.0) - Overall amplitude
+│   ├── tension (0.0-1.0) - Dissonance level
+│   ├── wind-enabled (gboolean) - Crypt wind layer
+│   └── base-frequency (20-200 Hz) - Drone pitch
+│
+├── Virtual Method Override:
+│   └── generate(buffer, frame_count) - Fill audio buffer
+│
+├── API:
+│   ├── lp_ambient_audio_new() - Create new instance
+│   ├── lp_ambient_audio_get_default() - Singleton accessor
+│   ├── lp_ambient_audio_start() - Begin playback with fade-in
+│   ├── lp_ambient_audio_stop() - Stop with fade-out
+│   └── lp_ambient_audio_update(delta) - Update state
+│
+└── Fade Control:
+    ├── 2-second fade in/out duration
+    └── Smooth envelope interpolation
+```
+
+### UI Sound Effects
+
+```
+LpUiSounds (singleton)
+├── Purpose: Manage UI feedback sounds
+├── Manifest: data/audio/ui-sounds.yaml
+│
+├── Sound IDs:
+│   ├── click - Button/selection click
+│   ├── purchase - Investment purchased
+│   ├── sell - Investment sold
+│   ├── achievement - Achievement unlock fanfare
+│   ├── event - Event notification chime
+│   └── error - Invalid action buzz
+│
+├── Properties:
+│   ├── enabled (gboolean) - Master toggle
+│   └── volume (0.0-1.0) - Master volume
+│
+├── API:
+│   ├── lp_ui_sounds_get_default() - Singleton accessor
+│   ├── lp_ui_sounds_play(sound_id) - Play by ID
+│   ├── lp_ui_sounds_play_click() - Convenience method
+│   ├── lp_ui_sounds_play_purchase()
+│   ├── lp_ui_sounds_play_sell()
+│   ├── lp_ui_sounds_play_achievement()
+│   ├── lp_ui_sounds_play_event()
+│   ├── lp_ui_sounds_play_error()
+│   └── lp_ui_sounds_load_manifest(path) - Load sound definitions
+│
+└── Design:
+    ├── GKeyFile format for manifest
+    ├── Sounds loaded on first access
+    └── Graceful fallback if files missing
+```
+
+### Tutorial System
+
+```
+LpTutorialSequences (singleton)
+├── Purpose: Register and manage game tutorials
+├── Data Files: data/tutorials/*.yaml
+│
+├── Tutorials:
+│   ├── intro - Welcome and gold introduction
+│   ├── investment - Portfolio and first purchase
+│   └── slumber - Time passage mechanics
+│
+├── Condition Callbacks:
+│   ├── has_gold - Player has gold reserves
+│   ├── has_investment - Portfolio not empty
+│   ├── portfolio_open - Portfolio screen visible
+│   └── slumber_selected - Slumber duration chosen
+│
+├── API:
+│   ├── lp_tutorial_sequences_get_default() - Singleton accessor
+│   ├── lp_tutorial_sequences_init_tutorials(manager) - Register all
+│   ├── lp_tutorial_sequences_maybe_start_intro() - Conditional start
+│   ├── lp_tutorial_sequences_maybe_start_investment()
+│   ├── lp_tutorial_sequences_maybe_start_slumber()
+│   └── lp_tutorial_sequences_check_condition(id) - Condition callback
+│
+├── Integration Points:
+│   ├── LpStateWake::enter() - Maybe start intro tutorial
+│   └── LpStateSlumber::enter() - Maybe start slumber tutorial
+│
+└── Design:
+    ├── Programmatic fallback if YAML not found
+    ├── LrgTutorialStep is GBoxed (use copy/free, not ref/unref)
+    └── Completion status persisted via LrgTutorialManager
+```
+
+### Screen Transitions
+
+```
+State Transitions
+├── Wake State Entry:
+│   ├── Fade in from dark (#0a0a0a)
+│   ├── Duration: 0.5 seconds
+│   └── Creates "awakening" effect
+│
+└── Slumber State Exit:
+    ├── Fade out to dark (#0a0a0a)
+    ├── Duration: 0.5 seconds
+    └── Creates "entering slumber" effect
+
+LrgFadeTransition Usage:
+├── Create with lrg_fade_transition_new_with_color(10, 10, 10)
+├── Set duration with lrg_transition_set_duration(0.5f)
+└── Start via lrg_transition_manager_start()
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-8 types)
+│
+├── LpStrings (singleton) [Phase 9]
+│   └── Wraps: LrgLocalization
+│
+├── LpMalacharVoice (singleton) [Phase 9]
+│   ├── Holds: GHashTable of commentary arrays
+│   └── Uses: Random selection for variety
+│
+├── LpAmbientAudio (singleton, extends LrgProceduralAudio) [Phase 9]
+│   ├── Overrides: generate() virtual method
+│   └── Features: Additive synthesis, LFO, wind noise
+│
+├── LpUiSounds (singleton) [Phase 9]
+│   ├── Holds: GHashTable of GrlSound*
+│   └── Loads: GKeyFile manifest
+│
+└── LpTutorialSequences (singleton) [Phase 9]
+    ├── Holds: LrgTutorialManager reference
+    └── Provides: Condition callback
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| Localization | core/lp-strings.h/.c | Singleton with helpers |
+| Malachar Voice | narrative/lp-malachar-voice.h/.c | Commentary generation |
+| Ambient Audio | audio/lp-ambient-audio.h/.c | Procedural drone synthesis |
+| UI Sounds | audio/lp-ui-sounds.h/.c | Sound bank management |
+| Tutorial Sequences | tutorial/lp-tutorial-sequences.h/.c | Tutorial registration |
+| Locale Data | data/locales/en.yaml | English translations |
+| Commentary Data | data/narrative/commentary.yaml | Malachar lines |
+| Sound Manifest | data/audio/ui-sounds.yaml | Sound definitions |
+| Tutorial Data | data/tutorials/*.yaml | Tutorial definitions |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-polish.c | Strings, voice, audio, sounds, tutorials |
+
+**Test Count:** 18 tests covering:
+- LpStrings singleton, string lookup
+- LpMalacharVoice singleton, commentary contexts
+- LpAmbientAudio singleton, properties (intensity, tension, wind, frequency)
+- LpUiSounds singleton, enabled/volume, play methods
+- LpTutorialSequences singleton, condition callbacks
+
+### Build System Updates
+
+```makefile
+# src/Makefile - Phase 9 additions
+SOURCES += core/lp-strings.c
+SOURCES += narrative/lp-malachar-voice.c
+SOURCES += audio/lp-ambient-audio.c
+SOURCES += audio/lp-ui-sounds.c
+SOURCES += tutorial/lp-tutorial-sequences.c
+
+# tests/Makefile - Phase 9 additions
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-strings.o
+GAME_OBJECTS += $(OBJDIR)/src/narrative/lp-malachar-voice.o
+GAME_OBJECTS += $(OBJDIR)/src/audio/lp-ambient-audio.o
+GAME_OBJECTS += $(OBJDIR)/src/audio/lp-ui-sounds.o
+GAME_OBJECTS += $(OBJDIR)/src/tutorial/lp-tutorial-sequences.o
+LINKED_TESTS += test-polish.c
+```
+
+### Key Design Decisions
+
+1. **Singleton Pattern**: All Phase 9 systems use singletons for global access and initialization control.
+
+2. **Data-Driven Content**: Commentary, tutorials, and sounds are loaded from YAML files with programmatic fallbacks.
+
+3. **GBoxed vs GObject**: LrgTutorialStep is GBoxed - use `lrg_tutorial_step_copy()`/`lrg_tutorial_step_free()`, not ref/unref.
+
+4. **Procedural Audio**: LpAmbientAudio subclasses LrgProceduralAudio, overriding `generate()` for custom synthesis.
+
+5. **Graceful Degradation**: All systems handle missing data files without crashing.
+
+6. **Transition Integration**: Screen transitions are added at state enter/exit, not requiring new state types.
+
+7. **Tutorial Flow**: Tutorials trigger based on game state conditions, checking completion status before starting.
+
+### Directory Structure
+
+```
+src/
+├── core/
+│   └── lp-strings.h/.c         # Localization wrapper
+├── narrative/
+│   └── lp-malachar-voice.h/.c  # Commentary system
+├── audio/
+│   ├── lp-ambient-audio.h/.c   # Procedural drone
+│   └── lp-ui-sounds.h/.c       # Sound bank
+└── tutorial/
+    └── lp-tutorial-sequences.h/.c  # Tutorial definitions
+
+data/
+├── locales/
+│   └── en.yaml                 # English strings
+├── narrative/
+│   └── commentary.yaml         # Malachar lines
+├── audio/
+│   └── ui-sounds.yaml          # Sound manifest
+└── tutorials/
+    ├── intro.yaml              # Introduction tutorial
+    ├── investment.yaml         # Investment tutorial
+    └── slumber.yaml            # Slumber tutorial
+```
+
+---
+
 ## Related Documents
 
 - [Game Design Document](../design/GAME.md) - Full game design

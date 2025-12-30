@@ -1,0 +1,16 @@
+# UI Sounds Manifest - Lich's Portfolio
+#
+# Copyright 2025 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Sound definitions for UI feedback.
+# Format: GKeyFile with [sounds] section mapping IDs to filenames.
+# Sound files should be in the same directory as this manifest.
+
+[sounds]
+click=click.ogg
+purchase=purchase.ogg
+sell=sell.ogg
+achievement=achievement.ogg
+event=event.ogg
+error=error.ogg

@@ -445,3 +445,38 @@ lp_growth_intensity_get_type (void)
 
     return g_type_id;
 }
+
+/* ==========================================================================
+ * LpCommentaryContext
+ * ========================================================================== */
+
+GType
+lp_commentary_context_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_COMMENTARY_GREETING,          "LP_COMMENTARY_GREETING",          "greeting" },
+            { LP_COMMENTARY_SLUMBER,           "LP_COMMENTARY_SLUMBER",           "slumber" },
+            { LP_COMMENTARY_KINGDOM_COLLAPSE,  "LP_COMMENTARY_KINGDOM_COLLAPSE",  "kingdom-collapse" },
+            { LP_COMMENTARY_AGENT_DEATH,       "LP_COMMENTARY_AGENT_DEATH",       "agent-death" },
+            { LP_COMMENTARY_AGENT_BETRAYAL,    "LP_COMMENTARY_AGENT_BETRAYAL",    "agent-betrayal" },
+            { LP_COMMENTARY_COMPETITOR_DEFEAT, "LP_COMMENTARY_COMPETITOR_DEFEAT", "competitor-defeat" },
+            { LP_COMMENTARY_DISCOVERY,         "LP_COMMENTARY_DISCOVERY",         "discovery" },
+            { LP_COMMENTARY_CRUSADE,           "LP_COMMENTARY_CRUSADE",           "crusade" },
+            { LP_COMMENTARY_INVESTMENT_SUCCESS, "LP_COMMENTARY_INVESTMENT_SUCCESS", "investment-success" },
+            { LP_COMMENTARY_INVESTMENT_FAILURE, "LP_COMMENTARY_INVESTMENT_FAILURE", "investment-failure" },
+            { LP_COMMENTARY_PRESTIGE,          "LP_COMMENTARY_PRESTIGE",          "prestige" },
+            { LP_COMMENTARY_FIRST_INVESTMENT,  "LP_COMMENTARY_FIRST_INVESTMENT",  "first-investment" },
+            { LP_COMMENTARY_FIRST_AGENT,       "LP_COMMENTARY_FIRST_AGENT",       "first-agent" },
+            { LP_COMMENTARY_FIRST_SLUMBER,     "LP_COMMENTARY_FIRST_SLUMBER",     "first-slumber" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpCommentaryContext", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}

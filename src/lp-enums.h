@@ -447,6 +447,50 @@ typedef enum
 GType lp_growth_intensity_get_type (void) G_GNUC_CONST;
 #define LP_TYPE_GROWTH_INTENSITY (lp_growth_intensity_get_type ())
 
+/* ==========================================================================
+ * LpCommentaryContext - Malachar commentary contexts
+ * ========================================================================== */
+
+/**
+ * LpCommentaryContext:
+ * @LP_COMMENTARY_GREETING: Greeting when player wakes
+ * @LP_COMMENTARY_SLUMBER: Entering slumber
+ * @LP_COMMENTARY_KINGDOM_COLLAPSE: Kingdom collapses
+ * @LP_COMMENTARY_AGENT_DEATH: Agent dies
+ * @LP_COMMENTARY_AGENT_BETRAYAL: Agent betrays
+ * @LP_COMMENTARY_COMPETITOR_DEFEAT: Competitor defeated
+ * @LP_COMMENTARY_DISCOVERY: Player discovered by mortals
+ * @LP_COMMENTARY_CRUSADE: Crusade launched
+ * @LP_COMMENTARY_INVESTMENT_SUCCESS: Investment succeeds
+ * @LP_COMMENTARY_INVESTMENT_FAILURE: Investment fails
+ * @LP_COMMENTARY_PRESTIGE: Prestige completed
+ * @LP_COMMENTARY_FIRST_INVESTMENT: First investment made
+ * @LP_COMMENTARY_FIRST_AGENT: First agent hired
+ * @LP_COMMENTARY_FIRST_SLUMBER: First slumber entered
+ *
+ * Contexts that trigger Malachar commentary.
+ */
+typedef enum
+{
+    LP_COMMENTARY_GREETING,
+    LP_COMMENTARY_SLUMBER,
+    LP_COMMENTARY_KINGDOM_COLLAPSE,
+    LP_COMMENTARY_AGENT_DEATH,
+    LP_COMMENTARY_AGENT_BETRAYAL,
+    LP_COMMENTARY_COMPETITOR_DEFEAT,
+    LP_COMMENTARY_DISCOVERY,
+    LP_COMMENTARY_CRUSADE,
+    LP_COMMENTARY_INVESTMENT_SUCCESS,
+    LP_COMMENTARY_INVESTMENT_FAILURE,
+    LP_COMMENTARY_PRESTIGE,
+    LP_COMMENTARY_FIRST_INVESTMENT,
+    LP_COMMENTARY_FIRST_AGENT,
+    LP_COMMENTARY_FIRST_SLUMBER
+} LpCommentaryContext;
+
+GType lp_commentary_context_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_COMMENTARY_CONTEXT (lp_commentary_context_get_type ())
+
 G_END_DECLS
 
 #endif /* LP_ENUMS_H */

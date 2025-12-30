@@ -96,6 +96,13 @@ SOURCES += save/lp-settings-manager.c
 # Steam Integration (Phase 8)
 SOURCES += steam/lp-steam-bridge.c
 
+# Polish and Content (Phase 9)
+SOURCES += core/lp-strings.c
+SOURCES += narrative/lp-malachar-voice.c
+SOURCES += audio/lp-ambient-audio.c
+SOURCES += audio/lp-ui-sounds.c
+SOURCES += tutorial/lp-tutorial-sequences.c
+
 # =============================================================================
 # Object Files
 # =============================================================================
@@ -222,13 +229,14 @@ $(OBJDIR)/src/achievement/lp-achievement-manager.o: achievement/lp-achievement-m
 $(OBJDIR)/src/states/lp-state-main-menu.o: states/lp-state-main-menu.c \
 	states/lp-state-main-menu.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-wake.o: states/lp-state-wake.c \
-	states/lp-state-wake.h lp-log.h lp-types.h
+	states/lp-state-wake.h narrative/lp-malachar-voice.h \
+	tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-analyze.o: states/lp-state-analyze.c \
 	states/lp-state-analyze.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-decide.o: states/lp-state-decide.c \
 	states/lp-state-decide.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-slumber.o: states/lp-state-slumber.c \
-	states/lp-state-slumber.h lp-log.h lp-types.h
+	states/lp-state-slumber.h tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-simulating.o: states/lp-state-simulating.c \
 	states/lp-state-simulating.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-pause.o: states/lp-state-pause.c \
@@ -288,6 +296,19 @@ $(OBJDIR)/src/save/lp-settings-manager.o: save/lp-settings-manager.c \
 $(OBJDIR)/src/steam/lp-steam-bridge.o: steam/lp-steam-bridge.c \
 	steam/lp-steam-bridge.h achievement/lp-achievement-manager.h lp-log.h lp-types.h
 
+# Polish and Content (Phase 9)
+$(OBJDIR)/src/core/lp-strings.o: core/lp-strings.c core/lp-strings.h \
+	lp-log.h lp-types.h
+$(OBJDIR)/src/narrative/lp-malachar-voice.o: narrative/lp-malachar-voice.c \
+	narrative/lp-malachar-voice.h lp-log.h lp-enums.h lp-types.h
+$(OBJDIR)/src/audio/lp-ambient-audio.o: audio/lp-ambient-audio.c \
+	audio/lp-ambient-audio.h lp-log.h lp-types.h
+$(OBJDIR)/src/audio/lp-ui-sounds.o: audio/lp-ui-sounds.c \
+	audio/lp-ui-sounds.h lp-log.h lp-types.h
+$(OBJDIR)/src/tutorial/lp-tutorial-sequences.o: tutorial/lp-tutorial-sequences.c \
+	tutorial/lp-tutorial-sequences.h core/lp-game-data.h investment/lp-portfolio.h \
+	lp-log.h lp-types.h
+
 # =============================================================================
 # Directory Creation
 # =============================================================================
@@ -304,6 +325,9 @@ $(OBJDIR):
 	@$(MKDIR_P) $(OBJDIR)/src/achievement
 	@$(MKDIR_P) $(OBJDIR)/src/save
 	@$(MKDIR_P) $(OBJDIR)/src/steam
+	@$(MKDIR_P) $(OBJDIR)/src/narrative
+	@$(MKDIR_P) $(OBJDIR)/src/audio
+	@$(MKDIR_P) $(OBJDIR)/src/tutorial
 
 $(BINDIR_OUT):
 	@$(MKDIR_P) $@

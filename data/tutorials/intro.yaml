@@ -1,0 +1,40 @@
+# Introduction Tutorial - Lich's Portfolio
+#
+# Copyright 2025 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# This tutorial welcomes new players and introduces the basic concepts.
+
+id: intro
+name: Introduction
+description: Welcome to the eternal game of wealth and power.
+skippable: true
+repeatable: false
+
+steps:
+  - id: welcome
+    type: text
+    speaker: Malachar
+    text: |
+      Ah, you've awakened. I am Malachar, your guide through the
+      centuries. As an undead lich, you possess a unique advantage:
+      immortality. Use it wisely.
+    blocks_input: true
+
+  - id: gold-intro
+    type: text
+    speaker: Malachar
+    text: |
+      Your gold reserves are displayed here. Gold is the foundation
+      of all power in the mortal realm. Guard it jealously.
+    target_id: gold-display
+    highlight_style: pulse
+
+  - id: portfolio-pointer
+    type: text
+    speaker: Malachar
+    text: |
+      Your portfolio awaits. Here you shall make investments that
+      will grow while you slumber. Click to proceed.
+    target_id: portfolio-button
+    highlight_style: arrow

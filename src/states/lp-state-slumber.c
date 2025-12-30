@@ -8,6 +8,7 @@
 #include "../lp-log.h"
 
 #include "lp-state-slumber.h"
+#include "../tutorial/lp-tutorial-sequences.h"
 
 /* Default and range for slumber duration */
 #define DEFAULT_SLUMBER_YEARS (10)
@@ -35,12 +36,21 @@ lp_state_slumber_enter (LrgGameState *state)
     lp_log_info ("Entering slumber configuration");
 
     self->slumber_years = DEFAULT_SLUMBER_YEARS;
+
+    /* Maybe start slumber tutorial for first-time users */
+    lp_tutorial_sequences_maybe_start_slumber (
+        lp_tutorial_sequences_get_default ());
 }
 
 static void
 lp_state_slumber_exit (LrgGameState *state)
 {
     lp_log_info ("Exiting slumber configuration");
+
+    /*
+     * TODO: When application has transition manager, trigger fade-out here.
+     * The player is "entering slumber" so we'd fade to black.
+     */
 }
 
 static void

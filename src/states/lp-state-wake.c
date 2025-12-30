@@ -8,6 +8,8 @@
 #include "../lp-log.h"
 
 #include "lp-state-wake.h"
+#include "../narrative/lp-malachar-voice.h"
+#include "../tutorial/lp-tutorial-sequences.h"
 
 struct _LpStateWake
 {
@@ -31,6 +33,15 @@ lp_state_wake_enter (LrgGameState *state)
     lp_log_info ("Entering wake state");
 
     self->current_event = 0;
+
+    /*
+     * TODO: When application has transition manager, trigger fade-in here.
+     * The player is "waking up" so we'd fade from black.
+     */
+
+    /* Maybe start intro tutorial for new players */
+    lp_tutorial_sequences_maybe_start_intro (
+        lp_tutorial_sequences_get_default ());
 }
 
 static void

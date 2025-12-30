@@ -1,0 +1,52 @@
+# Slumber Tutorial - Lich's Portfolio
+#
+# Copyright 2025 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# This tutorial teaches players about the slumber/time passage mechanic.
+
+id: slumber
+name: The Art of Slumber
+description: Master time itself through the slumber mechanic.
+skippable: true
+repeatable: false
+
+steps:
+  - id: slumber-intro
+    type: text
+    speaker: Malachar
+    text: |
+      As an immortal, you possess a power mortals can only dream of:
+      the ability to skip through time. During slumber, your
+      investments grow while the world ages.
+    blocks_input: true
+
+  - id: duration-intro
+    type: text
+    speaker: Malachar
+    text: |
+      Choose how long to slumber. Decades pass in an instant.
+      But beware - events may occur while you sleep. Kingdoms
+      rise and fall. Agents age and die.
+    target_id: duration-selector
+    highlight_style: box
+
+  - id: dormant-orders
+    type: text
+    speaker: Malachar
+    text: |
+      Before slumbering, you may set dormant orders. These are
+      instructions your agents will follow while you sleep.
+      Reinvest profits, sell failing assets, respond to events.
+    target_id: dormant-orders-panel
+    highlight_style: box
+
+  - id: slumber-prompt
+    type: text
+    speaker: Malachar
+    text: |
+      When ready, enter the slumber. Time will pass, your
+      investments will grow, and the world will change.
+      Such is the privilege of immortality.
+    target_id: slumber-button
+    highlight_style: arrow

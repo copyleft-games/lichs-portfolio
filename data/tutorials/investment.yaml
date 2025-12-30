@@ -1,0 +1,53 @@
+# Investment Tutorial - Lich's Portfolio
+#
+# Copyright 2025 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# This tutorial teaches players about the investment system.
+
+id: investment
+name: Investment Basics
+description: Learn to build wealth through careful investment.
+skippable: true
+repeatable: false
+
+steps:
+  - id: investment-intro
+    type: text
+    speaker: Malachar
+    text: |
+      Investments are the instruments of our eternal wealth.
+      Each asset class carries different risks and rewards.
+    blocks_input: true
+
+  - id: investment-list
+    type: text
+    speaker: Malachar
+    text: |
+      Here you see available investments. Properties provide
+      steady returns. Trade routes are riskier but more profitable.
+      Financial instruments offer leverage.
+    target_id: investment-list
+    highlight_style: box
+
+  - id: first-purchase-prompt
+    type: text
+    speaker: Malachar
+    text: |
+      Select an investment to begin. I recommend starting with
+      something modest - a small property, perhaps. We have
+      eternity to grow our empire.
+    target_id: buy-button
+    highlight_style: arrow
+
+  - id: wait-for-investment
+    type: condition
+    condition_id: has_investment
+    auto_advance: true
+
+  - id: investment-success
+    type: text
+    speaker: Malachar
+    text: |
+      Excellent. Your first investment. The foundation of an
+      eternal empire. Now, let us discuss the art of slumber...
