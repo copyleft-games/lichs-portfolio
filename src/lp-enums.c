@@ -341,3 +341,82 @@ lp_event_severity_get_type (void)
 
     return g_type_id;
 }
+
+/* ==========================================================================
+ * LpUpgradeCategory
+ * ========================================================================== */
+
+GType
+lp_upgrade_category_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_UPGRADE_CATEGORY_TEMPORAL,   "LP_UPGRADE_CATEGORY_TEMPORAL",   "temporal" },
+            { LP_UPGRADE_CATEGORY_NETWORK,    "LP_UPGRADE_CATEGORY_NETWORK",    "network" },
+            { LP_UPGRADE_CATEGORY_DIVINATION, "LP_UPGRADE_CATEGORY_DIVINATION", "divination" },
+            { LP_UPGRADE_CATEGORY_RESILIENCE, "LP_UPGRADE_CATEGORY_RESILIENCE", "resilience" },
+            { LP_UPGRADE_CATEGORY_DARK_ARTS,  "LP_UPGRADE_CATEGORY_DARK_ARTS",  "dark-arts" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpUpgradeCategory", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpMegaprojectState
+ * ========================================================================== */
+
+GType
+lp_megaproject_state_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_MEGAPROJECT_STATE_LOCKED,     "LP_MEGAPROJECT_STATE_LOCKED",     "locked" },
+            { LP_MEGAPROJECT_STATE_AVAILABLE,  "LP_MEGAPROJECT_STATE_AVAILABLE",  "available" },
+            { LP_MEGAPROJECT_STATE_ACTIVE,     "LP_MEGAPROJECT_STATE_ACTIVE",     "active" },
+            { LP_MEGAPROJECT_STATE_PAUSED,     "LP_MEGAPROJECT_STATE_PAUSED",     "paused" },
+            { LP_MEGAPROJECT_STATE_DISCOVERED, "LP_MEGAPROJECT_STATE_DISCOVERED", "discovered" },
+            { LP_MEGAPROJECT_STATE_COMPLETE,   "LP_MEGAPROJECT_STATE_COMPLETE",   "complete" },
+            { LP_MEGAPROJECT_STATE_DESTROYED,  "LP_MEGAPROJECT_STATE_DESTROYED",  "destroyed" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpMegaprojectState", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}
+
+/* ==========================================================================
+ * LpEchoTree
+ * ========================================================================== */
+
+GType
+lp_echo_tree_get_type (void)
+{
+    static volatile gsize g_type_id = 0;
+
+    if (g_once_init_enter (&g_type_id))
+    {
+        static const GEnumValue values[] = {
+            { LP_ECHO_TREE_ECONOMIST,   "LP_ECHO_TREE_ECONOMIST",   "economist" },
+            { LP_ECHO_TREE_MANIPULATOR, "LP_ECHO_TREE_MANIPULATOR", "manipulator" },
+            { LP_ECHO_TREE_SCHOLAR,     "LP_ECHO_TREE_SCHOLAR",     "scholar" },
+            { LP_ECHO_TREE_ARCHITECT,   "LP_ECHO_TREE_ARCHITECT",   "architect" },
+            { 0, NULL, NULL }
+        };
+        GType type_id = g_enum_register_static ("LpEchoTree", values);
+        g_once_init_leave (&g_type_id, type_id);
+    }
+
+    return g_type_id;
+}

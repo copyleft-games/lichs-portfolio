@@ -57,6 +57,10 @@ GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-event-generator.o
 GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-competitor.o
 GAME_OBJECTS += $(OBJDIR)/src/achievement/lp-achievement-manager.o
 
+# Phase 5: Progression
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-prestige-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-megaproject.o
+
 # =============================================================================
 # Test Sources
 # =============================================================================
@@ -78,6 +82,9 @@ LINKED_TESTS += test-agent.c
 
 # Phase 4: Simulation tests
 LINKED_TESTS += test-simulation.c
+
+# Phase 5: Progression tests
+LINKED_TESTS += test-progression.c
 
 # =============================================================================
 # Test Binaries

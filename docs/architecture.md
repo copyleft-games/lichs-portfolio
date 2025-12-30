@@ -980,6 +980,301 @@ typedef enum {
 
 ---
 
+## Phase 5 Implementation Status
+
+Phase 5 implements the progression systems including prestige mechanics, upgrade trees, megaprojects, and enhanced discovery tracking.
+
+### Prestige Manager
+
+```
+LpPrestigeManager (derivable, implements LrgSaveable)
+├── Virtual Methods:
+│   ├── calculate_echo_reward() - Calculate Echoes gained from prestige
+│   ├── can_prestige() - Check if prestige requirements are met
+│   ├── on_prestige() - Called when prestige is performed
+│   └── get_bonus_multiplier() - Calculate prestige bonus multiplier
+│
+├── Echo Management:
+│   ├── echoes (LrgBigNumber*) - Current Echo count
+│   ├── total_echoes_earned (LrgBigNumber*) - Lifetime Echoes
+│   └── times_prestiged (guint64) - Prestige count
+│
+├── Echo Specialization Trees (4 trees using LrgUnlockTree):
+│   ├── LP_ECHO_TREE_ECONOMIST - Starting gold, compound interest
+│   ├── LP_ECHO_TREE_MANIPULATOR - Agent and political bonuses
+│   ├── LP_ECHO_TREE_SCHOLAR - Ledger retention, knowledge bonuses
+│   └── LP_ECHO_TREE_ARCHITECT - Gold retention, structure bonuses
+│
+├── Bonus Queries:
+│   ├── lp_prestige_manager_get_starting_gold_multiplier()
+│   ├── lp_prestige_manager_get_compound_interest_bonus()
+│   ├── lp_prestige_manager_get_ledger_retention()
+│   └── lp_prestige_manager_get_gold_retention()
+│
+└── Signals:
+    └── prestige-performed (echoes_gained)
+```
+
+### Phylactery (Enhanced)
+
+```
+LpPhylactery (final, implements LrgSaveable)
+├── Points Management:
+│   ├── points (guint64) - Available phylactery points
+│   ├── total_points_earned (guint64) - Lifetime points
+│   └── level (guint) - Derived from total upgrades
+│
+├── Upgrade Categories (5 trees using LrgUnlockTree):
+│   ├── LP_UPGRADE_CATEGORY_TEMPORAL - Slumber duration, time efficiency
+│   │   ├── extended-slumber-1/2/3 - +50/100/150 years max slumber
+│   │   ├── time-mastery-1/2 - +10/20% time efficiency
+│   │   └── temporal-anchor - Reduce event impact during slumber
+│   │
+│   ├── LP_UPGRADE_CATEGORY_NETWORK - Agent capacity and types
+│   │   ├── expanded-network-1/2/3 - +1/2/3 max agents
+│   │   ├── family-lineages - Unlock family agents
+│   │   └── cult-followers - Unlock cult agents
+│   │
+│   ├── LP_UPGRADE_CATEGORY_DIVINATION - Predictions and warnings
+│   │   ├── foresight-1/2/3 - +10/20/30% prediction accuracy
+│   │   ├── early-warning-1/2 - +10/20 years event warning
+│   │   └── market-sense - See market trends
+│   │
+│   ├── LP_UPGRADE_CATEGORY_RESILIENCE - Survival and recovery
+│   │   ├── hardened-assets-1/2 - +10/20% disaster survival
+│   │   ├── rapid-recovery-1/2 - +25/50% recovery speed
+│   │   └── shadow-ward - Reduce exposure decay
+│   │
+│   └── LP_UPGRADE_CATEGORY_DARK_ARTS - Dark investments (hidden)
+│       ├── dark-initiation - Unlock dark investments
+│       ├── soul-binding - Unlock bound agents
+│       └── dark-mastery - +50% dark investment income
+│
+├── Bonus Calculations:
+│   ├── lp_phylactery_get_max_slumber_years() - Base 100 + upgrades
+│   ├── lp_phylactery_get_time_efficiency_bonus() - 1.0 + upgrades
+│   ├── lp_phylactery_get_max_agents() - Base 3 + upgrades
+│   ├── lp_phylactery_get_prediction_bonus() - 0-100%
+│   ├── lp_phylactery_get_warning_years() - Event warning period
+│   ├── lp_phylactery_get_disaster_survival_bonus() - 0-100%
+│   ├── lp_phylactery_get_recovery_bonus() - Multiplier
+│   └── lp_phylactery_get_dark_income_bonus() - Multiplier
+│
+├── Unlock Queries:
+│   ├── lp_phylactery_has_family_agents()
+│   ├── lp_phylactery_has_cult_agents()
+│   ├── lp_phylactery_has_dark_investments()
+│   └── lp_phylactery_has_bound_agents()
+│
+└── Methods:
+    ├── lp_phylactery_add_points() - Add points from prestige
+    ├── lp_phylactery_purchase_upgrade() - Buy upgrade from tree
+    ├── lp_phylactery_has_upgrade() - Check if owned
+    └── lp_phylactery_can_purchase_upgrade() - Check if available
+```
+
+### Megaproject System
+
+```
+LpMegaproject (final, implements LrgSaveable)
+├── Properties:
+│   ├── id, name, description (gchar*)
+│   ├── cost_per_year (LrgBigNumber*) - Ongoing maintenance cost
+│   ├── unlock_level (guint) - Required phylactery level
+│   └── discovery_risk (guint 0-100) - Risk per decade
+│
+├── States (LpMegaprojectState):
+│   ├── LOCKED - Not yet available
+│   ├── AVAILABLE - Can be started
+│   ├── ACTIVE - In progress
+│   ├── PAUSED - Progress preserved, no cost
+│   ├── DISCOVERED - Found by enemies
+│   ├── COMPLETE - All phases finished
+│   └── DESTROYED - Lost to enemy action
+│
+├── Phases (GPtrArray of LpMegaprojectPhase):
+│   ├── name (gchar*) - Phase name
+│   ├── years (guint) - Years to complete
+│   ├── effect_type (gchar*) - Effect when complete
+│   └── effect_value (gdouble) - Effect magnitude
+│
+├── Progress Tracking:
+│   ├── years_invested (guint) - Total years worked
+│   ├── current_phase_index (guint) - Current phase
+│   ├── years_in_current_phase (guint) - Progress in phase
+│   └── total_duration (guint) - Sum of all phase years
+│
+├── Effect Types:
+│   ├── property_income_bonus - Increase property returns
+│   ├── agent_travel - Enable instant agent travel
+│   └── property_immune_seizure - Protect from seizure
+│
+├── Methods:
+│   ├── lp_megaproject_can_start() - Check level requirement
+│   ├── lp_megaproject_start() - Begin project
+│   ├── lp_megaproject_pause() - Suspend work
+│   ├── lp_megaproject_resume() - Continue work
+│   ├── lp_megaproject_advance_years() - Progress phases
+│   ├── lp_megaproject_roll_discovery() - Risk check
+│   ├── lp_megaproject_destroy() - Enemy destruction
+│   └── lp_megaproject_hide() - Re-conceal discovered
+│
+└── Signals:
+    ├── state-changed (old, new)
+    ├── phase-completed (index, phase)
+    ├── discovered
+    ├── destroyed
+    └── completed
+```
+
+### LpMegaprojectPhase (GBoxed)
+
+```c
+struct _LpMegaprojectPhase {
+    gchar   *name;          /* Phase name */
+    guint    years;         /* Years to complete */
+    gchar   *effect_type;   /* Effect type string */
+    gdouble  effect_value;  /* Effect magnitude */
+};
+```
+
+### Ledger (Enhanced)
+
+```
+LpLedger (final, implements LrgSaveable)
+├── Entry Structure:
+│   ├── entry_id (gchar*) - Unique identifier
+│   ├── category (LpLedgerCategory) - Entry category
+│   ├── occurrences_required (guint) - Needed for discovery
+│   ├── occurrences_current (guint) - Current progress
+│   └── is_discovered (gboolean) - Fully discovered flag
+│
+├── Discovery Methods (LpDiscoveryMethod):
+│   ├── LP_DISCOVERY_METHOD_MANUAL - Debug/testing
+│   ├── LP_DISCOVERY_METHOD_AGENT_REPORT - Random from agents
+│   ├── LP_DISCOVERY_METHOD_EVENT_SURVIVAL - Surviving events
+│   ├── LP_DISCOVERY_METHOD_COMPETITOR - Immortal interaction
+│   ├── LP_DISCOVERY_METHOD_ACHIEVEMENT - Achievement reward
+│   └── LP_DISCOVERY_METHOD_MILESTONE - Investment milestone
+│
+├── Registration:
+│   ├── lp_ledger_register_entry() - Pre-register multi-occurrence
+│   └── lp_ledger_is_registered() - Check if registered
+│
+├── Progress Tracking:
+│   ├── lp_ledger_progress_entry() - Advance by one occurrence
+│   ├── lp_ledger_get_progress() - Get current occurrences
+│   ├── lp_ledger_get_required_occurrences() - Get required
+│   └── lp_ledger_get_progress_fraction() - Progress 0.0-1.0
+│
+├── Query Methods:
+│   ├── lp_ledger_has_discovered() - Full discovery check
+│   ├── lp_ledger_has_started() - Progress > 0 check
+│   ├── lp_ledger_get_discovered_count() - Total discoveries
+│   ├── lp_ledger_get_in_progress_count() - Partial progress
+│   ├── lp_ledger_get_all_discoveries() - List all discovered
+│   └── lp_ledger_get_all_in_progress() - List in-progress
+│
+├── Prestige:
+│   └── lp_ledger_apply_retention() - Keep fraction on prestige
+│
+└── Signals:
+    ├── entry-discovered (entry_id, category)
+    └── entry-progressed (entry_id, current, required)
+```
+
+### New Enumerations
+
+```c
+/* Phylactery upgrade categories */
+typedef enum {
+    LP_UPGRADE_CATEGORY_TEMPORAL,    /* Slumber duration, time efficiency */
+    LP_UPGRADE_CATEGORY_NETWORK,     /* Agent capacity and types */
+    LP_UPGRADE_CATEGORY_DIVINATION,  /* Predictions and warnings */
+    LP_UPGRADE_CATEGORY_RESILIENCE,  /* Survival and recovery */
+    LP_UPGRADE_CATEGORY_DARK_ARTS    /* Dark investments (hidden) */
+} LpUpgradeCategory;
+
+/* Megaproject states */
+typedef enum {
+    LP_MEGAPROJECT_STATE_LOCKED,     /* Not yet available */
+    LP_MEGAPROJECT_STATE_AVAILABLE,  /* Can be started */
+    LP_MEGAPROJECT_STATE_ACTIVE,     /* In progress */
+    LP_MEGAPROJECT_STATE_PAUSED,     /* Progress preserved */
+    LP_MEGAPROJECT_STATE_DISCOVERED, /* Found by enemies */
+    LP_MEGAPROJECT_STATE_COMPLETE,   /* All phases done */
+    LP_MEGAPROJECT_STATE_DESTROYED   /* Lost to enemy action */
+} LpMegaprojectState;
+
+/* Echo specialization trees */
+typedef enum {
+    LP_ECHO_TREE_ECONOMIST,   /* Starting gold, compound interest */
+    LP_ECHO_TREE_MANIPULATOR, /* Agent and political bonuses */
+    LP_ECHO_TREE_SCHOLAR,     /* Ledger retention, knowledge */
+    LP_ECHO_TREE_ARCHITECT    /* Gold retention, structures */
+} LpEchoTree;
+```
+
+### Updated Type Hierarchy
+
+```
+GObject
+├── ... (Phase 1-4 types)
+│
+├── LpPrestigeManager (derivable, implements LrgSaveable) [Phase 5]
+│   └── Uses: LrgUnlockTree (4 echo trees)
+│
+├── LpMegaproject (final, implements LrgSaveable) [Phase 5]
+│   └── Contains: GPtrArray of LpMegaprojectPhase
+│
+├── LpPhylactery (enhanced) [Phase 5]
+│   └── Uses: LrgUnlockTree (5 upgrade trees)
+│
+└── LpLedger (enhanced) [Phase 5]
+    └── Progress tracking with occurrences
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| LpPrestigeManager | core/lp-prestige-manager.h/.c | Derivable, echo trees |
+| LpMegaproject | core/lp-megaproject.h/.c | Multi-century projects |
+| LpPhylactery (enhanced) | core/lp-phylactery.h/.c | 5 upgrade trees |
+| LpLedger (enhanced) | core/lp-ledger.h/.c | Progress tracking |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-progression.c | Prestige, megaprojects, phylactery, ledger progress |
+
+### Key Design Decisions
+
+1. **Derivable Prestige Manager**: Allows subclassing for testing and future variations in prestige mechanics.
+
+2. **Echo Trees**: Four specialization trees using `LrgUnlockTree` provide permanent bonuses that persist across prestige resets.
+
+3. **Upgrade Categories**: Five phylactery categories organize upgrades by theme, with Dark Arts hidden until specific conditions are met.
+
+4. **Multi-Occurrence Discoveries**: Some ledger entries require multiple occurrences to fully discover, adding depth to the discovery system.
+
+5. **Megaproject Phases**: Breaking large projects into phases provides incremental benefits and progress milestones.
+
+6. **Discovery Risk**: Megaprojects can be discovered by enemies, adding tension and risk management to long-term investments.
+
+7. **Prestige Retention**: Scholar tree upgrades allow retaining ledger discoveries across prestige, rewarding meta-progression investment.
+
+### Deferred to Later Phases
+
+- Echo tree unlock UI (Phase 6)
+- Megaproject management screens (Phase 6)
+- Phylactery upgrade visualization (Phase 6)
+- Discovery journal UI (Phase 6)
+- Idle calculations integration (Phase 5+)
+
+---
+
 ## Related Documents
 
 - [Game Design Document](../design/GAME.md) - Full game design

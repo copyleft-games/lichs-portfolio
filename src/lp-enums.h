@@ -343,6 +343,86 @@ typedef enum
 GType lp_event_severity_get_type (void) G_GNUC_CONST;
 #define LP_TYPE_EVENT_SEVERITY (lp_event_severity_get_type ())
 
+/* ==========================================================================
+ * LpUpgradeCategory - Phylactery upgrade categories
+ * ========================================================================== */
+
+/**
+ * LpUpgradeCategory:
+ * @LP_UPGRADE_CATEGORY_TEMPORAL: Temporal Mastery - longer slumber, time efficiency
+ * @LP_UPGRADE_CATEGORY_NETWORK: Network Expansion - more agents, family/cult mechanics
+ * @LP_UPGRADE_CATEGORY_DIVINATION: Divination - better predictions, early warnings
+ * @LP_UPGRADE_CATEGORY_RESILIENCE: Resilience - survive disasters, faster recovery
+ * @LP_UPGRADE_CATEGORY_DARK_ARTS: Dark Arts - unlock dark investments (hidden)
+ *
+ * Categories of upgrades in the phylactery tree.
+ */
+typedef enum
+{
+    LP_UPGRADE_CATEGORY_TEMPORAL,
+    LP_UPGRADE_CATEGORY_NETWORK,
+    LP_UPGRADE_CATEGORY_DIVINATION,
+    LP_UPGRADE_CATEGORY_RESILIENCE,
+    LP_UPGRADE_CATEGORY_DARK_ARTS
+} LpUpgradeCategory;
+
+GType lp_upgrade_category_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_UPGRADE_CATEGORY (lp_upgrade_category_get_type ())
+
+/* ==========================================================================
+ * LpMegaprojectState - Megaproject progress states
+ * ========================================================================== */
+
+/**
+ * LpMegaprojectState:
+ * @LP_MEGAPROJECT_STATE_LOCKED: Not yet unlocked
+ * @LP_MEGAPROJECT_STATE_AVAILABLE: Unlocked but not started
+ * @LP_MEGAPROJECT_STATE_ACTIVE: Currently in progress
+ * @LP_MEGAPROJECT_STATE_PAUSED: Temporarily paused
+ * @LP_MEGAPROJECT_STATE_DISCOVERED: Discovered by enemies (at risk)
+ * @LP_MEGAPROJECT_STATE_COMPLETE: Successfully completed
+ * @LP_MEGAPROJECT_STATE_DESTROYED: Destroyed by enemies
+ *
+ * States a megaproject can be in during its lifecycle.
+ */
+typedef enum
+{
+    LP_MEGAPROJECT_STATE_LOCKED,
+    LP_MEGAPROJECT_STATE_AVAILABLE,
+    LP_MEGAPROJECT_STATE_ACTIVE,
+    LP_MEGAPROJECT_STATE_PAUSED,
+    LP_MEGAPROJECT_STATE_DISCOVERED,
+    LP_MEGAPROJECT_STATE_COMPLETE,
+    LP_MEGAPROJECT_STATE_DESTROYED
+} LpMegaprojectState;
+
+GType lp_megaproject_state_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_MEGAPROJECT_STATE (lp_megaproject_state_get_type ())
+
+/* ==========================================================================
+ * LpEchoTree - Echo specialization tree types
+ * ========================================================================== */
+
+/**
+ * LpEchoTree:
+ * @LP_ECHO_TREE_ECONOMIST: The Economist - financial and compound bonuses
+ * @LP_ECHO_TREE_MANIPULATOR: The Manipulator - agent and political bonuses
+ * @LP_ECHO_TREE_SCHOLAR: The Scholar - ledger and discovery bonuses
+ * @LP_ECHO_TREE_ARCHITECT: The Architect - preservation and project bonuses
+ *
+ * Specialization trees purchased with Echo points after prestige.
+ */
+typedef enum
+{
+    LP_ECHO_TREE_ECONOMIST,
+    LP_ECHO_TREE_MANIPULATOR,
+    LP_ECHO_TREE_SCHOLAR,
+    LP_ECHO_TREE_ARCHITECT
+} LpEchoTree;
+
+GType lp_echo_tree_get_type (void) G_GNUC_CONST;
+#define LP_TYPE_ECHO_TREE (lp_echo_tree_get_type ())
+
 G_END_DECLS
 
 #endif /* LP_ENUMS_H */

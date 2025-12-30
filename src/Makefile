@@ -26,6 +26,10 @@ SOURCES += core/lp-exposure-manager.c
 SOURCES += core/lp-synergy-manager.c
 SOURCES += core/lp-ledger.c
 
+# Progression (Phase 5)
+SOURCES += core/lp-prestige-manager.c
+SOURCES += core/lp-megaproject.c
+
 # Simulation (Phase 4)
 SOURCES += simulation/lp-world-simulation.c
 SOURCES += simulation/lp-region.c
@@ -123,6 +127,12 @@ $(OBJDIR)/src/core/lp-synergy-manager.o: core/lp-synergy-manager.c \
 	core/lp-synergy-manager.h lp-log.h lp-types.h
 $(OBJDIR)/src/core/lp-ledger.o: core/lp-ledger.c core/lp-ledger.h \
 	lp-log.h lp-enums.h lp-types.h
+
+# Progression (Phase 5)
+$(OBJDIR)/src/core/lp-prestige-manager.o: core/lp-prestige-manager.c \
+	core/lp-prestige-manager.h lp-log.h lp-enums.h lp-types.h
+$(OBJDIR)/src/core/lp-megaproject.o: core/lp-megaproject.c \
+	core/lp-megaproject.h lp-log.h lp-enums.h lp-types.h
 
 # Simulation (Phase 4)
 $(OBJDIR)/src/simulation/lp-world-simulation.o: simulation/lp-world-simulation.c \
