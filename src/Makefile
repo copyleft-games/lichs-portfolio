@@ -36,7 +36,11 @@ SOURCES += investment/lp-investment-trade.c
 SOURCES += investment/lp-investment-financial.c
 SOURCES += investment/lp-portfolio.c
 
-# Agent (Phase 1 skeleton)
+# Agent (Phase 3)
+SOURCES += agent/lp-agent.c
+SOURCES += agent/lp-trait.c
+SOURCES += agent/lp-agent-individual.c
+SOURCES += agent/lp-agent-family.c
 SOURCES += agent/lp-agent-manager.c
 
 # Achievement (Phase 1 skeleton)
@@ -129,8 +133,19 @@ $(OBJDIR)/src/investment/lp-portfolio.o: investment/lp-portfolio.c \
 	investment/lp-investment-trade.h investment/lp-investment-financial.h lp-log.h lp-types.h lp-enums.h
 
 # Agent
+$(OBJDIR)/src/agent/lp-agent.o: agent/lp-agent.c agent/lp-agent.h \
+	agent/lp-trait.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/agent/lp-trait.o: agent/lp-trait.c agent/lp-trait.h \
+	lp-log.h lp-types.h
+$(OBJDIR)/src/agent/lp-agent-individual.o: agent/lp-agent-individual.c \
+	agent/lp-agent-individual.h agent/lp-agent.h agent/lp-trait.h \
+	lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/agent/lp-agent-family.o: agent/lp-agent-family.c \
+	agent/lp-agent-family.h agent/lp-agent.h agent/lp-trait.h \
+	lp-log.h lp-types.h lp-enums.h
 $(OBJDIR)/src/agent/lp-agent-manager.o: agent/lp-agent-manager.c \
-	agent/lp-agent-manager.h lp-log.h lp-types.h
+	agent/lp-agent-manager.h agent/lp-agent.h agent/lp-agent-individual.h \
+	agent/lp-agent-family.h agent/lp-trait.h lp-log.h lp-types.h lp-enums.h
 
 # Achievement
 $(OBJDIR)/src/achievement/lp-achievement-manager.o: achievement/lp-achievement-manager.c \

@@ -40,6 +40,10 @@ GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-property.o
 GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-trade.o
 GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-financial.o
 GAME_OBJECTS += $(OBJDIR)/src/investment/lp-portfolio.o
+GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent.o
+GAME_OBJECTS += $(OBJDIR)/src/agent/lp-trait.o
+GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-individual.o
+GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-family.o
 GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-world-simulation.o
 GAME_OBJECTS += $(OBJDIR)/src/achievement/lp-achievement-manager.o
@@ -59,6 +63,9 @@ LINKED_TESTS += test-game-data.c
 
 # Phase 2: Investment tests
 LINKED_TESTS += test-investment.c
+
+# Phase 3: Agent tests
+LINKED_TESTS += test-agent.c
 
 # =============================================================================
 # Test Binaries

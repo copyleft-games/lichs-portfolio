@@ -17,6 +17,7 @@
 #include <libregnum.h>
 #include "../lp-types.h"
 #include "../lp-enums.h"
+#include "lp-agent.h"
 
 G_BEGIN_DECLS
 
@@ -40,7 +41,48 @@ LpAgentManager *
 lp_agent_manager_new (void);
 
 /* ==========================================================================
- * Agent Tracking (Skeleton - Phase 3+)
+ * Agent Management
+ * ========================================================================== */
+
+/**
+ * lp_agent_manager_add_agent:
+ * @self: an #LpAgentManager
+ * @agent: (transfer full): the #LpAgent to add
+ *
+ * Adds an agent to the manager. Takes ownership of the agent.
+ */
+void
+lp_agent_manager_add_agent (LpAgentManager *self,
+                            LpAgent        *agent);
+
+/**
+ * lp_agent_manager_remove_agent:
+ * @self: an #LpAgentManager
+ * @agent: the #LpAgent to remove
+ *
+ * Removes an agent from the manager.
+ *
+ * Returns: %TRUE if the agent was removed
+ */
+gboolean
+lp_agent_manager_remove_agent (LpAgentManager *self,
+                               LpAgent        *agent);
+
+/**
+ * lp_agent_manager_get_agent_by_id:
+ * @self: an #LpAgentManager
+ * @agent_id: the agent ID to find
+ *
+ * Finds an agent by ID.
+ *
+ * Returns: (transfer none) (nullable): The agent, or %NULL if not found
+ */
+LpAgent *
+lp_agent_manager_get_agent_by_id (LpAgentManager *self,
+                                  const gchar    *agent_id);
+
+/* ==========================================================================
+ * Agent Tracking
  * ========================================================================== */
 
 /**
@@ -48,8 +90,6 @@ lp_agent_manager_new (void);
  * @self: an #LpAgentManager
  *
  * Gets all agents.
- *
- * Note: This is a skeleton implementation. Returns empty array in Phase 1.
  *
  * Returns: (transfer none) (element-type LpAgent): Array of agents
  */
@@ -71,7 +111,7 @@ lp_agent_manager_get_agent_count (LpAgentManager *self);
  * lp_agent_manager_get_available_agents:
  * @self: an #LpAgentManager
  *
- * Gets agents that are not currently assigned.
+ * Gets agents that are not currently assigned to investments.
  *
  * Returns: (transfer container) (element-type LpAgent): List of unassigned agents
  */
@@ -92,7 +132,7 @@ lp_agent_manager_get_agents_by_type (LpAgentManager *self,
                                      LpAgentType     agent_type);
 
 /* ==========================================================================
- * Simulation (Skeleton - Phase 3+)
+ * Simulation
  * ========================================================================== */
 
 /**
@@ -102,12 +142,75 @@ lp_agent_manager_get_agents_by_type (LpAgentManager *self,
  *
  * Advances the agent simulation by the given number of years.
  * Handles aging, death, succession, loyalty changes, etc.
- *
- * Note: Skeleton implementation - no-op in Phase 1.
  */
 void
 lp_agent_manager_advance_years (LpAgentManager *self,
                                 guint           years);
+
+/**
+ * lp_agent_manager_process_year:
+ * @self: an #LpAgentManager
+ *
+ * Processes a single year for all agents.
+ * Called internally by advance_years.
+ */
+void
+lp_agent_manager_process_year (LpAgentManager *self);
+
+/* ==========================================================================
+ * Succession Handling
+ * ========================================================================== */
+
+/**
+ * lp_agent_manager_process_succession:
+ * @self: an #LpAgentManager
+ * @dying_agent: the agent that died
+ *
+ * Handles succession when an individual agent dies.
+ * The successor (if any) is added to the manager.
+ *
+ * Returns: (transfer none) (nullable): The successor who takes over
+ */
+LpAgent *
+lp_agent_manager_process_succession (LpAgentManager *self,
+                                     LpAgent        *dying_agent);
+
+/* ==========================================================================
+ * Statistics
+ * ========================================================================== */
+
+/**
+ * lp_agent_manager_get_total_exposure:
+ * @self: an #LpAgentManager
+ *
+ * Gets the total exposure contribution from all agents.
+ *
+ * Returns: Total exposure value
+ */
+guint
+lp_agent_manager_get_total_exposure (LpAgentManager *self);
+
+/**
+ * lp_agent_manager_get_average_loyalty:
+ * @self: an #LpAgentManager
+ *
+ * Gets the average loyalty across all agents.
+ *
+ * Returns: Average loyalty (0-100), or -1 if no agents
+ */
+gint
+lp_agent_manager_get_average_loyalty (LpAgentManager *self);
+
+/**
+ * lp_agent_manager_get_average_competence:
+ * @self: an #LpAgentManager
+ *
+ * Gets the average competence across all agents.
+ *
+ * Returns: Average competence (0-100), or -1 if no agents
+ */
+gint
+lp_agent_manager_get_average_competence (LpAgentManager *self);
 
 /* ==========================================================================
  * Reset

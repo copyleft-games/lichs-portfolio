@@ -280,11 +280,13 @@ GObject
 │   ├── LpInvestmentPolitical [Phase 2+]
 │   └── LpInvestmentDark [Phase 2+]
 │
-├── LpAgent (derivable) [Phase 3+]
-│   ├── LpAgentIndividual
-│   ├── LpAgentFamily
-│   ├── LpAgentCult
-│   └── LpAgentBound
+├── LpAgent (derivable, implements LrgSaveable) [Phase 3]
+│   ├── LpAgentIndividual (final) [Phase 3]
+│   ├── LpAgentFamily (final) [Phase 3]
+│   ├── LpAgentCult [Phase 3+]
+│   └── LpAgentBound [Phase 3+]
+│
+├── LpTrait (derivable, implements LrgSaveable) [Phase 3]
 │
 ├── LrgGameState (from libregnum, derivable)
 │   ├── LpStateMainMenu [Phase 1]
@@ -452,11 +454,169 @@ void          lp_portfolio_apply_event            (LpPortfolio *self, LpEvent *e
 - Magical investments (Phase 2+)
 - Political investments (Phase 2+)
 - Dark investments (Phase 2+)
-- Agent types (Phase 3)
 - World simulation logic (Phase 4)
 - Event system (Phase 4)
 - Graphics/UI (Phase 6)
 - Steam integration (Phase 7)
+
+---
+
+## Phase 3 Implementation Status
+
+Phase 3 implements the agent system with bloodline traits and inheritance mechanics.
+
+### Agent Type Hierarchy
+
+```
+LpAgent (derivable base class, implements LrgSaveable)
+├── Virtual Methods:
+│   ├── on_year_passed() - Handle aging, loyalty decay
+│   ├── on_death() - Handle agent death and succession
+│   ├── on_betrayal() - Handle betrayal (exposure increase)
+│   ├── can_recruit() - Check if can recruit successors
+│   └── get_agent_type() - Return agent type enum
+│
+├── Properties:
+│   ├── id (gchar*) - Unique identifier
+│   ├── name (gchar*) - Display name
+│   ├── age (guint) - Current age in years
+│   ├── max_age (guint) - Maximum lifespan
+│   ├── loyalty (gint 0-100) - Loyalty to the lich
+│   ├── competence (gint 0-100) - Skill level
+│   ├── cover_status (LpCoverStatus) - Cover identity status
+│   ├── knowledge_level (LpKnowledgeLevel) - Knowledge of true master
+│   ├── traits (GPtrArray of LpTrait)
+│   └── assigned_investments (GPtrArray)
+│
+├── Signals:
+│   ├── died - Emitted when agent dies
+│   ├── betrayed - Emitted when agent betrays
+│   └── loyalty-changed - Emitted when loyalty changes
+│
+├── LpAgentIndividual (final)
+│   ├── Single mortal agent with explicit succession
+│   ├── Properties: successor, training_progress
+│   ├── Skill retention: 25% untrained, 75% trained successor
+│   └── Training based on mentor's competence
+│
+└── LpAgentFamily (final)
+    ├── Bloodline dynasty that spans generations
+    ├── Properties: family_name, generation, founding_year, bloodline_traits
+    ├── Generation advancement on head's death
+    ├── Trait inheritance with generation bonus (+2% per gen, max 95%)
+    ├── 5% base chance for new trait emergence per generation
+    └── Maximum 4 traits per agent
+```
+
+### Trait System
+
+```
+LpTrait (derivable, implements LrgSaveable)
+├── Virtual Methods:
+│   ├── apply_effects() - Apply trait effects to agent
+│   └── roll_inheritance() - Roll for inheritance success
+│
+├── Properties:
+│   ├── id (gchar*) - Unique identifier
+│   ├── name (gchar*) - Display name
+│   ├── description (gchar*) - Detailed description
+│   ├── inheritance_chance (gfloat 0-1) - Base inheritance probability
+│   ├── income_modifier (gfloat) - Income multiplier (1.0 = no change)
+│   ├── loyalty_modifier (gint) - Loyalty bonus/penalty
+│   ├── discovery_modifier (gfloat) - Discovery chance multiplier
+│   └── conflicts_with (GPtrArray) - Conflicting trait IDs
+│
+└── Key Methods:
+    ├── lp_trait_copy() - Create trait copy
+    ├── lp_trait_conflicts_with() - Check trait conflicts
+    └── lp_trait_roll_inheritance() - Roll with generation bonus
+```
+
+### Agent Manager (Enhanced)
+
+```c
+/* Agent lifecycle management */
+void          lp_agent_manager_add_agent           (LpAgentManager *self, LpAgent *agent);
+gboolean      lp_agent_manager_remove_agent        (LpAgentManager *self, LpAgent *agent);
+LpAgent      *lp_agent_manager_get_agent_by_id     (LpAgentManager *self, const gchar *id);
+
+/* Filtering */
+GList        *lp_agent_manager_get_available_agents (LpAgentManager *self);
+GList        *lp_agent_manager_get_agents_by_type   (LpAgentManager *self, LpAgentType type);
+
+/* Simulation */
+void          lp_agent_manager_advance_years       (LpAgentManager *self, guint years);
+void          lp_agent_manager_process_year        (LpAgentManager *self);
+LpAgent      *lp_agent_manager_process_succession  (LpAgentManager *self, LpAgent *dying);
+
+/* Statistics */
+guint         lp_agent_manager_get_total_exposure  (LpAgentManager *self);
+gint          lp_agent_manager_get_average_loyalty (LpAgentManager *self);
+gint          lp_agent_manager_get_average_competence (LpAgentManager *self);
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| LpAgent | agent/lp-agent.h/.c | Base class, LrgSaveable |
+| LpTrait | agent/lp-trait.h/.c | Trait system, LrgSaveable |
+| LpAgentIndividual | agent/lp-agent-individual.h/.c | Individual agents |
+| LpAgentFamily | agent/lp-agent-family.h/.c | Family bloodlines |
+| LpAgentManager (enhanced) | agent/lp-agent-manager.h/.c | Full lifecycle management |
+
+### Agent Enumerations
+
+```c
+/* Agent types */
+typedef enum {
+    LP_AGENT_TYPE_INDIVIDUAL,  /* Single mortal */
+    LP_AGENT_TYPE_FAMILY,      /* Bloodline dynasty */
+    LP_AGENT_TYPE_CULT,        /* Secret society (future) */
+    LP_AGENT_TYPE_BOUND        /* Magically bound (future) */
+} LpAgentType;
+
+/* Cover identity status */
+typedef enum {
+    LP_COVER_STATUS_SECURE,    /* No suspicion */
+    LP_COVER_STATUS_SUSPECTED, /* Under investigation */
+    LP_COVER_STATUS_EXPOSED    /* Identity known */
+} LpCoverStatus;
+
+/* Knowledge of true master */
+typedef enum {
+    LP_KNOWLEDGE_LEVEL_NONE,    /* Doesn't know */
+    LP_KNOWLEDGE_LEVEL_PARTIAL, /* Suspects something */
+    LP_KNOWLEDGE_LEVEL_FULL     /* Knows everything */
+} LpKnowledgeLevel;
+```
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-agent.c | Base agent, traits, individual, family, manager |
+
+### Key Design Decisions
+
+1. **Derivable Base Classes**: Both `LpAgent` and `LpTrait` are derivable to allow future subtypes (Cult, Bound, specialized traits).
+
+2. **Virtual Methods**: Agent behavior varies by type through virtual methods, enabling polymorphic processing.
+
+3. **Trait Inheritance**: Family agents accumulate bloodline traits that pass down through generations with increasing probability.
+
+4. **Generation Bonus**: Each generation increases inheritance chance by 2% (capped at 95%), rewarding long-serving families.
+
+5. **Skill Retention**: Individual agents preserve 25-75% of skills through succession based on training.
+
+6. **Exposure Contribution**: Agents contribute to overall exposure based on cover status and knowledge level.
+
+### Deferred to Later Phases
+
+- Cult agents (Phase 3+)
+- Bound agents (Phase 3+)
+- Agent recruitment UI (Phase 6)
+- Agent management screens (Phase 6)
 
 ## Related Documents
 
