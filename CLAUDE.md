@@ -240,9 +240,24 @@ lp_game_data_saveable_init (LrgSaveableInterface *iface)
 | Type | File | Purpose |
 |------|------|---------|
 | `LpApplication` | core/lp-application.h | Main application singleton |
-| `LpGameData` | core/lp-game-data.h | Game state container |
-| `LpPhylactery` | core/lp-phylactery.h | Upgrade tree |
-| `LpPrestigeManager` | core/lp-prestige.h | Prestige system |
+| `LpGameData` | core/lp-game-data.h | Game state container (LrgSaveable) |
+| `LpPhylactery` | core/lp-phylactery.h | Upgrade tree (LrgSaveable) |
+| `LpExposureManager` | core/lp-exposure-manager.h | Exposure tracking singleton |
+| `LpSynergyManager` | core/lp-synergy-manager.h | Synergy detection singleton |
+| `LpLedger` | core/lp-ledger.h | Discovery tracking (LrgSaveable) |
+| `LpPrestigeManager` | core/lp-prestige.h | Prestige system (Phase 2+) |
+
+### Simulation Types
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpWorldSimulation` | simulation/lp-world-simulation.h | World state (LrgSaveable) |
+
+### Achievement Types
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpAchievementManager` | achievement/lp-achievement-manager.h | Achievement tracking singleton |
 
 ### Investment Types
 

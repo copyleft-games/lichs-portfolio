@@ -18,40 +18,48 @@ TEST_BUILDDIR := $(BUILDDIR)/tests
 TEST_CFLAGS := $(BASE_CFLAGS) $(OPT_CFLAGS)
 TEST_CFLAGS += -I$(PROJECT_ROOT)/src
 TEST_CFLAGS += $(GLIB_CFLAGS)
+TEST_CFLAGS += $(LIBREGNUM_CFLAGS)
 
-# Test linker flags
-TEST_LDFLAGS := $(OPT_LDFLAGS)
+# Test linker flags (use same libregnum paths as game)
+TEST_LDFLAGS := $(OPT_LDFLAGS) $(LIBREGNUM_LDFLAGS)
 
-# Test libraries
-TEST_LIBS := $(GLIB_LIBS)
+# Test libraries - link against libregnum and glib (use same libs as game)
+TEST_LIBS := $(LIBREGNUM_LIBS)
+TEST_LIBS += $(GLIB_LIBS) $(JSON_LIBS) $(YAML_LIBS)
+TEST_LIBS += $(PLATFORM_LIBS)
+
+# Source objects to link against (for Phase 1 tests)
+GAME_OBJECTS := $(OBJDIR)/src/lp-enums.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-exposure-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-synergy-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-ledger.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-phylactery.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-game-data.o
+GAME_OBJECTS += $(OBJDIR)/src/investment/lp-portfolio.o
+GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-world-simulation.o
+GAME_OBJECTS += $(OBJDIR)/src/achievement/lp-achievement-manager.o
 
 # =============================================================================
 # Test Sources
 # =============================================================================
 
-# Phase 0: Infrastructure test
-TEST_SOURCES := test-stub.c
+# Phase 0: Infrastructure test (standalone, no game objects)
+STANDALONE_TESTS := test-stub.c
 
-# Phase 1+: Add more tests as features are implemented
-# TEST_SOURCES += test-enums.c
-# TEST_SOURCES += test-investment.c
-# TEST_SOURCES += test-agent.c
-# TEST_SOURCES += test-kingdom.c
-# TEST_SOURCES += test-simulation.c
-# TEST_SOURCES += test-save-load.c
-# TEST_SOURCES += test-prestige.c
-# TEST_SOURCES += test-portfolio.c
-# TEST_SOURCES += test-achievement.c
-# TEST_SOURCES += test-synergy.c
-# TEST_SOURCES += test-exposure.c
-# TEST_SOURCES += test-trait.c
-# TEST_SOURCES += test-megaproject.c
+# Phase 1: Core type tests (require game objects)
+LINKED_TESTS := test-exposure.c
+LINKED_TESTS += test-portfolio.c
+LINKED_TESTS += test-ledger.c
+LINKED_TESTS += test-game-data.c
 
 # =============================================================================
 # Test Binaries
 # =============================================================================
 
-TEST_BINARIES := $(TEST_SOURCES:%.c=$(TEST_BUILDDIR)/%)
+STANDALONE_BINARIES := $(STANDALONE_TESTS:%.c=$(TEST_BUILDDIR)/%)
+LINKED_BINARIES := $(LINKED_TESTS:%.c=$(TEST_BUILDDIR)/%)
+TEST_BINARIES := $(STANDALONE_BINARIES) $(LINKED_BINARIES)
 
 # =============================================================================
 # Build Rules
@@ -61,10 +69,15 @@ TEST_BINARIES := $(TEST_SOURCES:%.c=$(TEST_BUILDDIR)/%)
 all: $(TEST_BINARIES)
 	$(call print_status,"Tests built: $(words $(TEST_BINARIES)) test(s)")
 
-# Pattern rule for test binaries
-$(TEST_BUILDDIR)/test-%: test-%.c | $(TEST_BUILDDIR)
+# Standalone tests (no game objects needed)
+$(TEST_BUILDDIR)/test-stub: test-stub.c | $(TEST_BUILDDIR)
 	$(call print_compile,$<)
 	@$(CC) $(TEST_CFLAGS) -o $@ $< $(TEST_LDFLAGS) $(TEST_LIBS)
+
+# Linked tests (require game objects and libregnum)
+$(TEST_BUILDDIR)/test-%: test-%.c $(GAME_OBJECTS) | $(TEST_BUILDDIR)
+	$(call print_compile,$<)
+	@$(CC) $(TEST_CFLAGS) -o $@ $< $(GAME_OBJECTS) $(TEST_LDFLAGS) $(TEST_LIBS)
 
 # =============================================================================
 # Run Tests
@@ -78,7 +91,7 @@ run: all
 		echo ""; \
 		echo "Running: $$(basename $$test)"; \
 		echo "----------------------------------------"; \
-		if $$test --tap; then \
+		if LD_LIBRARY_PATH="$(LIBREGNUM_LIBDIR):$(LIBREGNUM_DIR)/deps/graylib/build/lib:$(LIBREGNUM_DIR)/deps/yaml-glib/build:$$LD_LIBRARY_PATH" $$test --tap; then \
 			echo "PASSED"; \
 		else \
 			echo "FAILED"; \
@@ -100,7 +113,7 @@ run-verbose: all
 	@for test in $(TEST_BINARIES); do \
 		echo ""; \
 		echo "Running: $$test"; \
-		$$test -v || exit 1; \
+		LD_LIBRARY_PATH="$(LIBREGNUM_LIBDIR):$(LIBREGNUM_DIR)/deps/graylib/build/lib:$(LIBREGNUM_DIR)/deps/yaml-glib/build:$$LD_LIBRARY_PATH" $$test -v || exit 1; \
 	done
 	$(call print_status,"All tests passed")
 

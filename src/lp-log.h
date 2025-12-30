@@ -31,6 +31,7 @@ G_BEGIN_DECLS
 #define LP_LOG_DOMAIN_AGENT         "LichsPortfolio-Agent"
 #define LP_LOG_DOMAIN_UI            "LichsPortfolio-UI"
 #define LP_LOG_DOMAIN_STATE         "LichsPortfolio-State"
+#define LP_LOG_DOMAIN_GAMESTATE     "LichsPortfolio-GameState"
 #define LP_LOG_DOMAIN_FEEDBACK      "LichsPortfolio-Feedback"
 #define LP_LOG_DOMAIN_ACHIEVEMENT   "LichsPortfolio-Achievement"
 #define LP_LOG_DOMAIN_STEAM         "LichsPortfolio-Steam"

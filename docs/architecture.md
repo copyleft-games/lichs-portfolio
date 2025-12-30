@@ -254,12 +254,25 @@ data/events/*.yaml
 
 ```
 GObject
-├── LpApplication (singleton)
-├── LpGameData (implements LrgSaveable)
-├── LpPhylactery (implements LrgSaveable)
-├── LpPrestigeManager
+├── LpApplication (singleton) [Phase 1]
+├── LpGameData (implements LrgSaveable) [Phase 1]
+│   ├── owns LpPortfolio
+│   ├── owns LpAgentManager
+│   ├── owns LpPhylactery
+│   ├── owns LpLedger
+│   └── owns LpWorldSimulation
 │
-├── LpInvestment (derivable)
+├── LpPhylactery (implements LrgSaveable) [Phase 1]
+├── LpPortfolio (implements LrgSaveable) [Phase 1]
+├── LpAgentManager (implements LrgSaveable) [Phase 1 skeleton]
+├── LpLedger (implements LrgSaveable) [Phase 1]
+├── LpWorldSimulation (implements LrgSaveable) [Phase 1 skeleton]
+│
+├── LpExposureManager (singleton) [Phase 1]
+├── LpSynergyManager (singleton) [Phase 1 skeleton]
+├── LpAchievementManager (singleton, implements LrgSaveable) [Phase 1 skeleton]
+│
+├── LpInvestment (derivable) [Phase 2+]
 │   ├── LpInvestmentProperty
 │   ├── LpInvestmentTrade
 │   ├── LpInvestmentFinancial
@@ -267,27 +280,26 @@ GObject
 │   ├── LpInvestmentPolitical
 │   └── LpInvestmentDark
 │
-├── LpAgent (derivable)
+├── LpAgent (derivable) [Phase 3+]
 │   ├── LpAgentIndividual
 │   ├── LpAgentFamily
 │   ├── LpAgentCult
 │   └── LpAgentBound
 │
 ├── LrgGameState (from libregnum, derivable)
-│   ├── LpStateMainMenu
-│   ├── LpStateWake
-│   ├── LpStateAnalyze
-│   ├── LpStateDecide
-│   ├── LpStateSlumber
-│   ├── LpStateSimulating
-│   ├── LpStatePause
-│   └── LpStateSettings
+│   ├── LpStateMainMenu [Phase 1]
+│   ├── LpStateWake [Phase 1 skeleton]
+│   ├── LpStateAnalyze [Phase 1 skeleton]
+│   ├── LpStateDecide [Phase 1 skeleton]
+│   ├── LpStateSlumber [Phase 1 skeleton]
+│   ├── LpStateSimulating [Phase 1]
+│   ├── LpStatePause [Phase 1 skeleton]
+│   └── LpStateSettings [Phase 1 skeleton]
 │
-└── LpWorldSimulation
-    ├── LpKingdom
-    ├── LpRegion
-    ├── LpEvent (derivable)
-    └── LpCompetitor
+├── LpKingdom [Phase 4+]
+├── LpRegion [Phase 4+]
+├── LpEvent (derivable) [Phase 4+]
+└── LpCompetitor [Phase 5+]
 ```
 
 ## Build System
@@ -334,6 +346,51 @@ test_investment_returns (InvestmentFixture *fixture,
 ```
 
 Run with: `make test`
+
+## Phase 1 Implementation Status
+
+Phase 1 establishes the core architecture with skeleton implementations. The game can run but has minimal gameplay.
+
+### Implemented
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| LpApplication | core/lp-application.h/.c | Singleton, main loop |
+| LpGameData | core/lp-game-data.h/.c | Central game state, LrgSaveable |
+| LpPortfolio | investment/lp-portfolio.h/.c | Gold tracking, LrgSaveable |
+| LpAgentManager | agent/lp-agent-manager.h/.c | Skeleton, LrgSaveable |
+| LpPhylactery | core/lp-phylactery.h/.c | Upgrade points, LrgSaveable |
+| LpLedger | core/lp-ledger.h/.c | Discovery tracking, LrgSaveable |
+| LpWorldSimulation | simulation/lp-world-simulation.h/.c | Skeleton, LrgSaveable |
+| LpExposureManager | core/lp-exposure-manager.h/.c | Exposure tracking singleton |
+| LpSynergyManager | core/lp-synergy-manager.h/.c | Skeleton singleton |
+| LpAchievementManager | achievement/lp-achievement-manager.h/.c | Skeleton singleton |
+| LpStateMainMenu | states/lp-state-main-menu.h/.c | Menu state |
+| LpStateWake | states/lp-state-wake.h/.c | Skeleton |
+| LpStateAnalyze | states/lp-state-analyze.h/.c | Skeleton |
+| LpStateDecide | states/lp-state-decide.h/.c | Skeleton |
+| LpStateSlumber | states/lp-state-slumber.h/.c | Skeleton |
+| LpStateSimulating | states/lp-state-simulating.h/.c | Year counter |
+| LpStatePause | states/lp-state-pause.h/.c | Overlay skeleton |
+| LpStateSettings | states/lp-state-settings.h/.c | Overlay skeleton |
+
+### Tests
+
+| Test File | Coverage |
+|-----------|----------|
+| test-exposure.c | Exposure thresholds, levels, decay |
+| test-portfolio.c | Gold operations, LrgSaveable |
+| test-ledger.c | Discovery tracking |
+| test-game-data.c | GameData creation, child objects |
+
+### Deferred to Later Phases
+
+- Investment types (Phase 2)
+- Agent types (Phase 3)
+- World simulation logic (Phase 4)
+- Event system (Phase 4)
+- Graphics/UI (Phase 6)
+- Steam integration (Phase 7)
 
 ## Related Documents
 
