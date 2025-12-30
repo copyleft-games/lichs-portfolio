@@ -28,13 +28,17 @@ TEST_LIBS := $(LIBREGNUM_LIBS)
 TEST_LIBS += $(GLIB_LIBS) $(JSON_LIBS) $(YAML_LIBS)
 TEST_LIBS += $(PLATFORM_LIBS)
 
-# Source objects to link against (for Phase 1 tests)
+# Source objects to link against (for tests)
 GAME_OBJECTS := $(OBJDIR)/src/lp-enums.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-exposure-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-synergy-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-ledger.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-phylactery.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-game-data.o
+GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment.o
+GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-property.o
+GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-trade.o
+GAME_OBJECTS += $(OBJDIR)/src/investment/lp-investment-financial.o
 GAME_OBJECTS += $(OBJDIR)/src/investment/lp-portfolio.o
 GAME_OBJECTS += $(OBJDIR)/src/agent/lp-agent-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/simulation/lp-world-simulation.o
@@ -52,6 +56,9 @@ LINKED_TESTS := test-exposure.c
 LINKED_TESTS += test-portfolio.c
 LINKED_TESTS += test-ledger.c
 LINKED_TESTS += test-game-data.c
+
+# Phase 2: Investment tests
+LINKED_TESTS += test-investment.c
 
 # =============================================================================
 # Test Binaries

@@ -8,6 +8,10 @@
 #include "../lp-log.h"
 
 #include "lp-portfolio.h"
+#include "lp-investment.h"
+#include "lp-investment-property.h"
+#include "lp-investment-trade.h"
+#include "lp-investment-financial.h"
 
 /* Default starting gold (1000) */
 #define DEFAULT_STARTING_GOLD (1000.0)
@@ -30,6 +34,8 @@ enum
 enum
 {
     SIGNAL_GOLD_CHANGED,
+    SIGNAL_INVESTMENT_ADDED,
+    SIGNAL_INVESTMENT_REMOVED,
     N_SIGNALS
 };
 
@@ -59,6 +65,7 @@ lp_portfolio_save (LrgSaveable    *saveable,
                    GError        **error)
 {
     LpPortfolio *self = LP_PORTFOLIO (saveable);
+    guint i;
 
     /* Save gold as mantissa/exponent pair */
     lrg_save_context_write_double (context, "gold-mantissa",
@@ -68,10 +75,63 @@ lp_portfolio_save (LrgSaveable    *saveable,
     lrg_save_context_write_boolean (context, "gold-is-zero",
                                     lrg_big_number_is_zero (self->gold));
 
-    /* Phase 2+: Save investments here */
-    lrg_save_context_write_uint (context, "investment-count", 0);
+    /* Save investments */
+    lrg_save_context_write_uint (context, "investment-count", self->investments->len);
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        g_autofree gchar *section_name = NULL;
+
+        section_name = g_strdup_printf ("investment-%u", i);
+        lrg_save_context_begin_section (context, section_name);
+
+        if (!lrg_saveable_save (LRG_SAVEABLE (inv), context, error))
+        {
+            lrg_save_context_end_section (context);
+            return FALSE;
+        }
+
+        lrg_save_context_end_section (context);
+    }
+
+    lp_log_debug ("Saved portfolio: %s gold, %u investments",
+                  lrg_big_number_format_short (self->gold),
+                  self->investments->len);
 
     return TRUE;
+}
+
+/*
+ * Helper to create an investment from saved asset class.
+ * We need to create the right subclass type before loading.
+ */
+static LpInvestment *
+create_investment_for_class (LpAssetClass asset_class)
+{
+    switch (asset_class)
+    {
+    case LP_ASSET_CLASS_PROPERTY:
+        return LP_INVESTMENT (lp_investment_property_new ("temp", "temp",
+                                                          LP_PROPERTY_TYPE_AGRICULTURAL));
+
+    case LP_ASSET_CLASS_TRADE:
+        return LP_INVESTMENT (lp_investment_trade_new ("temp", "temp",
+                                                       LP_TRADE_TYPE_ROUTE));
+
+    case LP_ASSET_CLASS_FINANCIAL:
+        return LP_INVESTMENT (lp_investment_financial_new ("temp", "temp",
+                                                           LP_FINANCIAL_TYPE_CROWN_BOND));
+
+    /* Future phases */
+    case LP_ASSET_CLASS_MAGICAL:
+    case LP_ASSET_CLASS_POLITICAL:
+    case LP_ASSET_CLASS_DARK:
+    default:
+        lp_log_warning ("Unknown asset class %d, creating generic property", asset_class);
+        return LP_INVESTMENT (lp_investment_property_new ("temp", "temp",
+                                                          LP_PROPERTY_TYPE_AGRICULTURAL));
+    }
 }
 
 static gboolean
@@ -83,6 +143,8 @@ lp_portfolio_load (LrgSaveable    *saveable,
     gdouble mantissa;
     gint64 exponent;
     gboolean is_zero;
+    guint64 inv_count;
+    guint i;
 
     /* Load gold */
     mantissa = lrg_save_context_read_double (context, "gold-mantissa", 1.0);
@@ -96,10 +158,46 @@ lp_portfolio_load (LrgSaveable    *saveable,
     else
         self->gold = lrg_big_number_new_from_parts (mantissa, exponent);
 
-    lp_log_debug ("Loaded portfolio with gold: %s",
-                  lrg_big_number_format_short (self->gold));
+    /* Clear existing investments before loading */
+    g_ptr_array_set_size (self->investments, 0);
 
-    /* Phase 2+: Load investments here */
+    /* Load investments */
+    inv_count = lrg_save_context_read_uint (context, "investment-count", 0);
+
+    for (i = 0; i < inv_count; i++)
+    {
+        g_autofree gchar *section_name = NULL;
+        LpInvestment *inv;
+        LpAssetClass asset_class;
+
+        section_name = g_strdup_printf ("investment-%u", i);
+
+        if (!lrg_save_context_enter_section (context, section_name))
+        {
+            lp_log_warning ("Missing investment section: %s", section_name);
+            continue;
+        }
+
+        /* Read asset class first to create the right type */
+        asset_class = (LpAssetClass) lrg_save_context_read_int (context, "asset-class",
+                                                                 LP_ASSET_CLASS_PROPERTY);
+
+        inv = create_investment_for_class (asset_class);
+
+        if (!lrg_saveable_load (LRG_SAVEABLE (inv), context, error))
+        {
+            g_object_unref (inv);
+            lrg_save_context_leave_section (context);
+            return FALSE;
+        }
+
+        g_ptr_array_add (self->investments, inv);
+        lrg_save_context_leave_section (context);
+    }
+
+    lp_log_debug ("Loaded portfolio: %s gold, %u investments",
+                  lrg_big_number_format_short (self->gold),
+                  self->investments->len);
 
     return TRUE;
 }
@@ -211,6 +309,40 @@ lp_portfolio_class_init (LpPortfolioClass *klass)
                       G_TYPE_NONE, 2,
                       LRG_TYPE_BIG_NUMBER,
                       LRG_TYPE_BIG_NUMBER);
+
+    /**
+     * LpPortfolio::investment-added:
+     * @self: the #LpPortfolio
+     * @investment: (transfer none): The investment that was added
+     *
+     * Emitted when an investment is added to the portfolio.
+     */
+    signals[SIGNAL_INVESTMENT_ADDED] =
+        g_signal_new ("investment-added",
+                      G_TYPE_FROM_CLASS (klass),
+                      G_SIGNAL_RUN_LAST,
+                      0,
+                      NULL, NULL,
+                      NULL,
+                      G_TYPE_NONE, 1,
+                      LP_TYPE_INVESTMENT);
+
+    /**
+     * LpPortfolio::investment-removed:
+     * @self: the #LpPortfolio
+     * @investment: (transfer none): The investment that was removed
+     *
+     * Emitted when an investment is removed from the portfolio.
+     */
+    signals[SIGNAL_INVESTMENT_REMOVED] =
+        g_signal_new ("investment-removed",
+                      G_TYPE_FROM_CLASS (klass),
+                      G_SIGNAL_RUN_LAST,
+                      0,
+                      NULL, NULL,
+                      NULL,
+                      G_TYPE_NONE, 1,
+                      LP_TYPE_INVESTMENT);
 }
 
 static void
@@ -390,7 +522,7 @@ lp_portfolio_can_afford (LpPortfolio        *self,
 }
 
 /* ==========================================================================
- * Investment Management (Skeleton)
+ * Investment Management
  * ========================================================================== */
 
 /**
@@ -426,6 +558,186 @@ lp_portfolio_get_investment_count (LpPortfolio *self)
 }
 
 /**
+ * lp_portfolio_add_investment:
+ * @self: an #LpPortfolio
+ * @investment: (transfer full): Investment to add
+ *
+ * Adds an investment to the portfolio. The portfolio takes ownership.
+ */
+void
+lp_portfolio_add_investment (LpPortfolio  *self,
+                             LpInvestment *investment)
+{
+    g_return_if_fail (LP_IS_PORTFOLIO (self));
+    g_return_if_fail (LP_IS_INVESTMENT (investment));
+
+    g_ptr_array_add (self->investments, investment);
+
+    lp_log_debug ("Added investment: %s (%s)",
+                  lp_investment_get_name (investment),
+                  lp_investment_get_id (investment));
+
+    g_signal_emit (self, signals[SIGNAL_INVESTMENT_ADDED], 0, investment);
+}
+
+/**
+ * lp_portfolio_remove_investment:
+ * @self: an #LpPortfolio
+ * @investment: Investment to remove
+ *
+ * Removes an investment from the portfolio.
+ *
+ * Returns: %TRUE if the investment was found and removed
+ */
+gboolean
+lp_portfolio_remove_investment (LpPortfolio  *self,
+                                LpInvestment *investment)
+{
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), FALSE);
+    g_return_val_if_fail (LP_IS_INVESTMENT (investment), FALSE);
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+
+        if (inv == investment)
+        {
+            /* Emit signal before removing (so handlers can access it) */
+            g_signal_emit (self, signals[SIGNAL_INVESTMENT_REMOVED], 0, investment);
+
+            lp_log_debug ("Removed investment: %s (%s)",
+                          lp_investment_get_name (investment),
+                          lp_investment_get_id (investment));
+
+            /* Remove with index to avoid O(n) search in g_ptr_array_remove */
+            g_ptr_array_remove_index (self->investments, i);
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+/**
+ * lp_portfolio_remove_investment_by_id:
+ * @self: an #LpPortfolio
+ * @investment_id: ID of investment to remove
+ *
+ * Removes an investment by its ID.
+ *
+ * Returns: %TRUE if the investment was found and removed
+ */
+gboolean
+lp_portfolio_remove_investment_by_id (LpPortfolio *self,
+                                      const gchar *investment_id)
+{
+    LpInvestment *inv;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), FALSE);
+    g_return_val_if_fail (investment_id != NULL, FALSE);
+
+    inv = lp_portfolio_get_investment_by_id (self, investment_id);
+    if (inv == NULL)
+        return FALSE;
+
+    return lp_portfolio_remove_investment (self, inv);
+}
+
+/**
+ * lp_portfolio_get_investment_by_id:
+ * @self: an #LpPortfolio
+ * @investment_id: ID to search for
+ *
+ * Finds an investment by its ID.
+ *
+ * Returns: (transfer none) (nullable): The investment, or %NULL if not found
+ */
+LpInvestment *
+lp_portfolio_get_investment_by_id (LpPortfolio *self,
+                                   const gchar *investment_id)
+{
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+    g_return_val_if_fail (investment_id != NULL, NULL);
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        const gchar *inv_id = lp_investment_get_id (inv);
+
+        if (g_strcmp0 (inv_id, investment_id) == 0)
+            return inv;
+    }
+
+    return NULL;
+}
+
+/**
+ * lp_portfolio_get_investments_by_class:
+ * @self: an #LpPortfolio
+ * @asset_class: The #LpAssetClass to filter by
+ *
+ * Gets all investments of a specific asset class.
+ *
+ * Returns: (transfer container) (element-type LpInvestment): Array of matching investments
+ */
+GPtrArray *
+lp_portfolio_get_investments_by_class (LpPortfolio  *self,
+                                       LpAssetClass  asset_class)
+{
+    GPtrArray *result;
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+
+    result = g_ptr_array_new ();
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+
+        if (lp_investment_get_asset_class (inv) == asset_class)
+            g_ptr_array_add (result, inv);
+    }
+
+    return result;
+}
+
+/**
+ * lp_portfolio_get_investments_by_risk:
+ * @self: an #LpPortfolio
+ * @risk_level: The #LpRiskLevel to filter by
+ *
+ * Gets all investments of a specific risk level.
+ *
+ * Returns: (transfer container) (element-type LpInvestment): Array of matching investments
+ */
+GPtrArray *
+lp_portfolio_get_investments_by_risk (LpPortfolio *self,
+                                      LpRiskLevel  risk_level)
+{
+    GPtrArray *result;
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+
+    result = g_ptr_array_new ();
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+
+        if (lp_investment_get_risk_level (inv) == risk_level)
+            g_ptr_array_add (result, inv);
+    }
+
+    return result;
+}
+
+/**
  * lp_portfolio_get_total_value:
  * @self: an #LpPortfolio
  *
@@ -436,13 +748,201 @@ lp_portfolio_get_investment_count (LpPortfolio *self)
 LrgBigNumber *
 lp_portfolio_get_total_value (LpPortfolio *self)
 {
+    g_autoptr(LrgBigNumber) inv_value = NULL;
+    g_autoptr(LrgBigNumber) total = NULL;
+
     g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
 
-    /*
-     * Phase 1 skeleton: Just return gold amount.
-     * Phase 2+: Sum gold + all investment values.
-     */
-    return lrg_big_number_copy (self->gold);
+    inv_value = lp_portfolio_get_investment_value (self);
+    total = lrg_big_number_add (self->gold, inv_value);
+
+    return g_steal_pointer (&total);
+}
+
+/**
+ * lp_portfolio_get_investment_value:
+ * @self: an #LpPortfolio
+ *
+ * Gets the total value of investments only (excluding gold).
+ *
+ * Returns: (transfer full): Total investment value
+ */
+LrgBigNumber *
+lp_portfolio_get_investment_value (LpPortfolio *self)
+{
+    g_autoptr(LrgBigNumber) total = NULL;
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+
+    total = lrg_big_number_new_zero ();
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        LrgBigNumber *value = lp_investment_get_current_value (inv);
+
+        if (value != NULL)
+        {
+            g_autoptr(LrgBigNumber) new_total = lrg_big_number_add (total, value);
+            lrg_big_number_free (total);
+            total = g_steal_pointer (&new_total);
+        }
+    }
+
+    return g_steal_pointer (&total);
+}
+
+/**
+ * lp_portfolio_calculate_income:
+ * @self: an #LpPortfolio
+ * @years: Number of years to calculate
+ *
+ * Calculates the expected income from all investments over the
+ * specified number of years. Does not modify the portfolio.
+ *
+ * Returns: (transfer full): Expected income as #LrgBigNumber
+ */
+LrgBigNumber *
+lp_portfolio_calculate_income (LpPortfolio *self,
+                               guint        years)
+{
+    g_autoptr(LrgBigNumber) total_income = NULL;
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+
+    if (years == 0)
+        return lrg_big_number_new_zero ();
+
+    total_income = lrg_big_number_new_zero ();
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        g_autoptr(LrgBigNumber) returns = NULL;
+        LrgBigNumber *current_value;
+        g_autoptr(LrgBigNumber) income = NULL;
+        g_autoptr(LrgBigNumber) new_total = NULL;
+
+        current_value = lp_investment_get_current_value (inv);
+        if (current_value == NULL)
+            continue;
+
+        /* Calculate returns (new value after years) */
+        returns = lp_investment_calculate_returns (inv, years);
+        if (returns == NULL)
+            continue;
+
+        /* Income = returns - current value */
+        income = lrg_big_number_subtract (returns, current_value);
+
+        /* Only count positive income */
+        if (!lrg_big_number_is_negative (income))
+        {
+            new_total = lrg_big_number_add (total_income, income);
+            lrg_big_number_free (total_income);
+            total_income = g_steal_pointer (&new_total);
+        }
+    }
+
+    lp_log_debug ("Calculated income for %u years: %s",
+                  years, lrg_big_number_format_short (total_income));
+
+    return g_steal_pointer (&total_income);
+}
+
+/**
+ * lp_portfolio_apply_slumber:
+ * @self: an #LpPortfolio
+ * @years: Number of years slumbered
+ *
+ * Applies the effects of slumber to all investments.
+ * Updates investment values and adds income to gold.
+ *
+ * Returns: (transfer full): Total income earned during slumber
+ */
+LrgBigNumber *
+lp_portfolio_apply_slumber (LpPortfolio *self,
+                            guint        years)
+{
+    g_autoptr(LrgBigNumber) total_income = NULL;
+    guint i;
+
+    g_return_val_if_fail (LP_IS_PORTFOLIO (self), NULL);
+
+    if (years == 0)
+        return lrg_big_number_new_zero ();
+
+    total_income = lrg_big_number_new_zero ();
+
+    lp_log_debug ("Applying slumber for %u years to %u investments",
+                  years, self->investments->len);
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        g_autoptr(LrgBigNumber) returns = NULL;
+        LrgBigNumber *current_value;
+        g_autoptr(LrgBigNumber) income = NULL;
+        g_autoptr(LrgBigNumber) new_total = NULL;
+
+        current_value = lp_investment_get_current_value (inv);
+        if (current_value == NULL)
+            continue;
+
+        /* Calculate and apply returns */
+        returns = lp_investment_calculate_returns (inv, years);
+        if (returns == NULL)
+            continue;
+
+        /* Income = returns - current value */
+        income = lrg_big_number_subtract (returns, current_value);
+
+        /* Update investment to new value */
+        lp_investment_set_current_value (inv, lrg_big_number_copy (returns));
+
+        /* Accumulate positive income */
+        if (!lrg_big_number_is_negative (income))
+        {
+            new_total = lrg_big_number_add (total_income, income);
+            lrg_big_number_free (total_income);
+            total_income = g_steal_pointer (&new_total);
+        }
+    }
+
+    /* Add income to gold */
+    lp_portfolio_add_gold (self, total_income);
+
+    lp_log_debug ("Slumber complete: earned %s gold",
+                  lrg_big_number_format_short (total_income));
+
+    return g_steal_pointer (&total_income);
+}
+
+/**
+ * lp_portfolio_apply_event:
+ * @self: an #LpPortfolio
+ * @event: The #LpEvent to apply
+ *
+ * Applies an event to all investments in the portfolio.
+ */
+void
+lp_portfolio_apply_event (LpPortfolio *self,
+                          LpEvent     *event)
+{
+    guint i;
+
+    g_return_if_fail (LP_IS_PORTFOLIO (self));
+    g_return_if_fail (event != NULL);
+
+    lp_log_debug ("Applying event to %u investments", self->investments->len);
+
+    for (i = 0; i < self->investments->len; i++)
+    {
+        LpInvestment *inv = g_ptr_array_index (self->investments, i);
+        lp_investment_apply_event (inv, event);
+    }
 }
 
 /* ==========================================================================

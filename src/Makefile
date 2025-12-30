@@ -29,7 +29,11 @@ SOURCES += core/lp-ledger.c
 # Simulation (Phase 1 skeleton)
 SOURCES += simulation/lp-world-simulation.c
 
-# Investment (Phase 1 skeleton)
+# Investment (Phase 2)
+SOURCES += investment/lp-investment.c
+SOURCES += investment/lp-investment-property.c
+SOURCES += investment/lp-investment-trade.c
+SOURCES += investment/lp-investment-financial.c
 SOURCES += investment/lp-portfolio.c
 
 # Agent (Phase 1 skeleton)
@@ -112,8 +116,17 @@ $(OBJDIR)/src/simulation/lp-world-simulation.o: simulation/lp-world-simulation.c
 	simulation/lp-world-simulation.h lp-log.h lp-types.h
 
 # Investment
+$(OBJDIR)/src/investment/lp-investment.o: investment/lp-investment.c \
+	investment/lp-investment.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/investment/lp-investment-property.o: investment/lp-investment-property.c \
+	investment/lp-investment-property.h investment/lp-investment.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/investment/lp-investment-trade.o: investment/lp-investment-trade.c \
+	investment/lp-investment-trade.h investment/lp-investment.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/investment/lp-investment-financial.o: investment/lp-investment-financial.c \
+	investment/lp-investment-financial.h investment/lp-investment.h lp-log.h lp-types.h lp-enums.h
 $(OBJDIR)/src/investment/lp-portfolio.o: investment/lp-portfolio.c \
-	investment/lp-portfolio.h lp-log.h lp-types.h
+	investment/lp-portfolio.h investment/lp-investment.h investment/lp-investment-property.h \
+	investment/lp-investment-trade.h investment/lp-investment-financial.h lp-log.h lp-types.h lp-enums.h
 
 # Agent
 $(OBJDIR)/src/agent/lp-agent-manager.o: agent/lp-agent-manager.c \

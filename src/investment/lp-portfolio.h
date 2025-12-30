@@ -114,7 +114,7 @@ lp_portfolio_can_afford (LpPortfolio        *self,
                          const LrgBigNumber *cost);
 
 /* ==========================================================================
- * Investment Management (Skeleton - Phase 2+)
+ * Investment Management
  * ========================================================================== */
 
 /**
@@ -122,8 +122,6 @@ lp_portfolio_can_afford (LpPortfolio        *self,
  * @self: an #LpPortfolio
  *
  * Gets the list of investments.
- *
- * Note: This is a skeleton implementation. Returns empty array in Phase 1.
  *
  * Returns: (transfer none) (element-type LpInvestment): Array of investments
  */
@@ -142,6 +140,89 @@ guint
 lp_portfolio_get_investment_count (LpPortfolio *self);
 
 /**
+ * lp_portfolio_add_investment:
+ * @self: an #LpPortfolio
+ * @investment: (transfer full): Investment to add
+ *
+ * Adds an investment to the portfolio. The portfolio takes ownership.
+ *
+ * Emits: #LpPortfolio::investment-added
+ */
+void
+lp_portfolio_add_investment (LpPortfolio  *self,
+                             LpInvestment *investment);
+
+/**
+ * lp_portfolio_remove_investment:
+ * @self: an #LpPortfolio
+ * @investment: Investment to remove
+ *
+ * Removes an investment from the portfolio.
+ * The investment is unreffed when removed.
+ *
+ * Emits: #LpPortfolio::investment-removed
+ *
+ * Returns: %TRUE if the investment was found and removed
+ */
+gboolean
+lp_portfolio_remove_investment (LpPortfolio  *self,
+                                LpInvestment *investment);
+
+/**
+ * lp_portfolio_remove_investment_by_id:
+ * @self: an #LpPortfolio
+ * @investment_id: ID of investment to remove
+ *
+ * Removes an investment by its ID.
+ *
+ * Emits: #LpPortfolio::investment-removed
+ *
+ * Returns: %TRUE if the investment was found and removed
+ */
+gboolean
+lp_portfolio_remove_investment_by_id (LpPortfolio *self,
+                                      const gchar *investment_id);
+
+/**
+ * lp_portfolio_get_investment_by_id:
+ * @self: an #LpPortfolio
+ * @investment_id: ID to search for
+ *
+ * Finds an investment by its ID.
+ *
+ * Returns: (transfer none) (nullable): The investment, or %NULL if not found
+ */
+LpInvestment *
+lp_portfolio_get_investment_by_id (LpPortfolio *self,
+                                   const gchar *investment_id);
+
+/**
+ * lp_portfolio_get_investments_by_class:
+ * @self: an #LpPortfolio
+ * @asset_class: The #LpAssetClass to filter by
+ *
+ * Gets all investments of a specific asset class.
+ *
+ * Returns: (transfer container) (element-type LpInvestment): Array of matching investments
+ */
+GPtrArray *
+lp_portfolio_get_investments_by_class (LpPortfolio  *self,
+                                       LpAssetClass  asset_class);
+
+/**
+ * lp_portfolio_get_investments_by_risk:
+ * @self: an #LpPortfolio
+ * @risk_level: The #LpRiskLevel to filter by
+ *
+ * Gets all investments of a specific risk level.
+ *
+ * Returns: (transfer container) (element-type LpInvestment): Array of matching investments
+ */
+GPtrArray *
+lp_portfolio_get_investments_by_risk (LpPortfolio *self,
+                                      LpRiskLevel  risk_level);
+
+/**
  * lp_portfolio_get_total_value:
  * @self: an #LpPortfolio
  *
@@ -151,6 +232,57 @@ lp_portfolio_get_investment_count (LpPortfolio *self);
  */
 LrgBigNumber *
 lp_portfolio_get_total_value (LpPortfolio *self);
+
+/**
+ * lp_portfolio_get_investment_value:
+ * @self: an #LpPortfolio
+ *
+ * Gets the total value of investments only (excluding gold).
+ *
+ * Returns: (transfer full): Total investment value
+ */
+LrgBigNumber *
+lp_portfolio_get_investment_value (LpPortfolio *self);
+
+/**
+ * lp_portfolio_calculate_income:
+ * @self: an #LpPortfolio
+ * @years: Number of years to calculate
+ *
+ * Calculates the expected income from all investments over the
+ * specified number of years. Does not modify the portfolio.
+ *
+ * Returns: (transfer full): Expected income as #LrgBigNumber
+ */
+LrgBigNumber *
+lp_portfolio_calculate_income (LpPortfolio *self,
+                               guint        years);
+
+/**
+ * lp_portfolio_apply_slumber:
+ * @self: an #LpPortfolio
+ * @years: Number of years slumbered
+ *
+ * Applies the effects of slumber to all investments.
+ * Updates investment values and adds income to gold.
+ *
+ * Returns: (transfer full): Total income earned during slumber
+ */
+LrgBigNumber *
+lp_portfolio_apply_slumber (LpPortfolio *self,
+                            guint        years);
+
+/**
+ * lp_portfolio_apply_event:
+ * @self: an #LpPortfolio
+ * @event: The #LpEvent to apply
+ *
+ * Applies an event to all investments in the portfolio.
+ * Events may affect investment values based on their type.
+ */
+void
+lp_portfolio_apply_event (LpPortfolio *self,
+                          LpEvent     *event);
 
 /* ==========================================================================
  * Reset

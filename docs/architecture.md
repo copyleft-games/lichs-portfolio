@@ -272,13 +272,13 @@ GObject
 ├── LpSynergyManager (singleton) [Phase 1 skeleton]
 ├── LpAchievementManager (singleton, implements LrgSaveable) [Phase 1 skeleton]
 │
-├── LpInvestment (derivable) [Phase 2+]
-│   ├── LpInvestmentProperty
-│   ├── LpInvestmentTrade
-│   ├── LpInvestmentFinancial
-│   ├── LpInvestmentMagical
-│   ├── LpInvestmentPolitical
-│   └── LpInvestmentDark
+├── LpInvestment (derivable, implements LrgSaveable) [Phase 2]
+│   ├── LpInvestmentProperty (final) [Phase 2]
+│   ├── LpInvestmentTrade (final) [Phase 2]
+│   ├── LpInvestmentFinancial (final) [Phase 2]
+│   ├── LpInvestmentMagical [Phase 2+]
+│   ├── LpInvestmentPolitical [Phase 2+]
+│   └── LpInvestmentDark [Phase 2+]
 │
 ├── LpAgent (derivable) [Phase 3+]
 │   ├── LpAgentIndividual
@@ -374,6 +374,69 @@ Phase 1 establishes the core architecture with skeleton implementations. The gam
 | LpStatePause | states/lp-state-pause.h/.c | Overlay skeleton |
 | LpStateSettings | states/lp-state-settings.h/.c | Overlay skeleton |
 
+---
+
+## Phase 2 Implementation Status
+
+Phase 2 implements the investment system, providing the core financial mechanics.
+
+### Investment Type Hierarchy
+
+```
+LpInvestment (derivable base class)
+├── Virtual Methods:
+│   ├── calculate_returns() - Calculate value growth over years
+│   ├── apply_event() - Handle world events
+│   ├── can_sell() - Check if sellable
+│   ├── get_risk_modifier() - Risk calculation factor
+│   └── get_base_return_rate() - Base annual return
+│
+├── LpInvestmentProperty (3-5% returns, low risk)
+│   ├── Types: Agricultural, Urban, Mining, Timber, Coastal
+│   ├── Features: Stability bonus, Improvements system
+│   └── Max improvements: 5 per property
+│
+├── LpInvestmentTrade (5-8% returns, medium risk)
+│   ├── Types: Route, Commodity, Guild, Shipping, Caravan
+│   ├── Features: Route status, Market modifier
+│   └── Signals: route-status-changed
+│
+└── LpInvestmentFinancial (4-12% returns, variable risk)
+    ├── Types: Crown Bond, Noble Debt, Merchant Note, Insurance, Usury
+    ├── Features: Interest rate, Face value, Debt status, Default handling
+    └── Signals: debt-status-changed
+```
+
+### Implemented Components
+
+| Component | File(s) | Status |
+|-----------|---------|--------|
+| LpInvestment | investment/lp-investment.h/.c | Base class, LrgSaveable |
+| LpInvestmentProperty | investment/lp-investment-property.h/.c | Property investments |
+| LpInvestmentTrade | investment/lp-investment-trade.h/.c | Trade investments |
+| LpInvestmentFinancial | investment/lp-investment-financial.h/.c | Financial instruments |
+| LpPortfolio (enhanced) | investment/lp-portfolio.h/.c | Full investment management |
+
+### Portfolio Methods Added
+
+```c
+/* Investment management */
+void          lp_portfolio_add_investment         (LpPortfolio *self, LpInvestment *inv);
+gboolean      lp_portfolio_remove_investment      (LpPortfolio *self, LpInvestment *inv);
+LpInvestment *lp_portfolio_get_investment_by_id   (LpPortfolio *self, const gchar *id);
+GPtrArray    *lp_portfolio_get_investments_by_class (LpPortfolio *self, LpAssetClass class);
+GPtrArray    *lp_portfolio_get_investments_by_risk (LpPortfolio *self, LpRiskLevel level);
+
+/* Value calculations */
+LrgBigNumber *lp_portfolio_get_total_value        (LpPortfolio *self);
+LrgBigNumber *lp_portfolio_get_investment_value   (LpPortfolio *self);
+LrgBigNumber *lp_portfolio_calculate_income       (LpPortfolio *self, guint years);
+
+/* Slumber mechanics */
+LrgBigNumber *lp_portfolio_apply_slumber          (LpPortfolio *self, guint years);
+void          lp_portfolio_apply_event            (LpPortfolio *self, LpEvent *event);
+```
+
 ### Tests
 
 | Test File | Coverage |
@@ -382,10 +445,13 @@ Phase 1 establishes the core architecture with skeleton implementations. The gam
 | test-portfolio.c | Gold operations, LrgSaveable |
 | test-ledger.c | Discovery tracking |
 | test-game-data.c | GameData creation, child objects |
+| test-investment.c | All investment types, portfolio management |
 
 ### Deferred to Later Phases
 
-- Investment types (Phase 2)
+- Magical investments (Phase 2+)
+- Political investments (Phase 2+)
+- Dark investments (Phase 2+)
 - Agent types (Phase 3)
 - World simulation logic (Phase 4)
 - Event system (Phase 4)
