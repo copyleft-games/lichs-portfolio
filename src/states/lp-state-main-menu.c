@@ -8,6 +8,11 @@
 #include "../lp-log.h"
 
 #include "lp-state-main-menu.h"
+#include "lp-state-wake.h"
+#include "lp-state-settings.h"
+#include "../core/lp-application.h"
+#include <graylib.h>
+#include <libregnum.h>
 
 /* Menu options */
 typedef enum
@@ -50,53 +55,199 @@ lp_state_main_menu_exit (LrgGameState *state)
     lp_log_info ("Exiting main menu");
 }
 
-static void
-lp_state_main_menu_update (LrgGameState *state,
-                           gdouble       delta)
+static GrlWindow *
+get_grl_window (void)
 {
-    /*
-     * Main menu has minimal update logic.
-     * Could animate background effects, title, etc.
-     */
+    LpApplication *app = lp_application_get_default ();
+    LrgEngine *engine = lp_application_get_engine (app);
+    LrgWindow *lrg_window = lrg_engine_get_window (engine);
+
+    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
 }
 
 static void
 lp_state_main_menu_draw (LrgGameState *state)
 {
-    /*
-     * Phase 1 skeleton: Minimal drawing.
-     * Full UI will be implemented in later phases.
-     *
-     * TODO: Draw menu options with proper styling:
-     * - Title: "Lich's Portfolio"
-     * - New Game
-     * - Continue (grayed if no save)
-     * - Settings
-     * - Quit
-     */
+    LpStateMainMenu *self = LP_STATE_MAIN_MENU (state);
+    GrlWindow *window;
+    g_autoptr(GrlColor) title_color = NULL;
+    g_autoptr(GrlColor) selected_color = NULL;
+    g_autoptr(GrlColor) normal_color = NULL;
+    g_autoptr(GrlColor) disabled_color = NULL;
+    gint screen_w, screen_h;
+    gint center_x, center_y;
+    gint title_y, subtitle_y, menu_y, instructions_y;
+    gint y_spacing;
+    gint i;
 
-    /* Placeholder - actual rendering would use graylib */
-    lp_log_debug ("Drawing main menu (skeleton)");
+    const gchar *menu_items[] = {
+        "New Game",
+        "Continue",
+        "Settings",
+        "Quit"
+    };
+
+    /* Get current window dimensions */
+    window = get_grl_window ();
+    screen_w = grl_window_get_width (window);
+    screen_h = grl_window_get_height (window);
+    center_x = screen_w / 2;
+    center_y = screen_h / 2;
+
+    /* Calculate vertical positions based on screen height */
+    title_y = screen_h / 7;
+    subtitle_y = title_y + 60;
+    menu_y = center_y - 60;
+    y_spacing = 50;
+    instructions_y = screen_h - 120;
+
+    /* Colors for the dark lich theme */
+    title_color = grl_color_new (180, 150, 200, 255);     /* Purple-ish */
+    selected_color = grl_color_new (255, 215, 0, 255);    /* Gold */
+    normal_color = grl_color_new (200, 200, 200, 255);    /* Light gray */
+    disabled_color = grl_color_new (100, 100, 100, 255);  /* Dark gray */
+
+    /* Draw title */
+    grl_draw_text ("LICH'S PORTFOLIO", center_x - 200, title_y, 48, title_color);
+
+    /* Draw subtitle */
+    grl_draw_text ("An Immortal Investment Strategy", center_x - 180, subtitle_y, 20, normal_color);
+
+    /* Draw menu options */
+    for (i = 0; i < MENU_OPTION_COUNT; i++)
+    {
+        GrlColor *color;
+        gint x_offset;
+
+        /* Determine color based on state */
+        if (i == self->selected_option)
+        {
+            color = selected_color;
+            x_offset = -10;  /* Indent selected item */
+        }
+        else if (i == MENU_OPTION_CONTINUE && !self->has_save_file)
+        {
+            color = disabled_color;
+            x_offset = 0;
+        }
+        else
+        {
+            color = normal_color;
+            x_offset = 0;
+        }
+
+        /* Draw selection indicator for selected item */
+        if (i == self->selected_option)
+        {
+            grl_draw_text (">", center_x - 100 + x_offset, menu_y + (i * y_spacing), 24, color);
+        }
+
+        grl_draw_text (menu_items[i], center_x - 70 + x_offset, menu_y + (i * y_spacing), 24, color);
+    }
+
+    /* Draw instructions at bottom */
+    grl_draw_text ("Use UP/DOWN to navigate, ENTER to select",
+                   center_x - 200, instructions_y, 16, disabled_color);
+}
+
+static void
+lp_state_main_menu_update (LrgGameState *state,
+                           gdouble       delta)
+{
+    LpStateMainMenu *self = LP_STATE_MAIN_MENU (state);
+
+    (void)delta;
+
+    /* Handle input in update since we poll input each frame */
+
+    /* Navigate up */
+    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
+        grl_input_is_key_pressed (GRL_KEY_W))
+    {
+        self->selected_option--;
+        if (self->selected_option < 0)
+        {
+            self->selected_option = MENU_OPTION_COUNT - 1;
+        }
+    }
+
+    /* Navigate down */
+    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+        grl_input_is_key_pressed (GRL_KEY_S))
+    {
+        self->selected_option++;
+        if (self->selected_option >= MENU_OPTION_COUNT)
+        {
+            self->selected_option = 0;
+        }
+    }
+
+    /* Select option */
+    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
+        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    {
+        switch (self->selected_option)
+        {
+        case MENU_OPTION_NEW_GAME:
+            lp_log_info ("New Game selected");
+            {
+                LpApplication *app = lp_application_get_default ();
+                LrgGameStateManager *manager;
+
+                /* Start a new game */
+                lp_application_new_game (app);
+
+                /* Replace main menu with wake state */
+                manager = lp_application_get_state_manager (app);
+                lrg_game_state_manager_replace (manager,
+                    LRG_GAME_STATE (lp_state_wake_new ()));
+            }
+            break;
+
+        case MENU_OPTION_CONTINUE:
+            if (self->has_save_file)
+            {
+                lp_log_info ("Continue selected");
+                /* TODO: Load game and transition */
+            }
+            break;
+
+        case MENU_OPTION_SETTINGS:
+            lp_log_info ("Settings selected");
+            {
+                LpApplication *app = lp_application_get_default ();
+                LrgGameStateManager *manager;
+
+                manager = lp_application_get_state_manager (app);
+                lrg_game_state_manager_push (manager,
+                    LRG_GAME_STATE (lp_state_settings_new ()));
+            }
+            break;
+
+        case MENU_OPTION_QUIT:
+            lp_log_info ("Quit selected");
+            lp_application_quit (lp_application_get_default ());
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    /*
+     * Note: ESC does not quit from main menu.
+     * Use the Quit menu option instead.
+     * This prevents conflict with ESC-to-return from settings overlay.
+     */
 }
 
 static gboolean
 lp_state_main_menu_handle_input (LrgGameState *state,
                                  gpointer      event)
 {
-    LpStateMainMenu *self = LP_STATE_MAIN_MENU (state);
-
-    /*
-     * Phase 1 skeleton: Basic input handling placeholder.
-     * Full input handling with proper UI navigation in later phases.
-     *
-     * Expected inputs:
-     * - Up/Down: Navigate menu
-     * - Enter/Space: Select option
-     * - Escape: Quit (from menu)
-     */
-
-    /* Placeholder for now */
-    (void)self;
+    /* Input is handled in update() via polling */
+    (void)state;
+    (void)event;
 
     return FALSE;
 }

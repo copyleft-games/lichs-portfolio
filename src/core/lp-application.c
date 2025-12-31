@@ -12,6 +12,14 @@
 #include "../achievement/lp-achievement-manager.h"
 #include "../states/lp-state-main-menu.h"
 
+#include <libregnum.h>
+#include <raylib.h>
+
+/* Window configuration */
+#define WINDOW_WIDTH  1280
+#define WINDOW_HEIGHT 720
+#define WINDOW_TITLE  "Lich's Portfolio"
+
 /* Target frame time for 60 FPS */
 #define TARGET_FRAME_TIME (1.0 / 60.0)
 
@@ -20,6 +28,7 @@ struct _LpApplication
     GObject parent_instance;
 
     LrgEngine           *engine;
+    LrgGrlWindow        *window;
     LrgGameStateManager *state_manager;
     LpGameData          *game_data;
     LpAchievementManager *achievement_manager;
@@ -58,6 +67,26 @@ lp_application_startup (LpApplication  *self,
         g_propagate_error (error, g_steal_pointer (&local_error));
         return FALSE;
     }
+
+    /* Create the game window */
+    self->window = lrg_grl_window_new (WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
+    if (self->window == NULL)
+    {
+        g_set_error (error,
+                     G_IO_ERROR,
+                     G_IO_ERROR_FAILED,
+                     "Failed to create game window");
+        return FALSE;
+    }
+
+    /* Set the window on the engine */
+    lrg_engine_set_window (self->engine, LRG_WINDOW (self->window));
+
+    /*
+     * Disable raylib's default ESC-to-close behavior.
+     * We handle ESC ourselves in game states.
+     */
+    SetExitKey (KEY_NULL);
 
     /* Create game state manager */
     self->state_manager = lrg_game_state_manager_new ();
@@ -113,6 +142,9 @@ lp_application_shutdown (LpApplication *self)
         lrg_engine_shutdown (self->engine);
         self->engine = NULL;
     }
+
+    /* Clean up window */
+    g_clear_object (&self->window);
 
     self->initialized = FALSE;
 
@@ -180,6 +212,7 @@ static void
 lp_application_init (LpApplication *self)
 {
     self->engine = NULL;
+    self->window = NULL;
     self->state_manager = NULL;
     self->game_data = NULL;
     self->achievement_manager = NULL;
@@ -225,9 +258,9 @@ lp_application_run (LpApplication  *self,
                     gchar         **argv)
 {
     g_autoptr(GError) error = NULL;
-    GTimer           *frame_timer;
-    gdouble           delta;
-    gdouble           frame_time;
+    g_autoptr(GrlColor) clear_color = NULL;
+    LrgWindow *window;
+    gfloat delta;
 
     g_return_val_if_fail (LP_IS_APPLICATION (self), 1);
 
@@ -242,53 +275,44 @@ lp_application_run (LpApplication  *self,
         return 1;
     }
 
-    /* Create frame timer */
-    frame_timer = g_timer_new ();
+    window = LRG_WINDOW (self->window);
     self->running = TRUE;
+
+    /* Dark background color for the lich theme */
+    clear_color = grl_color_new (10, 10, 15, 255);
 
     lp_log_info ("Entering main loop");
 
     /*
      * Main game loop.
      *
-     * In Phase 1, we run a headless loop that processes state transitions.
-     * When graphics are added in later phases, this will integrate with
-     * the window's event loop.
-     *
-     * For now, we run a limited number of frames for testing, then exit.
-     * In production, this loop runs until quit is requested or window closes.
+     * The loop runs until the window is closed or quit is requested.
+     * Frame timing is handled by the window (vsync or target FPS).
      */
-    while (self->running)
+    while (self->running && !lrg_window_should_close (window))
     {
-        /* Calculate delta time */
-        delta = g_timer_elapsed (frame_timer, NULL);
-        g_timer_start (frame_timer);
+        /* Poll for input events */
+        lrg_window_poll_input (window);
+
+        /* Get delta time from the window */
+        delta = lrg_window_get_frame_time (window);
 
         /* Clamp delta to prevent spiral of death */
-        if (delta > 0.25)
+        if (delta > 0.25f)
         {
-            delta = 0.25;
+            delta = 0.25f;
         }
 
-        /* Process frame */
-        lp_application_frame (self, delta);
+        /* Begin frame */
+        lrg_window_begin_frame (window);
+        lrg_window_clear (window, clear_color);
 
-        /* Sleep to maintain target frame rate (when not vsync'd) */
-        frame_time = g_timer_elapsed (frame_timer, NULL);
-        if (frame_time < TARGET_FRAME_TIME)
-        {
-            g_usleep ((gulong)((TARGET_FRAME_TIME - frame_time) * 1000000.0));
-        }
+        /* Process frame (update + draw) */
+        lp_application_frame (self, (gdouble)delta);
 
-        /*
-         * Phase 1: Exit after one frame for testing.
-         * Remove this in Phase 2 when we have actual graphics/input.
-         */
-        lp_log_debug ("Frame complete (delta=%.4fs)", delta);
-        self->running = FALSE;
+        /* End frame */
+        lrg_window_end_frame (window);
     }
-
-    g_timer_destroy (frame_timer);
 
     lp_log_info ("Exiting main loop");
 

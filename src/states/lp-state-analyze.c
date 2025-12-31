@@ -8,6 +8,11 @@
 #include "../lp-log.h"
 
 #include "lp-state-analyze.h"
+#include "lp-state-main-menu.h"
+#include "../core/lp-application.h"
+#include "../core/lp-game-data.h"
+#include <graylib.h>
+#include <libregnum.h>
 
 struct _LpStateAnalyze
 {
@@ -38,22 +43,123 @@ static void
 lp_state_analyze_update (LrgGameState *state,
                          gdouble       delta)
 {
-    /* Update UI animations, tooltips, etc. */
+    (void)state;
+    (void)delta;
+
+    /* ESC to return to main menu */
+    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    {
+        LpApplication *app = lp_application_get_default ();
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Returning to main menu");
+
+        manager = lp_application_get_state_manager (app);
+        lrg_game_state_manager_replace (manager,
+            LRG_GAME_STATE (lp_state_main_menu_new ()));
+    }
+}
+
+static GrlWindow *
+get_grl_window (void)
+{
+    LpApplication *app = lp_application_get_default ();
+    LrgEngine *engine = lp_application_get_engine (app);
+    LrgWindow *lrg_window = lrg_engine_get_window (engine);
+
+    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
 }
 
 static void
 lp_state_analyze_draw (LrgGameState *state)
 {
-    /*
-     * Phase 1 skeleton: Placeholder drawing.
-     * Full UI will show:
-     * - World map with regions
-     * - Portfolio summary sidebar
-     * - Agent status panel
-     * - Available investments
-     * - Exposure meter
-     */
-    lp_log_debug ("Drawing analyze state (skeleton)");
+    LpApplication *app = lp_application_get_default ();
+    LpGameData *game_data = lp_application_get_game_data (app);
+    GrlWindow *window;
+    g_autoptr(GrlColor) title_color = NULL;
+    g_autoptr(GrlColor) text_color = NULL;
+    g_autoptr(GrlColor) dim_color = NULL;
+    g_autoptr(GrlColor) gold_color = NULL;
+    g_autoptr(GrlColor) panel_color = NULL;
+    guint64 year;
+    gchar year_str[64];
+    gint screen_w, screen_h;
+    gint center_x;
+    gint margin, header_h, main_area_top, main_area_h;
+    gint left_panel_w, right_panel_w, center_panel_x, center_panel_w;
+    gint bottom_panel_y, bottom_panel_h;
+
+    (void)state;
+
+    /* Get current window dimensions */
+    window = get_grl_window ();
+    screen_w = grl_window_get_width (window);
+    screen_h = grl_window_get_height (window);
+    center_x = screen_w / 2;
+
+    /* Calculate layout proportions */
+    margin = 20;
+    header_h = 100;
+    main_area_top = header_h + margin;
+    bottom_panel_h = screen_h / 5;
+    bottom_panel_y = screen_h - bottom_panel_h - margin;
+    main_area_h = bottom_panel_y - main_area_top - margin;
+
+    /* Panel widths: left and right are 23% each, center fills the rest */
+    left_panel_w = (screen_w * 23) / 100;
+    right_panel_w = (screen_w * 23) / 100;
+    center_panel_x = margin + left_panel_w + margin;
+    center_panel_w = screen_w - left_panel_w - right_panel_w - (margin * 4);
+
+    /* Colors */
+    title_color = grl_color_new (180, 150, 200, 255);
+    text_color = grl_color_new (200, 200, 200, 255);
+    dim_color = grl_color_new (100, 100, 100, 255);
+    gold_color = grl_color_new (255, 215, 0, 255);
+    panel_color = grl_color_new (30, 30, 40, 255);
+
+    /* Draw header */
+    grl_draw_text ("WORLD ANALYSIS", center_x - 140, 30, 32, title_color);
+
+    /* Get and display current year */
+    if (game_data != NULL)
+    {
+        year = lp_game_data_get_current_year (game_data);
+        g_snprintf (year_str, sizeof (year_str), "Year %lu of the Third Age", (gulong)year);
+    }
+    else
+    {
+        g_snprintf (year_str, sizeof (year_str), "Year 847 of the Third Age");
+    }
+    grl_draw_text (year_str, center_x - 120, 70, 18, text_color);
+
+    /* Portfolio panel (left side) */
+    grl_draw_rectangle (margin, main_area_top, left_panel_w, main_area_h, panel_color);
+    grl_draw_text ("Portfolio", margin + 15, main_area_top + 10, 24, title_color);
+    grl_draw_text ("Gold: 10,000 gp", margin + 15, main_area_top + 50, 18, gold_color);
+    grl_draw_text ("Investments: 0", margin + 15, main_area_top + 80, 16, text_color);
+    grl_draw_text ("Total Value: 10,000 gp", margin + 15, main_area_top + 105, 16, text_color);
+
+    /* World map placeholder (center) */
+    grl_draw_rectangle (center_panel_x, main_area_top, center_panel_w, main_area_h, panel_color);
+    grl_draw_text ("World Map", center_panel_x + center_panel_w / 2 - 60, main_area_top + 10, 24, title_color);
+    grl_draw_text ("(Kingdoms and regions will be displayed here)",
+                   center_panel_x + center_panel_w / 2 - 190, main_area_top + main_area_h / 2, 16, dim_color);
+
+    /* Agent panel (right side) */
+    grl_draw_rectangle (screen_w - right_panel_w - margin, main_area_top, right_panel_w, main_area_h, panel_color);
+    grl_draw_text ("Agents", screen_w - right_panel_w - margin + 15, main_area_top + 10, 24, title_color);
+    grl_draw_text ("No agents recruited", screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
+
+    /* Actions bar (bottom) */
+    grl_draw_rectangle (margin, bottom_panel_y, screen_w - (margin * 2), bottom_panel_h, panel_color);
+    grl_draw_text ("Actions", margin + 15, bottom_panel_y + 10, 20, title_color);
+    grl_draw_text ("[I] Investments    [A] Agents    [S] Enter Slumber    [ESC] Main Menu",
+                   margin + 15, bottom_panel_y + 50, 16, text_color);
+
+    /* Malachar hint */
+    grl_draw_text ("\"The mortal kingdoms await your careful analysis, my lord...\"",
+                   margin + 15, bottom_panel_y + bottom_panel_h - 30, 14, gold_color);
 }
 
 static gboolean

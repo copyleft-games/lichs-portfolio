@@ -8,6 +8,19 @@
 #include "../lp-log.h"
 
 #include "lp-state-settings.h"
+#include "../core/lp-application.h"
+#include <graylib.h>
+#include <libregnum.h>
+
+/* Resolution options */
+static const struct {
+    gint width;
+    gint height;
+} resolutions[] = {
+    { 1280, 720 },
+    { 1920, 1080 },
+    { 2560, 1440 }
+};
 
 /* Settings tabs */
 typedef enum
@@ -19,15 +32,106 @@ typedef enum
     SETTINGS_TAB_COUNT
 } SettingsTab;
 
+/* Number of options per tab */
+#define GRAPHICS_OPTIONS 3
+#define AUDIO_OPTIONS    3
+#define GAMEPLAY_OPTIONS 3
+#define CONTROLS_OPTIONS 0  /* Read-only */
+
 struct _LpStateSettings
 {
     LrgGameState parent_instance;
 
     SettingsTab current_tab;
     gint        selected_option;
+
+    /* Graphics settings */
+    gint  resolution_idx;      /* 0=1280x720, 1=1920x1080, 2=2560x1440 */
+    gboolean fullscreen;
+    gboolean vsync;
+
+    /* Audio settings */
+    gint  master_volume;       /* 0-100 */
+    gint  music_volume;        /* 0-100 */
+    gint  sfx_volume;          /* 0-100 */
+
+    /* Gameplay settings */
+    gboolean auto_save;
+    gboolean tutorials;
+    gint  difficulty;          /* 0=Easy, 1=Normal, 2=Hard */
 };
 
 G_DEFINE_TYPE (LpStateSettings, lp_state_settings, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Private Helpers
+ * ========================================================================== */
+
+static gint
+get_option_count (SettingsTab tab)
+{
+    switch (tab)
+    {
+    case SETTINGS_TAB_GRAPHICS:
+        return GRAPHICS_OPTIONS;
+    case SETTINGS_TAB_AUDIO:
+        return AUDIO_OPTIONS;
+    case SETTINGS_TAB_GAMEPLAY:
+        return GAMEPLAY_OPTIONS;
+    case SETTINGS_TAB_CONTROLS:
+        return CONTROLS_OPTIONS;
+    default:
+        return 0;
+    }
+}
+
+static GrlWindow *
+get_grl_window (void)
+{
+    LpApplication *app = lp_application_get_default ();
+    LrgEngine *engine = lp_application_get_engine (app);
+    LrgWindow *lrg_window = lrg_engine_get_window (engine);
+
+    /* The window is a LrgGrlWindow, get the underlying GrlWindow */
+    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
+}
+
+static void
+apply_resolution (LpStateSettings *self)
+{
+    GrlWindow *window;
+    gint width, height;
+
+    window = get_grl_window ();
+    if (window == NULL)
+        return;
+
+    width = resolutions[self->resolution_idx].width;
+    height = resolutions[self->resolution_idx].height;
+
+    lp_log_info ("Applying resolution: %dx%d", width, height);
+    grl_window_set_size (window, width, height);
+}
+
+static void
+apply_fullscreen (LpStateSettings *self)
+{
+    GrlWindow *window;
+    gboolean is_fullscreen;
+
+    window = get_grl_window ();
+    if (window == NULL)
+        return;
+
+    is_fullscreen = grl_window_is_fullscreen (window);
+
+    /* Only toggle if state differs */
+    if (is_fullscreen != self->fullscreen)
+    {
+        lp_log_info ("Toggling fullscreen: %s", self->fullscreen ? "On" : "Off");
+        grl_window_toggle_fullscreen (window);
+    }
+}
 
 /* ==========================================================================
  * LrgGameState Virtual Methods
@@ -54,34 +158,384 @@ static void
 lp_state_settings_update (LrgGameState *state,
                           gdouble       delta)
 {
-    /* Settings menu animation updates */
+    LpStateSettings *self = LP_STATE_SETTINGS (state);
+    gint option_count;
+
+    (void)delta;
+
+    option_count = get_option_count (self->current_tab);
+
+    /* Navigate tabs with TAB key */
+    if (grl_input_is_key_pressed (GRL_KEY_TAB))
+    {
+        self->current_tab++;
+        if (self->current_tab >= SETTINGS_TAB_COUNT)
+        {
+            self->current_tab = 0;
+        }
+        self->selected_option = 0;  /* Reset selection when changing tabs */
+    }
+
+    /* Navigate options with UP/DOWN */
+    if (option_count > 0)
+    {
+        if (grl_input_is_key_pressed (GRL_KEY_UP) ||
+            grl_input_is_key_pressed (GRL_KEY_W))
+        {
+            self->selected_option--;
+            if (self->selected_option < 0)
+            {
+                self->selected_option = option_count - 1;
+            }
+        }
+
+        if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+            grl_input_is_key_pressed (GRL_KEY_S))
+        {
+            self->selected_option++;
+            if (self->selected_option >= option_count)
+            {
+                self->selected_option = 0;
+            }
+        }
+    }
+
+    /* Change values with LEFT/RIGHT */
+    if (grl_input_is_key_pressed (GRL_KEY_LEFT) ||
+        grl_input_is_key_pressed (GRL_KEY_A))
+    {
+        switch (self->current_tab)
+        {
+        case SETTINGS_TAB_GRAPHICS:
+            if (self->selected_option == 0)  /* Resolution */
+            {
+                if (self->resolution_idx > 0)
+                {
+                    self->resolution_idx--;
+                    apply_resolution (self);
+                }
+            }
+            else if (self->selected_option == 1)  /* Fullscreen */
+            {
+                self->fullscreen = !self->fullscreen;
+                apply_fullscreen (self);
+            }
+            else if (self->selected_option == 2)  /* VSync */
+            {
+                self->vsync = !self->vsync;
+                /* TODO: Apply VSync setting */
+            }
+            break;
+
+        case SETTINGS_TAB_AUDIO:
+            if (self->selected_option == 0)  /* Master */
+            {
+                self->master_volume = MAX (0, self->master_volume - 10);
+            }
+            else if (self->selected_option == 1)  /* Music */
+            {
+                self->music_volume = MAX (0, self->music_volume - 10);
+            }
+            else if (self->selected_option == 2)  /* SFX */
+            {
+                self->sfx_volume = MAX (0, self->sfx_volume - 10);
+            }
+            break;
+
+        case SETTINGS_TAB_GAMEPLAY:
+            if (self->selected_option == 0)  /* Auto-Save */
+            {
+                self->auto_save = !self->auto_save;
+            }
+            else if (self->selected_option == 1)  /* Tutorials */
+            {
+                self->tutorials = !self->tutorials;
+            }
+            else if (self->selected_option == 2)  /* Difficulty */
+            {
+                if (self->difficulty > 0)
+                    self->difficulty--;
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if (grl_input_is_key_pressed (GRL_KEY_RIGHT) ||
+        grl_input_is_key_pressed (GRL_KEY_D))
+    {
+        switch (self->current_tab)
+        {
+        case SETTINGS_TAB_GRAPHICS:
+            if (self->selected_option == 0)  /* Resolution */
+            {
+                if (self->resolution_idx < 2)
+                {
+                    self->resolution_idx++;
+                    apply_resolution (self);
+                }
+            }
+            else if (self->selected_option == 1)  /* Fullscreen */
+            {
+                self->fullscreen = !self->fullscreen;
+                apply_fullscreen (self);
+            }
+            else if (self->selected_option == 2)  /* VSync */
+            {
+                self->vsync = !self->vsync;
+                /* TODO: Apply VSync setting */
+            }
+            break;
+
+        case SETTINGS_TAB_AUDIO:
+            if (self->selected_option == 0)  /* Master */
+            {
+                self->master_volume = MIN (100, self->master_volume + 10);
+                /* TODO: Apply master volume */
+            }
+            else if (self->selected_option == 1)  /* Music */
+            {
+                self->music_volume = MIN (100, self->music_volume + 10);
+                /* TODO: Apply music volume */
+            }
+            else if (self->selected_option == 2)  /* SFX */
+            {
+                self->sfx_volume = MIN (100, self->sfx_volume + 10);
+                /* TODO: Apply SFX volume */
+            }
+            break;
+
+        case SETTINGS_TAB_GAMEPLAY:
+            if (self->selected_option == 0)  /* Auto-Save */
+            {
+                self->auto_save = !self->auto_save;
+            }
+            else if (self->selected_option == 1)  /* Tutorials */
+            {
+                self->tutorials = !self->tutorials;
+            }
+            else if (self->selected_option == 2)  /* Difficulty */
+            {
+                if (self->difficulty < 2)
+                    self->difficulty++;
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    /* ESC to return to previous state */
+    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    {
+        LpApplication *app = lp_application_get_default ();
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Returning from settings");
+
+        manager = lp_application_get_state_manager (app);
+        lrg_game_state_manager_pop (manager);
+    }
+}
+
+static void
+draw_option (gint         base_x,
+             const gchar *label,
+             const gchar *value,
+             gint         y,
+             gboolean     selected,
+             GrlColor    *text_color,
+             GrlColor    *selected_color,
+             GrlColor    *value_color)
+{
+    GrlColor *label_c = selected ? selected_color : text_color;
+
+    if (selected)
+    {
+        grl_draw_text (">", base_x, y, 18, selected_color);
+    }
+
+    grl_draw_text (label, base_x + 20, y, 18, label_c);
+    grl_draw_text (value, base_x + 280, y, 18, value_color);
+
+    if (selected)
+    {
+        grl_draw_text ("<", base_x + 260, y, 18, selected_color);
+        grl_draw_text (">", base_x + 380, y, 18, selected_color);
+    }
 }
 
 static void
 lp_state_settings_draw (LrgGameState *state)
 {
-    /*
-     * Phase 1 skeleton: Placeholder drawing.
-     * Full UI will show:
-     * - Tab bar (Graphics, Audio, Gameplay, Controls)
-     * - Settings list for selected tab
-     * - Apply/Cancel buttons
-     */
-    lp_log_debug ("Drawing settings state (skeleton)");
+    LpStateSettings *self = LP_STATE_SETTINGS (state);
+    GrlWindow *window;
+    g_autoptr(GrlColor) bg_color = NULL;
+    g_autoptr(GrlColor) panel_color = NULL;
+    g_autoptr(GrlColor) title_color = NULL;
+    g_autoptr(GrlColor) text_color = NULL;
+    g_autoptr(GrlColor) dim_color = NULL;
+    g_autoptr(GrlColor) selected_color = NULL;
+    g_autoptr(GrlColor) value_color = NULL;
+    gint screen_w, screen_h;
+    gint center_x, center_y;
+    gint panel_x, panel_y, panel_w, panel_h;
+    gint content_x, content_y;
+    gint i;
+    gchar value_str[64];
+
+    const gchar *tab_names[] = {
+        "Graphics",
+        "Audio",
+        "Gameplay",
+        "Controls"
+    };
+
+    const gchar *resolution_strs[] = {
+        "1280x720",
+        "1920x1080",
+        "2560x1440"
+    };
+
+    const gchar *difficulties[] = {
+        "Easy",
+        "Normal",
+        "Hard"
+    };
+
+    /* Get current window dimensions */
+    window = get_grl_window ();
+    screen_w = grl_window_get_width (window);
+    screen_h = grl_window_get_height (window);
+    center_x = screen_w / 2;
+    center_y = screen_h / 2;
+
+    /* Calculate panel dimensions (80% of screen) */
+    panel_w = (screen_w * 80) / 100;
+    panel_h = (screen_h * 55) / 100;
+    panel_x = (screen_w - panel_w) / 2;
+    panel_y = center_y - (panel_h / 2) + 40;
+
+    /* Content starts inside the panel */
+    content_x = panel_x + 40;
+    content_y = panel_y + 40;
+
+    /* Colors */
+    bg_color = grl_color_new (20, 20, 30, 240);
+    panel_color = grl_color_new (30, 30, 45, 255);
+    title_color = grl_color_new (180, 150, 200, 255);
+    text_color = grl_color_new (200, 200, 200, 255);
+    dim_color = grl_color_new (100, 100, 100, 255);
+    selected_color = grl_color_new (255, 215, 0, 255);
+    value_color = grl_color_new (150, 200, 150, 255);
+
+    /* Draw semi-transparent background */
+    grl_draw_rectangle (0, 0, screen_w, screen_h, bg_color);
+
+    /* Draw title */
+    grl_draw_text ("SETTINGS", center_x - 80, panel_y - 60, 40, title_color);
+
+    /* Draw tabs */
+    for (i = 0; i < SETTINGS_TAB_COUNT; i++)
+    {
+        GrlColor *color;
+        gint tab_x;
+        gint tab_spacing;
+
+        tab_spacing = panel_w / SETTINGS_TAB_COUNT;
+        tab_x = panel_x + (i * tab_spacing) + 20;
+        color = (i == (gint)self->current_tab) ? selected_color : text_color;
+
+        grl_draw_text (tab_names[i], tab_x, panel_y - 20, 20, color);
+
+        if (i == (gint)self->current_tab)
+        {
+            /* Underline current tab */
+            grl_draw_rectangle (tab_x, panel_y - 0, 80, 2, selected_color);
+        }
+    }
+
+    /* Draw content panel */
+    grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
+
+    /* Draw content for selected tab */
+    switch (self->current_tab)
+    {
+    case SETTINGS_TAB_GRAPHICS:
+        draw_option (content_x, "Resolution:", resolution_strs[self->resolution_idx],
+                     content_y, self->selected_option == 0,
+                     text_color, selected_color, value_color);
+
+        draw_option (content_x, "Fullscreen:", self->fullscreen ? "On" : "Off",
+                     content_y + 40, self->selected_option == 1,
+                     text_color, selected_color, value_color);
+
+        draw_option (content_x, "VSync:", self->vsync ? "On" : "Off",
+                     content_y + 80, self->selected_option == 2,
+                     text_color, selected_color, value_color);
+        break;
+
+    case SETTINGS_TAB_AUDIO:
+        g_snprintf (value_str, sizeof (value_str), "%d%%", self->master_volume);
+        draw_option (content_x, "Master Volume:", value_str,
+                     content_y, self->selected_option == 0,
+                     text_color, selected_color, value_color);
+
+        g_snprintf (value_str, sizeof (value_str), "%d%%", self->music_volume);
+        draw_option (content_x, "Music Volume:", value_str,
+                     content_y + 40, self->selected_option == 1,
+                     text_color, selected_color, value_color);
+
+        g_snprintf (value_str, sizeof (value_str), "%d%%", self->sfx_volume);
+        draw_option (content_x, "SFX Volume:", value_str,
+                     content_y + 80, self->selected_option == 2,
+                     text_color, selected_color, value_color);
+        break;
+
+    case SETTINGS_TAB_GAMEPLAY:
+        draw_option (content_x, "Auto-Save:", self->auto_save ? "On" : "Off",
+                     content_y, self->selected_option == 0,
+                     text_color, selected_color, value_color);
+
+        draw_option (content_x, "Tutorials:", self->tutorials ? "On" : "Off",
+                     content_y + 40, self->selected_option == 1,
+                     text_color, selected_color, value_color);
+
+        draw_option (content_x, "Difficulty:", difficulties[self->difficulty],
+                     content_y + 80, self->selected_option == 2,
+                     text_color, selected_color, value_color);
+        break;
+
+    case SETTINGS_TAB_CONTROLS:
+        grl_draw_text ("Key Bindings (read-only):", content_x, content_y, 18, title_color);
+        grl_draw_text ("Navigate Menu:", content_x + 20, content_y + 40, 16, text_color);
+        grl_draw_text ("Arrow Keys / WASD", content_x + 260, content_y + 40, 16, dim_color);
+        grl_draw_text ("Select / Confirm:", content_x + 20, content_y + 70, 16, text_color);
+        grl_draw_text ("Enter / Space", content_x + 260, content_y + 70, 16, dim_color);
+        grl_draw_text ("Back / Cancel:", content_x + 20, content_y + 100, 16, text_color);
+        grl_draw_text ("Escape", content_x + 260, content_y + 100, 16, dim_color);
+        grl_draw_text ("Switch Tabs:", content_x + 20, content_y + 130, 16, text_color);
+        grl_draw_text ("Tab", content_x + 260, content_y + 130, 16, dim_color);
+        break;
+
+    default:
+        break;
+    }
+
+    /* Draw instructions at bottom */
+    grl_draw_text ("UP/DOWN: Select    LEFT/RIGHT: Change    TAB: Switch Tab    ESC: Return",
+                   center_x - 340, screen_h - 50, 16, dim_color);
 }
 
 static gboolean
 lp_state_settings_handle_input (LrgGameState *state,
                                 gpointer      event)
 {
-    /*
-     * Phase 1 skeleton: Basic input handling.
-     * - Tab/Shift+Tab: Switch tabs
-     * - Up/Down: Navigate options
-     * - Left/Right: Adjust values
-     * - Enter: Apply changes
-     * - Escape: Cancel and return
-     */
+    (void)state;
+    (void)event;
     return FALSE;
 }
 
@@ -111,6 +565,21 @@ lp_state_settings_init (LpStateSettings *self)
 
     self->current_tab = SETTINGS_TAB_GRAPHICS;
     self->selected_option = 0;
+
+    /* Default graphics settings */
+    self->resolution_idx = 0;  /* 1280x720 */
+    self->fullscreen = FALSE;
+    self->vsync = TRUE;
+
+    /* Default audio settings */
+    self->master_volume = 100;
+    self->music_volume = 80;
+    self->sfx_volume = 100;
+
+    /* Default gameplay settings */
+    self->auto_save = TRUE;
+    self->tutorials = TRUE;
+    self->difficulty = 1;  /* Normal */
 }
 
 /* ==========================================================================
