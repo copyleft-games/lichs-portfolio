@@ -146,6 +146,12 @@ LINKED_TESTS += test-achievement.c
 # Phase 9: Polish tests
 LINKED_TESTS += test-polish.c
 
+# Phase 10: Additional coverage tests
+LINKED_TESTS += test-synergy.c
+LINKED_TESTS += test-trait.c
+LINKED_TESTS += test-megaproject.c
+LINKED_TESTS += test-integration.c
+
 # =============================================================================
 # Test Binaries
 # =============================================================================

@@ -287,6 +287,34 @@ lp_game_data_saveable_init (LrgSaveableInterface *iface)
 | `LpRegion` | simulation/lp-region.h | Geographic region |
 | `LpEvent` | simulation/lp-event.h | Base event class |
 
+### Agent Traits
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpTrait` | agent/lp-trait.h | Bloodline trait (derivable) |
+
+### Megaprojects
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpMegaproject` | core/lp-megaproject.h | Multi-century projects |
+| `LpMegaprojectPhase` | core/lp-megaproject.h | Project phase (GBoxed) |
+
+### Narrative & Audio (Phase 9)
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpMalacharVoice` | narrative/lp-malachar-voice.h | Commentary system singleton |
+| `LpAmbientAudio` | audio/lp-ambient-audio.h | Procedural dark drone |
+| `LpUiSounds` | audio/lp-ui-sounds.h | UI sound effects singleton |
+| `LpStrings` | core/lp-strings.h | Localization helper singleton |
+
+### Tutorial
+
+| Type | File | Purpose |
+|------|------|---------|
+| `LpTutorialSequences` | tutorial/lp-tutorial-sequences.h | Tutorial registration |
+
 ### Game States
 
 | Type | File | Purpose |
@@ -295,6 +323,9 @@ lp_game_data_saveable_init (LrgSaveableInterface *iface)
 | `LpStateWake` | states/lp-state-wake.h | Wake report |
 | `LpStateAnalyze` | states/lp-state-analyze.h | World view |
 | `LpStateSlumber` | states/lp-state-slumber.h | Slumber config |
+| `LpStateSimulating` | states/lp-state-simulating.h | Time passage animation |
+| `LpStatePause` | states/lp-state-pause.h | Pause menu |
+| `LpStateSettings` | states/lp-state-settings.h | Settings screen |
 
 ## Enumerations
 
@@ -492,6 +523,31 @@ G_MESSAGES_DEBUG=LichsPortfolio ./build/debug/lichs-portfolio
 make DEBUG=1 ASAN=1
 ./build/debug/lichs-portfolio
 ```
+
+## Test Files
+
+| Test File | Coverage |
+|-----------|----------|
+| test-stub.c | Infrastructure verification |
+| test-exposure.c | Exposure manager functionality |
+| test-portfolio.c | Portfolio management |
+| test-ledger.c | Discovery tracking |
+| test-game-data.c | Game state container |
+| test-investment.c | Investment calculations |
+| test-agent.c | Agent lifecycle |
+| test-simulation.c | World simulation ticks |
+| test-progression.c | Prestige mechanics |
+| test-ui.c | UI widget behavior |
+| test-feedback.c | Visual feedback systems |
+| test-save-load.c | Save/load round-trips |
+| test-achievement.c | Achievement unlocking |
+| test-polish.c | Phase 9 systems (narrative, audio, tutorial) |
+| test-synergy.c | Synergy detection |
+| test-trait.c | Bloodline inheritance |
+| test-megaproject.c | Multi-century projects |
+| test-integration.c | Full game loop integration |
+
+Run tests with: `make test`
 
 ## Design Documents
 
