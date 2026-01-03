@@ -10,7 +10,7 @@
 #include "lp-state-main-menu.h"
 #include "lp-state-wake.h"
 #include "lp-state-settings.h"
-#include "../core/lp-application.h"
+#include "../core/lp-game.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -55,21 +55,11 @@ lp_state_main_menu_exit (LrgGameState *state)
     lp_log_info ("Exiting main menu");
 }
 
-static GrlWindow *
-get_grl_window (void)
-{
-    LpApplication *app = lp_application_get_default ();
-    LrgEngine *engine = lp_application_get_engine (app);
-    LrgWindow *lrg_window = lrg_engine_get_window (engine);
-
-    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
-}
-
 static void
 lp_state_main_menu_draw (LrgGameState *state)
 {
     LpStateMainMenu *self = LP_STATE_MAIN_MENU (state);
-    GrlWindow *window;
+    LpGame *game = lp_game_get_from_state (state);
     g_autoptr(GrlColor) title_color = NULL;
     g_autoptr(GrlColor) selected_color = NULL;
     g_autoptr(GrlColor) normal_color = NULL;
@@ -88,9 +78,8 @@ lp_state_main_menu_draw (LrgGameState *state)
     };
 
     /* Get current window dimensions */
-    window = get_grl_window ();
-    screen_w = grl_window_get_width (window);
-    screen_h = grl_window_get_height (window);
+    lrg_game_template_get_window_size (LRG_GAME_TEMPLATE (game),
+                                        &screen_w, &screen_h);
     center_x = screen_w / 2;
     center_y = screen_h / 2;
 
@@ -191,14 +180,15 @@ lp_state_main_menu_update (LrgGameState *state,
         case MENU_OPTION_NEW_GAME:
             lp_log_info ("New Game selected");
             {
-                LpApplication *app = lp_application_get_default ();
+                LpGame *game = lp_game_get_from_state (state);
                 LrgGameStateManager *manager;
 
                 /* Start a new game */
-                lp_application_new_game (app);
+                lp_game_new_game (game);
 
                 /* Replace main menu with wake state */
-                manager = lp_application_get_state_manager (app);
+                manager = lrg_game_template_get_state_manager (
+                    LRG_GAME_TEMPLATE (game));
                 lrg_game_state_manager_replace (manager,
                     LRG_GAME_STATE (lp_state_wake_new ()));
             }
@@ -215,10 +205,11 @@ lp_state_main_menu_update (LrgGameState *state,
         case MENU_OPTION_SETTINGS:
             lp_log_info ("Settings selected");
             {
-                LpApplication *app = lp_application_get_default ();
+                LpGame *game = lp_game_get_from_state (state);
                 LrgGameStateManager *manager;
 
-                manager = lp_application_get_state_manager (app);
+                manager = lrg_game_template_get_state_manager (
+                    LRG_GAME_TEMPLATE (game));
                 lrg_game_state_manager_push (manager,
                     LRG_GAME_STATE (lp_state_settings_new ()));
             }
@@ -226,7 +217,10 @@ lp_state_main_menu_update (LrgGameState *state,
 
         case MENU_OPTION_QUIT:
             lp_log_info ("Quit selected");
-            lp_application_quit (lp_application_get_default ());
+            {
+                LpGame *game = lp_game_get_from_state (state);
+                lrg_game_template_quit (LRG_GAME_TEMPLATE (game));
+            }
             break;
 
         default:

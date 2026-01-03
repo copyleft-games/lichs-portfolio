@@ -3,23 +3,20 @@
  * Copyright 2025 Zach Podbielniak
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Main entry point for the game. Creates the application singleton
- * and runs the main game loop.
+ * Main entry point for the game. Creates the game instance
+ * and runs the template-managed game loop.
  */
 
 #include <glib.h>
-#include "core/lp-application.h"
+#include "core/lp-game.h"
 
 int
 main (int    argc,
       char **argv)
 {
-    LpApplication *app;
-    gint           status;
+    g_autoptr(LpGame) game = NULL;
 
-    app = lp_application_get_default ();
-    status = lp_application_run (app, argc, argv);
-    g_object_unref (app);
+    game = lp_game_new ();
 
-    return status;
+    return lrg_game_template_run (LRG_GAME_TEMPLATE (game), argc, argv);
 }

@@ -9,7 +9,7 @@
 
 #include "lp-state-analyze.h"
 #include "lp-state-main-menu.h"
-#include "../core/lp-application.h"
+#include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
 #include <graylib.h>
 #include <libregnum.h>
@@ -49,33 +49,24 @@ lp_state_analyze_update (LrgGameState *state,
     /* ESC to return to main menu */
     if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
     {
-        LpApplication *app = lp_application_get_default ();
+        LpGame *game;
         LrgGameStateManager *manager;
 
         lp_log_info ("Returning to main menu");
 
-        manager = lp_application_get_state_manager (app);
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
         lrg_game_state_manager_replace (manager,
             LRG_GAME_STATE (lp_state_main_menu_new ()));
     }
 }
 
-static GrlWindow *
-get_grl_window (void)
-{
-    LpApplication *app = lp_application_get_default ();
-    LrgEngine *engine = lp_application_get_engine (app);
-    LrgWindow *lrg_window = lrg_engine_get_window (engine);
-
-    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
-}
-
 static void
 lp_state_analyze_draw (LrgGameState *state)
 {
-    LpApplication *app = lp_application_get_default ();
-    LpGameData *game_data = lp_application_get_game_data (app);
-    GrlWindow *window;
+    LpGame *game = lp_game_get_from_state (state);
+    LpGameData *game_data = lp_game_get_game_data (game);
     g_autoptr(GrlColor) title_color = NULL;
     g_autoptr(GrlColor) text_color = NULL;
     g_autoptr(GrlColor) dim_color = NULL;
@@ -89,12 +80,9 @@ lp_state_analyze_draw (LrgGameState *state)
     gint left_panel_w, right_panel_w, center_panel_x, center_panel_w;
     gint bottom_panel_y, bottom_panel_h;
 
-    (void)state;
-
     /* Get current window dimensions */
-    window = get_grl_window ();
-    screen_w = grl_window_get_width (window);
-    screen_h = grl_window_get_height (window);
+    lrg_game_template_get_window_size (LRG_GAME_TEMPLATE (game),
+                                        &screen_w, &screen_h);
     center_x = screen_w / 2;
 
     /* Calculate layout proportions */

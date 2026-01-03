@@ -19,7 +19,9 @@ SOURCES := main.c
 SOURCES += lp-enums.c
 
 # Core (Phase 1)
-SOURCES += core/lp-application.c
+SOURCES += core/lp-game.c
+SOURCES += core/lp-prestige.c
+# SOURCES += core/lp-application.c  # Replaced by lp-game.c
 SOURCES += core/lp-game-data.c
 SOURCES += core/lp-phylactery.c
 SOURCES += core/lp-exposure-manager.c
@@ -68,6 +70,7 @@ SOURCES += states/lp-state-slumber.c
 SOURCES += states/lp-state-simulating.c
 SOURCES += states/lp-state-pause.c
 SOURCES += states/lp-state-settings.c
+SOURCES += states/lp-state-welcome-back.c
 
 # UI (Phase 6)
 SOURCES += ui/lp-theme.c
@@ -138,15 +141,23 @@ $(OBJDIR)/src/%.o: %.c | $(OBJDIR)
 # =============================================================================
 
 # Main entry point
-$(OBJDIR)/src/main.o: main.c core/lp-application.h
+$(OBJDIR)/src/main.o: main.c core/lp-game.h
 
 # Enumerations
 $(OBJDIR)/src/lp-enums.o: lp-enums.c lp-enums.h
 
 # Core
-$(OBJDIR)/src/core/lp-application.o: core/lp-application.c core/lp-application.h \
-	core/lp-game-data.h achievement/lp-achievement-manager.h states/lp-state-main-menu.h \
-	lp-log.h lp-types.h
+$(OBJDIR)/src/core/lp-game.o: core/lp-game.c core/lp-game.h \
+	core/lp-game-data.h core/lp-prestige.h core/lp-phylactery.h \
+	investment/lp-portfolio.h investment/lp-investment.h \
+	achievement/lp-achievement-manager.h states/lp-state-main-menu.h \
+	states/lp-state-pause.h states/lp-state-settings.h \
+	tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
+$(OBJDIR)/src/core/lp-prestige.o: core/lp-prestige.c core/lp-prestige.h \
+	core/lp-phylactery.h investment/lp-portfolio.h lp-log.h lp-types.h
+# $(OBJDIR)/src/core/lp-application.o: core/lp-application.c core/lp-application.h \
+#	core/lp-game-data.h achievement/lp-achievement-manager.h states/lp-state-main-menu.h \
+#	lp-log.h lp-types.h  # Replaced by lp-game.c
 $(OBJDIR)/src/core/lp-game-data.o: core/lp-game-data.c core/lp-game-data.h \
 	investment/lp-portfolio.h agent/lp-agent-manager.h core/lp-phylactery.h \
 	core/lp-ledger.h simulation/lp-world-simulation.h lp-log.h lp-types.h
@@ -227,12 +238,15 @@ $(OBJDIR)/src/achievement/lp-achievement-manager.o: achievement/lp-achievement-m
 
 # States
 $(OBJDIR)/src/states/lp-state-main-menu.o: states/lp-state-main-menu.c \
-	states/lp-state-main-menu.h lp-log.h lp-types.h
+	states/lp-state-main-menu.h states/lp-state-wake.h states/lp-state-settings.h \
+	core/lp-game.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-wake.o: states/lp-state-wake.c \
-	states/lp-state-wake.h narrative/lp-malachar-voice.h \
+	states/lp-state-wake.h states/lp-state-analyze.h core/lp-game.h \
+	core/lp-game-data.h narrative/lp-malachar-voice.h \
 	tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-analyze.o: states/lp-state-analyze.c \
-	states/lp-state-analyze.h lp-log.h lp-types.h
+	states/lp-state-analyze.h states/lp-state-main-menu.h \
+	core/lp-game.h core/lp-game-data.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-decide.o: states/lp-state-decide.c \
 	states/lp-state-decide.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-slumber.o: states/lp-state-slumber.c \
@@ -242,7 +256,7 @@ $(OBJDIR)/src/states/lp-state-simulating.o: states/lp-state-simulating.c \
 $(OBJDIR)/src/states/lp-state-pause.o: states/lp-state-pause.c \
 	states/lp-state-pause.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-settings.o: states/lp-state-settings.c \
-	states/lp-state-settings.h lp-log.h lp-types.h
+	states/lp-state-settings.h core/lp-game.h lp-log.h lp-types.h
 
 # UI (Phase 6)
 $(OBJDIR)/src/ui/lp-theme.o: ui/lp-theme.c ui/lp-theme.h lp-log.h
@@ -306,8 +320,8 @@ $(OBJDIR)/src/audio/lp-ambient-audio.o: audio/lp-ambient-audio.c \
 $(OBJDIR)/src/audio/lp-ui-sounds.o: audio/lp-ui-sounds.c \
 	audio/lp-ui-sounds.h lp-log.h lp-types.h
 $(OBJDIR)/src/tutorial/lp-tutorial-sequences.o: tutorial/lp-tutorial-sequences.c \
-	tutorial/lp-tutorial-sequences.h core/lp-game-data.h investment/lp-portfolio.h \
-	lp-log.h lp-types.h
+	tutorial/lp-tutorial-sequences.h core/lp-game.h core/lp-game-data.h \
+	investment/lp-portfolio.h lp-log.h lp-types.h
 
 # =============================================================================
 # Directory Creation

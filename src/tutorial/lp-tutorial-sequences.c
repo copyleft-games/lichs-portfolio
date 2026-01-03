@@ -8,7 +8,7 @@
 #include "../lp-log.h"
 
 #include "lp-tutorial-sequences.h"
-#include "../core/lp-application.h"
+#include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
 #include "../investment/lp-portfolio.h"
 
@@ -18,6 +18,9 @@ struct _LpTutorialSequences
 
     /* Tutorial manager reference */
     LrgTutorialManager *manager;
+
+    /* Game reference for accessing game data */
+    LpGame             *game;
 
     /* Data directory */
     gchar              *data_dir;
@@ -288,6 +291,7 @@ static void
 lp_tutorial_sequences_init (LpTutorialSequences *self)
 {
     self->initialized = FALSE;
+    self->game = NULL;
 
     /* Determine data directory */
     if (g_file_test ("data/tutorials", G_FILE_TEST_IS_DIR))
@@ -322,6 +326,23 @@ lp_tutorial_sequences_get_default (void)
     }
 
     return default_tutorial_sequences;
+}
+
+/**
+ * lp_tutorial_sequences_set_game:
+ * @self: an #LpTutorialSequences
+ * @game: the game instance to use for accessing game data
+ *
+ * Sets the game reference used for condition checking.
+ * Must be called before using tutorials that need game data.
+ */
+void
+lp_tutorial_sequences_set_game (LpTutorialSequences *self,
+                                 LpGame              *game)
+{
+    g_return_if_fail (LP_IS_TUTORIAL_SEQUENCES (self));
+
+    self->game = game;
 }
 
 /* ==========================================================================
@@ -421,13 +442,14 @@ lp_tutorial_sequences_maybe_start_intro (LpTutorialSequences *self)
 
     g_return_if_fail (LP_IS_TUTORIAL_SEQUENCES (self));
     g_return_if_fail (self->manager != NULL);
+    g_return_if_fail (self->game != NULL);
 
     /* Check if already completed */
     if (lrg_tutorial_manager_is_completed (self->manager, LP_TUTORIAL_INTRO))
         return;
 
     /* Check if this is a new game (no years played) */
-    data = lp_application_get_game_data (lp_application_get_default ());
+    data = lp_game_get_game_data (self->game);
     if (data == NULL || lp_game_data_get_total_years_played (data) > 0)
         return;
 
@@ -496,12 +518,14 @@ gboolean
 lp_tutorial_sequences_check_condition (const gchar *condition_id,
                                         gpointer     user_data)
 {
+    LpTutorialSequences *self = LP_TUTORIAL_SEQUENCES (user_data);
     LpGameData *data;
     LpPortfolio *portfolio;
 
     g_return_val_if_fail (condition_id != NULL, FALSE);
+    g_return_val_if_fail (self != NULL && self->game != NULL, FALSE);
 
-    data = lp_application_get_game_data (lp_application_get_default ());
+    data = lp_game_get_game_data (self->game);
     if (data == NULL)
         return FALSE;
 

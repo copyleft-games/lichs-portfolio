@@ -40,6 +40,18 @@ G_DECLARE_FINAL_TYPE (LpTutorialSequences, lp_tutorial_sequences, LP, TUTORIAL_S
 LpTutorialSequences *
 lp_tutorial_sequences_get_default (void);
 
+/**
+ * lp_tutorial_sequences_set_game:
+ * @self: an #LpTutorialSequences
+ * @game: the game instance to use for accessing game data
+ *
+ * Sets the game reference used for condition checking.
+ * Must be called before using tutorials that need game data.
+ */
+void
+lp_tutorial_sequences_set_game (LpTutorialSequences *self,
+                                 LpGame              *game);
+
 /* ==========================================================================
  * Tutorial Control
  * ========================================================================== */

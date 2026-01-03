@@ -25,6 +25,8 @@ G_BEGIN_DECLS
  * Final types: only instance struct forward declared
  * ========================================================================== */
 
+typedef struct _LpGame                  LpGame;
+typedef struct _LpPrestige              LpPrestige;
 typedef struct _LpApplication           LpApplication;
 typedef struct _LpGameData              LpGameData;
 typedef struct _LpPhylactery            LpPhylactery;

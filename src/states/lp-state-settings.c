@@ -8,7 +8,7 @@
 #include "../lp-log.h"
 
 #include "lp-state-settings.h"
-#include "../core/lp-application.h"
+#include "../core/lp-game.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -85,52 +85,34 @@ get_option_count (SettingsTab tab)
     }
 }
 
-static GrlWindow *
-get_grl_window (void)
-{
-    LpApplication *app = lp_application_get_default ();
-    LrgEngine *engine = lp_application_get_engine (app);
-    LrgWindow *lrg_window = lrg_engine_get_window (engine);
-
-    /* The window is a LrgGrlWindow, get the underlying GrlWindow */
-    return lrg_grl_window_get_grl_window (LRG_GRL_WINDOW (lrg_window));
-}
-
 static void
 apply_resolution (LpStateSettings *self)
 {
-    GrlWindow *window;
     gint width, height;
-
-    window = get_grl_window ();
-    if (window == NULL)
-        return;
 
     width = resolutions[self->resolution_idx].width;
     height = resolutions[self->resolution_idx].height;
 
-    lp_log_info ("Applying resolution: %dx%d", width, height);
-    grl_window_set_size (window, width, height);
+    lp_log_info ("Resolution change requested: %dx%d (not implemented)", width, height);
+
+    /*
+     * TODO: Implement resolution changes via game template API.
+     * The template manages the window internally, so we need a template
+     * method like lrg_game_template_set_window_size() to change resolution.
+     */
 }
 
 static void
 apply_fullscreen (LpStateSettings *self)
 {
-    GrlWindow *window;
-    gboolean is_fullscreen;
+    lp_log_info ("Fullscreen toggle requested: %s (not implemented)",
+                 self->fullscreen ? "On" : "Off");
 
-    window = get_grl_window ();
-    if (window == NULL)
-        return;
-
-    is_fullscreen = grl_window_is_fullscreen (window);
-
-    /* Only toggle if state differs */
-    if (is_fullscreen != self->fullscreen)
-    {
-        lp_log_info ("Toggling fullscreen: %s", self->fullscreen ? "On" : "Off");
-        grl_window_toggle_fullscreen (window);
-    }
+    /*
+     * TODO: Implement fullscreen toggle via game template API.
+     * The template manages the window internally, so we need a template
+     * method like lrg_game_template_set_fullscreen() to toggle fullscreen.
+     */
 }
 
 /* ==========================================================================
@@ -331,12 +313,14 @@ lp_state_settings_update (LrgGameState *state,
     /* ESC to return to previous state */
     if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
     {
-        LpApplication *app = lp_application_get_default ();
+        LpGame *game;
         LrgGameStateManager *manager;
 
         lp_log_info ("Returning from settings");
 
-        manager = lp_application_get_state_manager (app);
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
         lrg_game_state_manager_pop (manager);
     }
 }
@@ -372,7 +356,7 @@ static void
 lp_state_settings_draw (LrgGameState *state)
 {
     LpStateSettings *self = LP_STATE_SETTINGS (state);
-    GrlWindow *window;
+    LpGame *game = lp_game_get_from_state (state);
     g_autoptr(GrlColor) bg_color = NULL;
     g_autoptr(GrlColor) panel_color = NULL;
     g_autoptr(GrlColor) title_color = NULL;
@@ -407,9 +391,8 @@ lp_state_settings_draw (LrgGameState *state)
     };
 
     /* Get current window dimensions */
-    window = get_grl_window ();
-    screen_w = grl_window_get_width (window);
-    screen_h = grl_window_get_height (window);
+    lrg_game_template_get_window_size (LRG_GAME_TEMPLATE (game),
+                                        &screen_w, &screen_h);
     center_x = screen_w / 2;
     center_y = screen_h / 2;
 
