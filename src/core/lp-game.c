@@ -41,11 +41,6 @@ struct _LpGame
 
     LpGameData           *game_data;
     LpAchievementManager *achievement_manager;
-
-    /* Offline progress tracking */
-    LrgBigNumber *offline_gold_earned;
-    gdouble       offline_seconds;
-    gboolean      show_offline_progress;
 };
 
 /*
@@ -121,39 +116,15 @@ lp_game_real_pre_startup (LrgGameTemplate *template)
 /*
  * post_startup:
  *
- * Called after initial state is pushed. Process any offline progress.
+ * Called after initial state is pushed.
+ * Offline progress is handled directly in on_offline_progress_calculated().
  */
 static void
 lp_game_real_post_startup (LrgGameTemplate *template)
 {
-    LpGame *self = LP_GAME (template);
+    (void)template;
 
     lp_log_info ("Post-startup complete");
-
-    /*
-     * Offline progress is processed automatically by the template
-     * via process_offline_progress() which calls our on_offline_progress_calculated.
-     * We just need to check if we should show a welcome back notification.
-     */
-    if (self->show_offline_progress && self->offline_gold_earned != NULL)
-    {
-        LrgGameStateManager *manager;
-        LpStateWelcomeBack *welcome_back;
-
-        lp_log_info ("Offline progress: %.2f gold earned over %.0f seconds",
-                     lrg_big_number_to_double (self->offline_gold_earned),
-                     self->offline_seconds);
-
-        /* Create and configure welcome back state */
-        welcome_back = lp_state_welcome_back_new ();
-        lp_state_welcome_back_set_offline_data (welcome_back,
-                                                 self->offline_seconds,
-                                                 self->offline_gold_earned);
-
-        /* Push as overlay on top of initial state */
-        manager = lrg_game_template_get_state_manager (template);
-        lrg_game_state_manager_push (manager, LRG_GAME_STATE (welcome_back));
-    }
 }
 
 /*
@@ -181,9 +152,6 @@ lp_game_real_shutdown (LrgGameTemplate *template)
      * Achievement manager is a singleton; don't clear it here.
      */
     self->achievement_manager = NULL;
-
-    /* Clear offline progress tracking */
-    g_clear_pointer (&self->offline_gold_earned, lrg_big_number_free);
 
     lp_log_info ("Shutdown complete");
 }
@@ -273,7 +241,7 @@ lp_game_real_create_prestige (LrgIdleTemplate *template)
 /*
  * on_offline_progress_calculated:
  *
- * Called when offline progress is calculated. Store for welcome back display.
+ * Called when offline progress is calculated. Apply gold and show welcome back.
  */
 static void
 lp_game_real_on_offline_progress_calculated (LrgIdleTemplate    *template,
@@ -282,6 +250,8 @@ lp_game_real_on_offline_progress_calculated (LrgIdleTemplate    *template,
 {
     LpGame *self = LP_GAME (template);
     LpPortfolio *portfolio;
+    LrgGameStateManager *manager;
+    LpStateWelcomeBack *welcome_back;
 
     /* Only process if we have game data */
     if (self->game_data == NULL)
@@ -303,11 +273,12 @@ lp_game_real_on_offline_progress_calculated (LrgIdleTemplate    *template,
     portfolio = lp_game_data_get_portfolio (self->game_data);
     lp_portfolio_add_gold (portfolio, progress);
 
-    /* Store for welcome back display */
-    g_clear_pointer (&self->offline_gold_earned, lrg_big_number_free);
-    self->offline_gold_earned = lrg_big_number_copy (progress);
-    self->offline_seconds = seconds_offline;
-    self->show_offline_progress = TRUE;
+    /* Push welcome-back state directly - no storage needed */
+    welcome_back = lp_state_welcome_back_new ();
+    lp_state_welcome_back_set_offline_data (welcome_back, seconds_offline, progress);
+
+    manager = lrg_game_template_get_state_manager (LRG_GAME_TEMPLATE (template));
+    lrg_game_state_manager_push (manager, LRG_GAME_STATE (welcome_back));
 }
 
 /*
@@ -448,7 +419,6 @@ lp_game_dispose (GObject *object)
     LpGame *self = LP_GAME (object);
 
     g_clear_object (&self->game_data);
-    g_clear_pointer (&self->offline_gold_earned, lrg_big_number_free);
 
     if (current_game_instance == self)
     {
@@ -490,9 +460,6 @@ lp_game_init (LpGame *self)
 {
     self->game_data = NULL;
     self->achievement_manager = NULL;
-    self->offline_gold_earned = NULL;
-    self->offline_seconds = 0.0;
-    self->show_offline_progress = FALSE;
 }
 
 /* ==========================================================================
@@ -746,66 +713,3 @@ lp_game_sync_generators (LpGame *self)
     lp_game_sync_generators_internal (self);
 }
 
-/**
- * lp_game_has_offline_progress:
- * @self: an #LpGame
- *
- * Checks if there's pending offline progress to show.
- *
- * Returns: %TRUE if offline progress should be displayed
- */
-gboolean
-lp_game_has_offline_progress (LpGame *self)
-{
-    g_return_val_if_fail (LP_IS_GAME (self), FALSE);
-
-    return self->show_offline_progress;
-}
-
-/**
- * lp_game_get_offline_gold_earned:
- * @self: an #LpGame
- *
- * Gets the gold earned while offline.
- *
- * Returns: (transfer none) (nullable): Offline gold amount
- */
-const LrgBigNumber *
-lp_game_get_offline_gold_earned (LpGame *self)
-{
-    g_return_val_if_fail (LP_IS_GAME (self), NULL);
-
-    return self->offline_gold_earned;
-}
-
-/**
- * lp_game_get_offline_seconds:
- * @self: an #LpGame
- *
- * Gets the number of seconds the player was offline.
- *
- * Returns: Seconds offline
- */
-gdouble
-lp_game_get_offline_seconds (LpGame *self)
-{
-    g_return_val_if_fail (LP_IS_GAME (self), 0.0);
-
-    return self->offline_seconds;
-}
-
-/**
- * lp_game_clear_offline_progress:
- * @self: an #LpGame
- *
- * Clears the offline progress flag.
- */
-void
-lp_game_clear_offline_progress (LpGame *self)
-{
-    g_return_if_fail (LP_IS_GAME (self));
-
-    self->show_offline_progress = FALSE;
-    g_clear_pointer (&self->offline_gold_earned, lrg_big_number_free);
-    self->offline_seconds = 0.0;
-}

@@ -180,48 +180,6 @@ lp_game_save_game (LpGame   *self,
 void
 lp_game_sync_generators (LpGame *self);
 
-/**
- * lp_game_has_offline_progress:
- * @self: an #LpGame
- *
- * Checks if there's pending offline progress to show.
- *
- * Returns: %TRUE if offline progress should be displayed
- */
-gboolean
-lp_game_has_offline_progress (LpGame *self);
-
-/**
- * lp_game_get_offline_gold_earned:
- * @self: an #LpGame
- *
- * Gets the gold earned while offline (for display).
- *
- * Returns: (transfer none) (nullable): Offline gold amount
- */
-const LrgBigNumber *
-lp_game_get_offline_gold_earned (LpGame *self);
-
-/**
- * lp_game_get_offline_seconds:
- * @self: an #LpGame
- *
- * Gets the number of seconds the player was offline.
- *
- * Returns: Seconds offline
- */
-gdouble
-lp_game_get_offline_seconds (LpGame *self);
-
-/**
- * lp_game_clear_offline_progress:
- * @self: an #LpGame
- *
- * Clears the offline progress flag (after showing welcome back).
- */
-void
-lp_game_clear_offline_progress (LpGame *self);
-
 G_END_DECLS
 
 #endif /* LP_GAME_H */

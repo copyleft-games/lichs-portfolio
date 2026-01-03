@@ -141,20 +141,9 @@ lp_state_welcome_back_enter (LrgGameState *state)
 static void
 lp_state_welcome_back_exit (LrgGameState *state)
 {
-    LpStateWelcomeBack *self = LP_STATE_WELCOME_BACK (state);
+    (void)state;
 
     lp_log_info ("Exiting welcome back state");
-
-    /* Clear offline progress flag in game */
-    {
-        LpGame *game = lp_game_get_from_state (state);
-        if (game != NULL)
-        {
-            lp_game_clear_offline_progress (game);
-        }
-    }
-
-    (void)self;
 }
 
 static void
