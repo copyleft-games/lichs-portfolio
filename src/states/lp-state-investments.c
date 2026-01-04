@@ -447,7 +447,7 @@ lp_state_investments_draw (LrgGameState *state)
     }
     else
     {
-        grl_draw_text ("Cost", panel_x + 580, panel_y + 65, 16, dim_color);
+        grl_draw_text ("Cost", panel_x + 450, panel_y + 65, 16, dim_color);
 
         /* Draw available investments */
         visible_count = MIN (NUM_AVAILABLE_INVESTMENTS - self->scroll_offset, MAX_VISIBLE_ITEMS);
@@ -483,11 +483,19 @@ lp_state_investments_draw (LrgGameState *state)
                            panel_x + 300, item_y, 16,
                            can_afford ? text_color : dim_color);
 
-            grl_draw_text (option->description, panel_x + 420, item_y, 14, dim_color);
-
             g_snprintf (str_buf, sizeof (str_buf), "%.0f gp", option->base_cost);
-            grl_draw_text (str_buf, panel_x + 580, item_y, 16,
+            grl_draw_text (str_buf, panel_x + 450, item_y, 16,
                            can_afford ? gold_color : dim_color);
+        }
+
+        /* Draw selected item description below the list */
+        if (self->selected_index >= 0 &&
+            self->selected_index < (gint)NUM_AVAILABLE_INVESTMENTS)
+        {
+            const InvestmentOption *selected = &available_investments[self->selected_index];
+            grl_draw_text (selected->description,
+                           panel_x + 20, list_y + (MAX_VISIBLE_ITEMS * item_h) + 20,
+                           16, dim_color);
         }
     }
 
