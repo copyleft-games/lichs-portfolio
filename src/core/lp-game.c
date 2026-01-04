@@ -76,6 +76,11 @@ lp_game_real_configure (LrgGameTemplate *template)
     /* Set window properties via parent class */
     lrg_game_template_set_title (template, WINDOW_TITLE);
 
+    /* Set virtual resolution to match window for 1:1 pixel mapping.
+     * This game uses fixed pixel positions for UI, not scalable layout. */
+    lrg_game_2d_template_set_virtual_resolution (LRG_GAME_2D_TEMPLATE (template),
+                                                  WINDOW_WIDTH, WINDOW_HEIGHT);
+
     /* Configure idle template settings */
     lrg_idle_2d_template_set_offline_efficiency (LRG_IDLE_2D_TEMPLATE (template),
                                                   OFFLINE_EFFICIENCY);

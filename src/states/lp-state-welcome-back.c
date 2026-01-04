@@ -195,9 +195,9 @@ lp_state_welcome_back_draw (LrgGameState *state)
     gchar time_str[64];
     gchar gold_str[64];
 
-    /* Get current window dimensions */
-    lrg_game_template_get_window_size (LRG_GAME_TEMPLATE (game),
-                                        &screen_w, &screen_h);
+    /* Get virtual resolution (render target size) for UI positioning */
+    screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
+    screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
     center_x = screen_w / 2;
     center_y = screen_h / 2;
 

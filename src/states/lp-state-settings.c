@@ -134,7 +134,11 @@ apply_resolution (LpStateSettings *self)
     height = resolutions[self->resolution_idx].height;
 
     game = lp_game_get_from_state (LRG_GAME_STATE (self));
+
+    /* Update both window size AND virtual resolution for 1:1 pixel mapping */
     lrg_game_template_set_window_size (LRG_GAME_TEMPLATE (game), width, height);
+    lrg_game_2d_template_set_virtual_resolution (LRG_GAME_2D_TEMPLATE (game),
+                                                  width, height);
 
     lp_log_info ("Resolution changed to: %dx%d", width, height);
 }
@@ -514,9 +518,9 @@ lp_state_settings_draw (LrgGameState *state)
         "Hard"
     };
 
-    /* Get current window dimensions */
-    lrg_game_template_get_window_size (LRG_GAME_TEMPLATE (game),
-                                        &screen_w, &screen_h);
+    /* Get virtual resolution (render target size) for UI positioning */
+    screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
+    screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
     center_x = screen_w / 2;
     center_y = screen_h / 2;
 
