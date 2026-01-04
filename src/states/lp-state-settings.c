@@ -9,6 +9,7 @@
 
 #include "lp-state-settings.h"
 #include "../core/lp-game.h"
+#include "../core/lp-gameplay-settings.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -64,8 +65,46 @@ struct _LpStateSettings
 G_DEFINE_TYPE (LpStateSettings, lp_state_settings, LRG_TYPE_GAME_STATE)
 
 /* ==========================================================================
+ * Settings Access Helpers
+ * ========================================================================== */
+
+static LrgGraphicsSettings *
+get_graphics_settings (void)
+{
+    LrgSettings *settings = lrg_settings_get_default ();
+    return LRG_GRAPHICS_SETTINGS (lrg_settings_get_group (settings, "graphics"));
+}
+
+static LrgAudioSettings *
+get_audio_settings (void)
+{
+    LrgSettings *settings = lrg_settings_get_default ();
+    return LRG_AUDIO_SETTINGS (lrg_settings_get_group (settings, "audio"));
+}
+
+static LpGameplaySettings *
+get_gameplay_settings (void)
+{
+    LrgSettings *settings = lrg_settings_get_default ();
+    return LP_GAMEPLAY_SETTINGS (lrg_settings_get_group (settings, "gameplay"));
+}
+
+/* ==========================================================================
  * Private Helpers
  * ========================================================================== */
+
+static gint
+resolution_to_index (gint width, gint height)
+{
+    gint i;
+
+    for (i = 0; i < 3; i++)
+    {
+        if (resolutions[i].width == width && resolutions[i].height == height)
+            return i;
+    }
+    return 0;  /* Default to 1280x720 */
+}
 
 static gint
 get_option_count (SettingsTab tab)
@@ -88,31 +127,33 @@ get_option_count (SettingsTab tab)
 static void
 apply_resolution (LpStateSettings *self)
 {
+    LpGame *game;
     gint width, height;
 
     width = resolutions[self->resolution_idx].width;
     height = resolutions[self->resolution_idx].height;
 
-    lp_log_info ("Resolution change requested: %dx%d (not implemented)", width, height);
+    game = lp_game_get_from_state (LRG_GAME_STATE (self));
+    lrg_game_template_set_window_size (LRG_GAME_TEMPLATE (game), width, height);
 
-    /*
-     * TODO: Implement resolution changes via game template API.
-     * The template manages the window internally, so we need a template
-     * method like lrg_game_template_set_window_size() to change resolution.
-     */
+    lp_log_info ("Resolution changed to: %dx%d", width, height);
 }
 
 static void
 apply_fullscreen (LpStateSettings *self)
 {
-    lp_log_info ("Fullscreen toggle requested: %s (not implemented)",
-                 self->fullscreen ? "On" : "Off");
+    LpGame *game;
+    gboolean is_full;
 
-    /*
-     * TODO: Implement fullscreen toggle via game template API.
-     * The template manages the window internally, so we need a template
-     * method like lrg_game_template_set_fullscreen() to toggle fullscreen.
-     */
+    game = lp_game_get_from_state (LRG_GAME_STATE (self));
+    is_full = lrg_game_template_is_fullscreen (LRG_GAME_TEMPLATE (game));
+
+    /* Only toggle if current state doesn't match desired state */
+    if (is_full != self->fullscreen)
+    {
+        lrg_game_template_toggle_fullscreen (LRG_GAME_TEMPLATE (game));
+        lp_log_info ("Fullscreen toggled: %s", self->fullscreen ? "On" : "Off");
+    }
 }
 
 /* ==========================================================================
@@ -123,11 +164,47 @@ static void
 lp_state_settings_enter (LrgGameState *state)
 {
     LpStateSettings *self = LP_STATE_SETTINGS (state);
+    LrgGraphicsSettings *graphics;
+    LrgAudioSettings *audio;
+    LpGameplaySettings *gameplay;
 
     lp_log_info ("Entering settings");
 
     self->current_tab = SETTINGS_TAB_GRAPHICS;
     self->selected_option = 0;
+
+    /* Load current values from settings groups */
+    graphics = get_graphics_settings ();
+    audio = get_audio_settings ();
+    gameplay = get_gameplay_settings ();
+
+    /* Graphics settings */
+    if (graphics != NULL)
+    {
+        gint width, height;
+
+        lrg_graphics_settings_get_resolution (graphics, &width, &height);
+        self->resolution_idx = resolution_to_index (width, height);
+        self->fullscreen = lrg_graphics_settings_get_fullscreen_mode (graphics);
+        self->vsync = lrg_graphics_settings_get_vsync (graphics);
+    }
+
+    /* Audio settings */
+    if (audio != NULL)
+    {
+        /* Convert 0.0-1.0 to 0-100 percentage */
+        self->master_volume = (gint)(lrg_audio_settings_get_master_volume (audio) * 100.0);
+        self->music_volume = (gint)(lrg_audio_settings_get_music_volume (audio) * 100.0);
+        self->sfx_volume = (gint)(lrg_audio_settings_get_sfx_volume (audio) * 100.0);
+    }
+
+    /* Gameplay settings */
+    if (gameplay != NULL)
+    {
+        self->auto_save = lp_gameplay_settings_get_autosave_enabled (gameplay);
+        /* tutorials maps to show_notifications, difficulty not stored yet */
+        self->tutorials = lp_gameplay_settings_get_show_notifications (gameplay);
+    }
 }
 
 static void
@@ -193,45 +270,70 @@ lp_state_settings_update (LrgGameState *state,
             {
                 if (self->resolution_idx > 0)
                 {
+                    LrgGraphicsSettings *gfx = get_graphics_settings ();
                     self->resolution_idx--;
+                    if (gfx != NULL)
+                        lrg_graphics_settings_set_resolution (gfx,
+                            resolutions[self->resolution_idx].width,
+                            resolutions[self->resolution_idx].height);
                     apply_resolution (self);
                 }
             }
             else if (self->selected_option == 1)  /* Fullscreen */
             {
+                LrgGraphicsSettings *gfx = get_graphics_settings ();
                 self->fullscreen = !self->fullscreen;
+                if (gfx != NULL)
+                    lrg_graphics_settings_set_fullscreen_mode (gfx, self->fullscreen);
                 apply_fullscreen (self);
             }
             else if (self->selected_option == 2)  /* VSync */
             {
+                LrgGraphicsSettings *gfx = get_graphics_settings ();
                 self->vsync = !self->vsync;
-                /* TODO: Apply VSync setting */
+                if (gfx != NULL)
+                    lrg_graphics_settings_set_vsync (gfx, self->vsync);
             }
             break;
 
         case SETTINGS_TAB_AUDIO:
             if (self->selected_option == 0)  /* Master */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->master_volume = MAX (0, self->master_volume - 10);
+                if (aud != NULL)
+                    lrg_audio_settings_set_master_volume (aud, self->master_volume / 100.0);
             }
             else if (self->selected_option == 1)  /* Music */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->music_volume = MAX (0, self->music_volume - 10);
+                if (aud != NULL)
+                    lrg_audio_settings_set_music_volume (aud, self->music_volume / 100.0);
             }
             else if (self->selected_option == 2)  /* SFX */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->sfx_volume = MAX (0, self->sfx_volume - 10);
+                if (aud != NULL)
+                    lrg_audio_settings_set_sfx_volume (aud, self->sfx_volume / 100.0);
             }
             break;
 
         case SETTINGS_TAB_GAMEPLAY:
             if (self->selected_option == 0)  /* Auto-Save */
             {
+                LpGameplaySettings *gp = get_gameplay_settings ();
                 self->auto_save = !self->auto_save;
+                if (gp != NULL)
+                    lp_gameplay_settings_set_autosave_enabled (gp, self->auto_save);
             }
             else if (self->selected_option == 1)  /* Tutorials */
             {
+                LpGameplaySettings *gp = get_gameplay_settings ();
                 self->tutorials = !self->tutorials;
+                if (gp != NULL)
+                    lp_gameplay_settings_set_show_notifications (gp, self->tutorials);
             }
             else if (self->selected_option == 2)  /* Difficulty */
             {
@@ -255,48 +357,70 @@ lp_state_settings_update (LrgGameState *state,
             {
                 if (self->resolution_idx < 2)
                 {
+                    LrgGraphicsSettings *gfx = get_graphics_settings ();
                     self->resolution_idx++;
+                    if (gfx != NULL)
+                        lrg_graphics_settings_set_resolution (gfx,
+                            resolutions[self->resolution_idx].width,
+                            resolutions[self->resolution_idx].height);
                     apply_resolution (self);
                 }
             }
             else if (self->selected_option == 1)  /* Fullscreen */
             {
+                LrgGraphicsSettings *gfx = get_graphics_settings ();
                 self->fullscreen = !self->fullscreen;
+                if (gfx != NULL)
+                    lrg_graphics_settings_set_fullscreen_mode (gfx, self->fullscreen);
                 apply_fullscreen (self);
             }
             else if (self->selected_option == 2)  /* VSync */
             {
+                LrgGraphicsSettings *gfx = get_graphics_settings ();
                 self->vsync = !self->vsync;
-                /* TODO: Apply VSync setting */
+                if (gfx != NULL)
+                    lrg_graphics_settings_set_vsync (gfx, self->vsync);
             }
             break;
 
         case SETTINGS_TAB_AUDIO:
             if (self->selected_option == 0)  /* Master */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->master_volume = MIN (100, self->master_volume + 10);
-                /* TODO: Apply master volume */
+                if (aud != NULL)
+                    lrg_audio_settings_set_master_volume (aud, self->master_volume / 100.0);
             }
             else if (self->selected_option == 1)  /* Music */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->music_volume = MIN (100, self->music_volume + 10);
-                /* TODO: Apply music volume */
+                if (aud != NULL)
+                    lrg_audio_settings_set_music_volume (aud, self->music_volume / 100.0);
             }
             else if (self->selected_option == 2)  /* SFX */
             {
+                LrgAudioSettings *aud = get_audio_settings ();
                 self->sfx_volume = MIN (100, self->sfx_volume + 10);
-                /* TODO: Apply SFX volume */
+                if (aud != NULL)
+                    lrg_audio_settings_set_sfx_volume (aud, self->sfx_volume / 100.0);
             }
             break;
 
         case SETTINGS_TAB_GAMEPLAY:
             if (self->selected_option == 0)  /* Auto-Save */
             {
+                LpGameplaySettings *gp = get_gameplay_settings ();
                 self->auto_save = !self->auto_save;
+                if (gp != NULL)
+                    lp_gameplay_settings_set_autosave_enabled (gp, self->auto_save);
             }
             else if (self->selected_option == 1)  /* Tutorials */
             {
+                LpGameplaySettings *gp = get_gameplay_settings ();
                 self->tutorials = !self->tutorials;
+                if (gp != NULL)
+                    lp_gameplay_settings_set_show_notifications (gp, self->tutorials);
             }
             else if (self->selected_option == 2)  /* Difficulty */
             {

@@ -1,4 +1,4 @@
-/* lp-game.c - Main Game (LrgIdleTemplate Subclass)
+/* lp-game.c - Main Game (LrgIdle2DTemplate Subclass)
  *
  * Copyright 2025 Zach Podbielniak
  * SPDX-License-Identifier: AGPL-3.0-or-later
@@ -38,7 +38,7 @@
 
 struct _LpGame
 {
-    LrgIdleTemplate parent_instance;
+    LrgIdle2DTemplate parent_instance;
 
     LpGameData           *game_data;
     LpAchievementManager *achievement_manager;
@@ -51,7 +51,7 @@ struct _LpGame
  */
 static LpGame *current_game_instance = NULL;
 
-G_DEFINE_TYPE (LpGame, lp_game, LRG_TYPE_IDLE_TEMPLATE)
+G_DEFINE_TYPE (LpGame, lp_game, LRG_TYPE_IDLE_2D_TEMPLATE)
 
 /* ==========================================================================
  * Forward Declarations
@@ -77,11 +77,11 @@ lp_game_real_configure (LrgGameTemplate *template)
     lrg_game_template_set_title (template, WINDOW_TITLE);
 
     /* Configure idle template settings */
-    lrg_idle_template_set_offline_efficiency (LRG_IDLE_TEMPLATE (template),
-                                               OFFLINE_EFFICIENCY);
-    lrg_idle_template_set_max_offline_hours (LRG_IDLE_TEMPLATE (template),
-                                              MAX_OFFLINE_HOURS);
-    lrg_idle_template_set_show_offline_popup (LRG_IDLE_TEMPLATE (template), FALSE);
+    lrg_idle_2d_template_set_offline_efficiency (LRG_IDLE_2D_TEMPLATE (template),
+                                                  OFFLINE_EFFICIENCY);
+    lrg_idle_2d_template_set_max_offline_hours (LRG_IDLE_2D_TEMPLATE (template),
+                                                 MAX_OFFLINE_HOURS);
+    lrg_idle_2d_template_set_show_offline_popup (LRG_IDLE_2D_TEMPLATE (template), FALSE);
 }
 
 /*
@@ -228,7 +228,7 @@ lp_game_real_create_settings_state (LrgGameTemplate *template)
  * Creates the idle calculator with investment generators.
  */
 static LrgIdleCalculator *
-lp_game_real_create_idle_calculator (LrgIdleTemplate *template)
+lp_game_real_create_idle_calculator (LrgIdle2DTemplate *template)
 {
     LrgIdleCalculator *calc;
 
@@ -248,7 +248,7 @@ lp_game_real_create_idle_calculator (LrgIdleTemplate *template)
  * Creates the custom prestige layer.
  */
 static LrgPrestige *
-lp_game_real_create_prestige (LrgIdleTemplate *template)
+lp_game_real_create_prestige (LrgIdle2DTemplate *template)
 {
     LpPrestige *prestige;
 
@@ -267,7 +267,7 @@ lp_game_real_create_prestige (LrgIdleTemplate *template)
  * Called when offline progress is calculated. Apply gold and show welcome back.
  */
 static void
-lp_game_real_on_offline_progress_calculated (LrgIdleTemplate    *template,
+lp_game_real_on_offline_progress_calculated (LrgIdle2DTemplate  *template,
                                              const LrgBigNumber *progress,
                                              gdouble             seconds_offline)
 {
@@ -310,7 +310,7 @@ lp_game_real_on_offline_progress_calculated (LrgIdleTemplate    *template,
  * Formats numbers with gold notation.
  */
 static gchar *
-lp_game_real_format_big_number (LrgIdleTemplate    *template,
+lp_game_real_format_big_number (LrgIdle2DTemplate  *template,
                                 const LrgBigNumber *number)
 {
     (void)template;
@@ -325,7 +325,7 @@ lp_game_real_format_big_number (LrgIdleTemplate    *template,
  * Returns offline efficiency, potentially modified by phylactery.
  */
 static gdouble
-lp_game_real_get_offline_efficiency (LrgIdleTemplate *template)
+lp_game_real_get_offline_efficiency (LrgIdle2DTemplate *template)
 {
     LpGame *self = LP_GAME (template);
     gdouble base_efficiency = OFFLINE_EFFICIENCY;
@@ -348,7 +348,7 @@ lp_game_real_get_offline_efficiency (LrgIdleTemplate *template)
  * Returns max offline hours, potentially modified by phylactery.
  */
 static gdouble
-lp_game_real_get_max_offline_hours (LrgIdleTemplate *template)
+lp_game_real_get_max_offline_hours (LrgIdle2DTemplate *template)
 {
     LpGame *self = LP_GAME (template);
     gdouble base_hours = MAX_OFFLINE_HOURS;
@@ -392,7 +392,7 @@ lp_game_sync_generators_internal (LpGame *self)
         return;
     }
 
-    calc = lrg_idle_template_get_idle_calculator (LRG_IDLE_TEMPLATE (self));
+    calc = lrg_idle_2d_template_get_idle_calculator (LRG_IDLE_2D_TEMPLATE (self));
     if (calc == NULL)
     {
         return;
@@ -425,8 +425,8 @@ lp_game_sync_generators_internal (LpGame *self)
         per_second = annual_income / SECONDS_PER_YEAR;
 
         /* Add or update generator */
-        lrg_idle_template_add_generator (LRG_IDLE_TEMPLATE (self), id, per_second);
-        lrg_idle_template_set_generator_count (LRG_IDLE_TEMPLATE (self), id, 1);
+        lrg_idle_2d_template_add_generator (LRG_IDLE_2D_TEMPLATE (self), id, per_second);
+        lrg_idle_2d_template_set_generator_count (LRG_IDLE_2D_TEMPLATE (self), id, 1);
     }
 
     lp_log_debug ("Synced %u investments to idle generators", investments->len);
@@ -456,7 +456,7 @@ lp_game_class_init (LpGameClass *klass)
 {
     GObjectClass         *object_class = G_OBJECT_CLASS (klass);
     LrgGameTemplateClass *template_class = LRG_GAME_TEMPLATE_CLASS (klass);
-    LrgIdleTemplateClass *idle_class = LRG_IDLE_TEMPLATE_CLASS (klass);
+    LrgIdle2DTemplateClass *idle_class = LRG_IDLE_2D_TEMPLATE_CLASS (klass);
 
     object_class->dispose = lp_game_dispose;
 
@@ -469,7 +469,7 @@ lp_game_class_init (LpGameClass *klass)
     template_class->create_pause_state = lp_game_real_create_pause_state;
     template_class->create_settings_state = lp_game_real_create_settings_state;
 
-    /* Override LrgIdleTemplate virtual methods */
+    /* Override LrgIdle2DTemplate virtual methods */
     idle_class->create_idle_calculator = lp_game_real_create_idle_calculator;
     idle_class->create_prestige = lp_game_real_create_prestige;
     idle_class->on_offline_progress_calculated = lp_game_real_on_offline_progress_calculated;
@@ -583,7 +583,7 @@ lp_game_get_prestige_layer (LpGame *self)
 {
     g_return_val_if_fail (LP_IS_GAME (self), NULL);
 
-    return LP_PRESTIGE (lrg_idle_template_get_prestige (LRG_IDLE_TEMPLATE (self)));
+    return LP_PRESTIGE (lrg_idle_2d_template_get_prestige (LRG_IDLE_2D_TEMPLATE (self)));
 }
 
 /**

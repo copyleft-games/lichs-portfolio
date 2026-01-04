@@ -1,11 +1,11 @@
-/* lp-game.h - Main Game (LrgIdleTemplate Subclass)
+/* lp-game.h - Main Game (LrgIdle2DTemplate Subclass)
  *
  * Copyright 2025 Zach Podbielniak
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
  * LpGame is the main game class for Lich's Portfolio. It extends
- * LrgIdleTemplate to gain automatic offline progress calculation,
- * prestige mechanics, and template-managed game loop.
+ * LrgIdle2DTemplate to gain automatic offline progress calculation,
+ * prestige mechanics, 2D viewport scaling, and template-managed game loop.
  *
  * ## Two Time Systems
  *
@@ -41,7 +41,7 @@ G_BEGIN_DECLS
 
 #define LP_TYPE_GAME (lp_game_get_type ())
 
-G_DECLARE_FINAL_TYPE (LpGame, lp_game, LP, GAME, LrgIdleTemplate)
+G_DECLARE_FINAL_TYPE (LpGame, lp_game, LP, GAME, LrgIdle2DTemplate)
 
 /* ==========================================================================
  * Construction
