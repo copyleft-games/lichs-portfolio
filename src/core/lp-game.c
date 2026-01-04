@@ -117,6 +117,40 @@ lp_game_real_pre_startup (LrgGameTemplate *template)
 
     lp_log_info ("Settings loaded");
 
+    /* Apply saved graphics settings to window */
+    {
+        LrgGraphicsSettings *gfx;
+        gint width = 0;
+        gint height = 0;
+
+        gfx = lrg_settings_get_graphics (settings);
+        lrg_graphics_settings_get_resolution (gfx, &width, &height);
+
+        if (width > 0 && height > 0)
+        {
+            lp_log_info ("Applying saved resolution: %dx%d", width, height);
+            lrg_game_template_set_window_size (template, width, height);
+            lrg_game_2d_template_set_virtual_resolution (LRG_GAME_2D_TEMPLATE (template),
+                                                          width, height);
+        }
+
+        /* Apply saved fullscreen setting */
+        {
+            gboolean saved_fullscreen;
+            gboolean current_fullscreen;
+
+            saved_fullscreen = lrg_graphics_settings_get_fullscreen_mode (gfx);
+            current_fullscreen = lrg_game_template_is_fullscreen (template);
+
+            if (saved_fullscreen != current_fullscreen)
+            {
+                lp_log_info ("Applying saved fullscreen: %s",
+                             saved_fullscreen ? "On" : "Off");
+                lrg_game_template_toggle_fullscreen (template);
+            }
+        }
+    }
+
     /* Create achievement manager singleton */
     self->achievement_manager = lp_achievement_manager_get_default ();
 
