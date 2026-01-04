@@ -9,6 +9,7 @@
 
 #include "lp-game.h"
 #include "lp-game-data.h"
+#include "lp-gameplay-settings.h"
 #include "lp-phylactery.h"
 #include "lp-prestige.h"
 #include "../achievement/lp-achievement-manager.h"
@@ -92,11 +93,24 @@ static void
 lp_game_real_pre_startup (LrgGameTemplate *template)
 {
     LpGame *self = LP_GAME (template);
+    LrgSettings *settings;
+    LpGameplaySettings *gameplay;
 
     lp_log_info ("Pre-startup: Initializing subsystems...");
 
     /* Disable raylib's ESC-to-close behavior */
     SetExitKey (KEY_NULL);
+
+    /*
+     * Initialize settings system.
+     * Register our custom gameplay settings group and load from disk.
+     */
+    settings = lrg_settings_get_default ();
+    gameplay = lp_gameplay_settings_new ();
+    lrg_settings_add_group (settings, LRG_SETTINGS_GROUP (gameplay));
+    lrg_settings_load_default_path (settings, "lichs-portfolio", NULL);
+
+    lp_log_info ("Settings loaded");
 
     /* Create achievement manager singleton */
     self->achievement_manager = lp_achievement_manager_get_default ();
@@ -136,8 +150,17 @@ static void
 lp_game_real_shutdown (LrgGameTemplate *template)
 {
     LpGame *self = LP_GAME (template);
+    LrgSettings *settings;
 
     lp_log_info ("Shutting down...");
+
+    /* Save settings if modified */
+    settings = lrg_settings_get_default ();
+    if (lrg_settings_is_dirty (settings))
+    {
+        lp_log_info ("Saving settings...");
+        lrg_settings_save_default_path (settings, "lichs-portfolio", NULL);
+    }
 
     /* Clear current instance */
     if (current_game_instance == self)

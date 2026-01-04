@@ -27,6 +27,7 @@ SOURCES += core/lp-phylactery.c
 SOURCES += core/lp-exposure-manager.c
 SOURCES += core/lp-synergy-manager.c
 SOURCES += core/lp-ledger.c
+SOURCES += core/lp-gameplay-settings.c
 
 # Progression (Phase 5)
 SOURCES += core/lp-prestige-manager.c
@@ -92,9 +93,8 @@ SOURCES += feedback/lp-synergy-effect.c
 SOURCES += feedback/lp-achievement-popup.c
 SOURCES += feedback/lp-slumber-visualization.c
 
-# Save/Settings (Phase 7)
+# Save (Phase 7)
 SOURCES += save/lp-save-manager.c
-SOURCES += save/lp-settings-manager.c
 
 # Steam Integration (Phase 8)
 SOURCES += steam/lp-steam-bridge.c
@@ -169,6 +169,8 @@ $(OBJDIR)/src/core/lp-synergy-manager.o: core/lp-synergy-manager.c \
 	core/lp-synergy-manager.h lp-log.h lp-types.h
 $(OBJDIR)/src/core/lp-ledger.o: core/lp-ledger.c core/lp-ledger.h \
 	lp-log.h lp-enums.h lp-types.h
+$(OBJDIR)/src/core/lp-gameplay-settings.o: core/lp-gameplay-settings.c \
+	core/lp-gameplay-settings.h lp-log.h lp-types.h
 
 # Progression (Phase 5)
 $(OBJDIR)/src/core/lp-prestige-manager.o: core/lp-prestige-manager.c \
@@ -300,11 +302,9 @@ $(OBJDIR)/src/feedback/lp-slumber-visualization.o: feedback/lp-slumber-visualiza
 	feedback/lp-slumber-visualization.h ui/lp-theme.h simulation/lp-event.h \
 	lp-log.h lp-types.h lp-enums.h
 
-# Save/Settings (Phase 7)
+# Save (Phase 7)
 $(OBJDIR)/src/save/lp-save-manager.o: save/lp-save-manager.c \
 	save/lp-save-manager.h core/lp-game-data.h lp-log.h lp-types.h
-$(OBJDIR)/src/save/lp-settings-manager.o: save/lp-settings-manager.c \
-	save/lp-settings-manager.h lp-log.h lp-types.h
 
 # Steam Integration (Phase 8)
 $(OBJDIR)/src/steam/lp-steam-bridge.o: steam/lp-steam-bridge.c \

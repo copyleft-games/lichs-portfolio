@@ -3,7 +3,7 @@
  * Copyright 2025 Zach Podbielniak
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Tests for save/load management and settings persistence.
+ * Tests for save/load management and gameplay settings.
  */
 
 #include <glib.h>
@@ -11,7 +11,7 @@
 #include <libregnum.h>
 
 #include "save/lp-save-manager.h"
-#include "save/lp-settings-manager.h"
+#include "core/lp-gameplay-settings.h"
 #include "core/lp-game-data.h"
 
 /* ==========================================================================
@@ -210,211 +210,166 @@ test_save_manager_load_from_file (SaveFixture   *fixture,
 }
 
 /* ==========================================================================
- * Settings Manager Tests
+ * Gameplay Settings Tests
  * ========================================================================== */
 
 static void
-test_settings_manager_singleton (void)
+test_gameplay_settings_creation (void)
 {
-    LpSettingsManager *manager1;
-    LpSettingsManager *manager2;
+    g_autoptr(LpGameplaySettings) settings = NULL;
 
-    manager1 = lp_settings_manager_get_default ();
-    g_assert_nonnull (manager1);
-    g_assert_true (LP_IS_SETTINGS_MANAGER (manager1));
-
-    manager2 = lp_settings_manager_get_default ();
-    g_assert_nonnull (manager2);
-
-    /* Should be the same instance */
-    g_assert_true (manager1 == manager2);
+    settings = lp_gameplay_settings_new ();
+    g_assert_nonnull (settings);
+    g_assert_true (LP_IS_GAMEPLAY_SETTINGS (settings));
+    g_assert_true (LRG_IS_SETTINGS_GROUP (settings));
 }
 
 static void
-test_settings_manager_graphics_defaults (void)
+test_gameplay_settings_group_name (void)
 {
-    LpSettingsManager *manager;
+    g_autoptr(LpGameplaySettings) settings = NULL;
+    const gchar *name;
 
-    manager = lp_settings_manager_get_default ();
+    settings = lp_gameplay_settings_new ();
+    name = lrg_settings_group_get_group_name (LRG_SETTINGS_GROUP (settings));
+
+    g_assert_cmpstr (name, ==, "gameplay");
+}
+
+static void
+test_gameplay_settings_defaults (void)
+{
+    g_autoptr(LpGameplaySettings) settings = NULL;
+
+    settings = lp_gameplay_settings_new ();
 
     /* Test default values */
-    g_assert_false (lp_settings_manager_get_fullscreen (manager));
-    g_assert_true (lp_settings_manager_get_vsync (manager));
-    g_assert_cmpint (lp_settings_manager_get_window_width (manager), ==, 1280);
-    g_assert_cmpint (lp_settings_manager_get_window_height (manager), ==, 720);
+    g_assert_true (lp_gameplay_settings_get_autosave_enabled (settings));
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (settings), ==, 5);
+    g_assert_true (lp_gameplay_settings_get_pause_on_events (settings));
+    g_assert_true (lp_gameplay_settings_get_show_notifications (settings));
 }
 
 static void
-test_settings_manager_graphics_setters (void)
+test_gameplay_settings_autosave (void)
 {
-    LpSettingsManager *manager;
+    g_autoptr(LpGameplaySettings) settings = NULL;
 
-    manager = lp_settings_manager_get_default ();
-
-    /* Test fullscreen */
-    lp_settings_manager_set_fullscreen (manager, TRUE);
-    g_assert_true (lp_settings_manager_get_fullscreen (manager));
-    lp_settings_manager_set_fullscreen (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_fullscreen (manager));
-
-    /* Test vsync */
-    lp_settings_manager_set_vsync (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_vsync (manager));
-    lp_settings_manager_set_vsync (manager, TRUE);
-    g_assert_true (lp_settings_manager_get_vsync (manager));
-
-    /* Test window size */
-    lp_settings_manager_set_window_size (manager, 1920, 1080);
-    g_assert_cmpint (lp_settings_manager_get_window_width (manager), ==, 1920);
-    g_assert_cmpint (lp_settings_manager_get_window_height (manager), ==, 1080);
-
-    /* Restore defaults */
-    lp_settings_manager_reset_to_defaults (manager);
-}
-
-static void
-test_settings_manager_audio_defaults (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
-    lp_settings_manager_reset_to_defaults (manager);
-
-    /* Test default values (0.8 master, 0.7 music, 1.0 sfx) */
-    g_assert_cmpfloat (lp_settings_manager_get_master_volume (manager), ==, 0.8f);
-    g_assert_cmpfloat (lp_settings_manager_get_music_volume (manager), ==, 0.7f);
-    g_assert_cmpfloat (lp_settings_manager_get_sfx_volume (manager), ==, 1.0f);
-    g_assert_false (lp_settings_manager_get_muted (manager));
-}
-
-static void
-test_settings_manager_audio_setters (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
-
-    /* Test master volume */
-    lp_settings_manager_set_master_volume (manager, 0.5f);
-    g_assert_cmpfloat (lp_settings_manager_get_master_volume (manager), ==, 0.5f);
-
-    /* Test music volume */
-    lp_settings_manager_set_music_volume (manager, 0.3f);
-    g_assert_cmpfloat (lp_settings_manager_get_music_volume (manager), ==, 0.3f);
-
-    /* Test sfx volume */
-    lp_settings_manager_set_sfx_volume (manager, 0.9f);
-    g_assert_cmpfloat (lp_settings_manager_get_sfx_volume (manager), ==, 0.9f);
-
-    /* Test mute */
-    lp_settings_manager_set_muted (manager, TRUE);
-    g_assert_true (lp_settings_manager_get_muted (manager));
-    lp_settings_manager_set_muted (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_muted (manager));
-
-    /* Restore defaults */
-    lp_settings_manager_reset_to_defaults (manager);
-}
-
-static void
-test_settings_manager_gameplay_defaults (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
-    lp_settings_manager_reset_to_defaults (manager);
-
-    /* Test default values */
-    g_assert_true (lp_settings_manager_get_autosave_enabled (manager));
-    g_assert_cmpuint (lp_settings_manager_get_autosave_interval (manager), ==, 5);
-    g_assert_true (lp_settings_manager_get_pause_on_events (manager));
-    g_assert_true (lp_settings_manager_get_show_notifications (manager));
-}
-
-static void
-test_settings_manager_gameplay_setters (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
+    settings = lp_gameplay_settings_new ();
 
     /* Test autosave enabled */
-    lp_settings_manager_set_autosave_enabled (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_autosave_enabled (manager));
-    lp_settings_manager_set_autosave_enabled (manager, TRUE);
-    g_assert_true (lp_settings_manager_get_autosave_enabled (manager));
+    lp_gameplay_settings_set_autosave_enabled (settings, FALSE);
+    g_assert_false (lp_gameplay_settings_get_autosave_enabled (settings));
+    lp_gameplay_settings_set_autosave_enabled (settings, TRUE);
+    g_assert_true (lp_gameplay_settings_get_autosave_enabled (settings));
 
     /* Test autosave interval */
-    lp_settings_manager_set_autosave_interval (manager, 10);
-    g_assert_cmpuint (lp_settings_manager_get_autosave_interval (manager), ==, 10);
+    lp_gameplay_settings_set_autosave_interval (settings, 10);
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (settings), ==, 10);
+
+    /* Test interval clamping (min 1, max 60) */
+    lp_gameplay_settings_set_autosave_interval (settings, 0);
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (settings), ==, 1);
+
+    lp_gameplay_settings_set_autosave_interval (settings, 100);
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (settings), ==, 60);
+}
+
+static void
+test_gameplay_settings_events (void)
+{
+    g_autoptr(LpGameplaySettings) settings = NULL;
+
+    settings = lp_gameplay_settings_new ();
 
     /* Test pause on events */
-    lp_settings_manager_set_pause_on_events (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_pause_on_events (manager));
+    lp_gameplay_settings_set_pause_on_events (settings, FALSE);
+    g_assert_false (lp_gameplay_settings_get_pause_on_events (settings));
+    lp_gameplay_settings_set_pause_on_events (settings, TRUE);
+    g_assert_true (lp_gameplay_settings_get_pause_on_events (settings));
 
     /* Test show notifications */
-    lp_settings_manager_set_show_notifications (manager, FALSE);
-    g_assert_false (lp_settings_manager_get_show_notifications (manager));
-
-    /* Restore defaults */
-    lp_settings_manager_reset_to_defaults (manager);
+    lp_gameplay_settings_set_show_notifications (settings, FALSE);
+    g_assert_false (lp_gameplay_settings_get_show_notifications (settings));
+    lp_gameplay_settings_set_show_notifications (settings, TRUE);
+    g_assert_true (lp_gameplay_settings_get_show_notifications (settings));
 }
 
 static void
-test_settings_manager_accessibility_defaults (void)
+test_gameplay_settings_reset (void)
 {
-    LpSettingsManager *manager;
+    g_autoptr(LpGameplaySettings) settings = NULL;
 
-    manager = lp_settings_manager_get_default ();
-    lp_settings_manager_reset_to_defaults (manager);
+    settings = lp_gameplay_settings_new ();
 
-    /* Test default values */
-    g_assert_cmpfloat (lp_settings_manager_get_ui_scale (manager), ==, 1.0f);
-}
-
-static void
-test_settings_manager_accessibility_setters (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
-
-    /* Test UI scale */
-    lp_settings_manager_set_ui_scale (manager, 1.5f);
-    g_assert_cmpfloat (lp_settings_manager_get_ui_scale (manager), ==, 1.5f);
-
-    /* Test bounds clamping (min 0.75, max 2.0) */
-    lp_settings_manager_set_ui_scale (manager, 0.5f);
-    g_assert_cmpfloat (lp_settings_manager_get_ui_scale (manager), ==, 0.75f);
-
-    lp_settings_manager_set_ui_scale (manager, 3.0f);
-    g_assert_cmpfloat (lp_settings_manager_get_ui_scale (manager), ==, 2.0f);
-
-    /* Restore defaults */
-    lp_settings_manager_reset_to_defaults (manager);
-}
-
-static void
-test_settings_manager_reset (void)
-{
-    LpSettingsManager *manager;
-
-    manager = lp_settings_manager_get_default ();
-
-    /* Change some settings */
-    lp_settings_manager_set_fullscreen (manager, TRUE);
-    lp_settings_manager_set_master_volume (manager, 0.5f);
-    lp_settings_manager_set_autosave_interval (manager, 15);
-    lp_settings_manager_set_ui_scale (manager, 1.5f);
+    /* Change all settings */
+    lp_gameplay_settings_set_autosave_enabled (settings, FALSE);
+    lp_gameplay_settings_set_autosave_interval (settings, 30);
+    lp_gameplay_settings_set_pause_on_events (settings, FALSE);
+    lp_gameplay_settings_set_show_notifications (settings, FALSE);
 
     /* Reset to defaults */
-    lp_settings_manager_reset_to_defaults (manager);
+    lrg_settings_group_reset (LRG_SETTINGS_GROUP (settings));
 
     /* Verify all are back to defaults */
-    g_assert_false (lp_settings_manager_get_fullscreen (manager));
-    g_assert_cmpfloat (lp_settings_manager_get_master_volume (manager), ==, 0.8f);
-    g_assert_cmpuint (lp_settings_manager_get_autosave_interval (manager), ==, 5);
-    g_assert_cmpfloat (lp_settings_manager_get_ui_scale (manager), ==, 1.0f);
+    g_assert_true (lp_gameplay_settings_get_autosave_enabled (settings));
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (settings), ==, 5);
+    g_assert_true (lp_gameplay_settings_get_pause_on_events (settings));
+    g_assert_true (lp_gameplay_settings_get_show_notifications (settings));
+}
+
+static void
+test_gameplay_settings_serialization (void)
+{
+    g_autoptr(LpGameplaySettings) settings = NULL;
+    g_autoptr(LpGameplaySettings) loaded = NULL;
+    g_autoptr(GVariant) data = NULL;
+    g_autoptr(GError) error = NULL;
+    gboolean result;
+
+    settings = lp_gameplay_settings_new ();
+
+    /* Change settings from defaults */
+    lp_gameplay_settings_set_autosave_enabled (settings, FALSE);
+    lp_gameplay_settings_set_autosave_interval (settings, 15);
+    lp_gameplay_settings_set_pause_on_events (settings, FALSE);
+    lp_gameplay_settings_set_show_notifications (settings, TRUE);
+
+    /* Serialize */
+    data = lrg_settings_group_serialize (LRG_SETTINGS_GROUP (settings), &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (data);
+
+    /* Create new settings and deserialize */
+    loaded = lp_gameplay_settings_new ();
+    result = lrg_settings_group_deserialize (LRG_SETTINGS_GROUP (loaded), data, &error);
+    g_assert_true (result);
+    g_assert_no_error (error);
+
+    /* Verify values match */
+    g_assert_false (lp_gameplay_settings_get_autosave_enabled (loaded));
+    g_assert_cmpuint (lp_gameplay_settings_get_autosave_interval (loaded), ==, 15);
+    g_assert_false (lp_gameplay_settings_get_pause_on_events (loaded));
+    g_assert_true (lp_gameplay_settings_get_show_notifications (loaded));
+}
+
+static void
+test_gameplay_settings_dirty_tracking (void)
+{
+    g_autoptr(LpGameplaySettings) settings = NULL;
+
+    settings = lp_gameplay_settings_new ();
+
+    /* Initially not dirty */
+    g_assert_false (lrg_settings_group_is_dirty (LRG_SETTINGS_GROUP (settings)));
+
+    /* Change a setting - should become dirty */
+    lp_gameplay_settings_set_autosave_interval (settings, 10);
+    g_assert_true (lrg_settings_group_is_dirty (LRG_SETTINGS_GROUP (settings)));
+
+    /* mark_clean clears dirty flag (called by LrgSettings after save) */
+    lrg_settings_group_mark_clean (LRG_SETTINGS_GROUP (settings));
+    g_assert_false (lrg_settings_group_is_dirty (LRG_SETTINGS_GROUP (settings)));
 }
 
 /* ==========================================================================
@@ -447,17 +402,15 @@ main (int    argc,
                 test_save_manager_load_from_file,
                 save_fixture_tear_down);
 
-    /* Settings manager tests */
-    g_test_add_func ("/settings/manager/singleton", test_settings_manager_singleton);
-    g_test_add_func ("/settings/graphics/defaults", test_settings_manager_graphics_defaults);
-    g_test_add_func ("/settings/graphics/setters", test_settings_manager_graphics_setters);
-    g_test_add_func ("/settings/audio/defaults", test_settings_manager_audio_defaults);
-    g_test_add_func ("/settings/audio/setters", test_settings_manager_audio_setters);
-    g_test_add_func ("/settings/gameplay/defaults", test_settings_manager_gameplay_defaults);
-    g_test_add_func ("/settings/gameplay/setters", test_settings_manager_gameplay_setters);
-    g_test_add_func ("/settings/accessibility/defaults", test_settings_manager_accessibility_defaults);
-    g_test_add_func ("/settings/accessibility/setters", test_settings_manager_accessibility_setters);
-    g_test_add_func ("/settings/manager/reset", test_settings_manager_reset);
+    /* Gameplay settings tests */
+    g_test_add_func ("/settings/gameplay/creation", test_gameplay_settings_creation);
+    g_test_add_func ("/settings/gameplay/group-name", test_gameplay_settings_group_name);
+    g_test_add_func ("/settings/gameplay/defaults", test_gameplay_settings_defaults);
+    g_test_add_func ("/settings/gameplay/autosave", test_gameplay_settings_autosave);
+    g_test_add_func ("/settings/gameplay/events", test_gameplay_settings_events);
+    g_test_add_func ("/settings/gameplay/reset", test_gameplay_settings_reset);
+    g_test_add_func ("/settings/gameplay/serialization", test_gameplay_settings_serialization);
+    g_test_add_func ("/settings/gameplay/dirty-tracking", test_gameplay_settings_dirty_tracking);
 
     return g_test_run ();
 }

@@ -30,7 +30,8 @@ TEST_LIBS += $(PLATFORM_LIBS)
 
 # Source objects to link against (for tests)
 GAME_OBJECTS := $(OBJDIR)/src/lp-enums.o
-GAME_OBJECTS += $(OBJDIR)/src/core/lp-application.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-game.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-prestige.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-exposure-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-synergy-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-ledger.o
@@ -82,14 +83,14 @@ GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-synergy-effect.o
 GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-achievement-popup.o
 GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
 
-# Phase 7: Save/Settings
+# Phase 7: Save
 GAME_OBJECTS += $(OBJDIR)/src/save/lp-save-manager.o
-GAME_OBJECTS += $(OBJDIR)/src/save/lp-settings-manager.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-gameplay-settings.o
 
 # Phase 8: Steam Integration
 GAME_OBJECTS += $(OBJDIR)/src/steam/lp-steam-bridge.o
 
-# States (required by lp-application)
+# States (required by lp-game)
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-main-menu.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-wake.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-analyze.o
@@ -98,6 +99,7 @@ GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-slumber.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-simulating.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-pause.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-settings.o
+GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-welcome-back.o
 
 # Phase 9: Polish and Content
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-strings.o

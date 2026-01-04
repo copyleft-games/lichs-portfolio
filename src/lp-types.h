@@ -36,6 +36,7 @@ typedef struct _LpSynergy               LpSynergy;
 typedef struct _LpLedger                LpLedger;
 typedef struct _LpMegaproject           LpMegaproject;
 typedef struct _LpStrings               LpStrings;
+typedef struct _LpGameplaySettings      LpGameplaySettings;
 
 /* Derivable types: both instance and class */
 typedef struct _LpPrestigeManager       LpPrestigeManager;
@@ -155,7 +156,6 @@ typedef struct _LpAchievementManager    LpAchievementManager;
  * ========================================================================== */
 
 typedef struct _LpSaveManager           LpSaveManager;
-typedef struct _LpSettingsManager       LpSettingsManager;
 
 /* ==========================================================================
  * Steam Types (src/steam/)
