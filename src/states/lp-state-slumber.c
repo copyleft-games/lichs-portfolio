@@ -65,16 +65,17 @@ lp_state_slumber_update (LrgGameState *state,
 
     (void)delta;
 
-    /* Up to increase years */
+    /* Up to increase years (including vim keys) */
     if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_W))
+        grl_input_is_key_pressed (GRL_KEY_K))
     {
         if (self->slumber_years < MAX_SLUMBER_YEARS)
             self->slumber_years += 10;
     }
 
-    /* Down to decrease years */
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN))
+    /* Down to decrease years (including vim keys) */
+    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+        grl_input_is_key_pressed (GRL_KEY_J))
     {
         if (self->slumber_years > MIN_SLUMBER_YEARS)
         {

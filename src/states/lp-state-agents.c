@@ -171,9 +171,9 @@ lp_state_agents_update (LrgGameState *state,
         max_items = 3; /* Number of recruit options */
     }
 
-    /* Navigation: Up/Down */
+    /* Navigation: Up/Down (including vim keys) */
     if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_W))
+        grl_input_is_key_pressed (GRL_KEY_K))
     {
         if (self->selected_index > 0)
         {
@@ -185,7 +185,8 @@ lp_state_agents_update (LrgGameState *state,
         }
     }
 
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN))
+    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+        grl_input_is_key_pressed (GRL_KEY_J))
     {
         if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
         {
@@ -197,8 +198,10 @@ lp_state_agents_update (LrgGameState *state,
         }
     }
 
-    /* Tab to switch views */
-    if (grl_input_is_key_pressed (GRL_KEY_TAB))
+    /* Tab/H/L to switch views */
+    if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
+        grl_input_is_key_pressed (GRL_KEY_H) ||
+        grl_input_is_key_pressed (GRL_KEY_L))
     {
         if (self->view_mode == VIEW_MODE_AGENTS)
         {

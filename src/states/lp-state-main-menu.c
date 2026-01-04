@@ -149,9 +149,9 @@ lp_state_main_menu_update (LrgGameState *state,
 
     /* Handle input in update since we poll input each frame */
 
-    /* Navigate up */
+    /* Navigate up (including vim keys) */
     if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_W))
+        grl_input_is_key_pressed (GRL_KEY_K))
     {
         self->selected_option--;
         if (self->selected_option < 0)
@@ -160,9 +160,9 @@ lp_state_main_menu_update (LrgGameState *state,
         }
     }
 
-    /* Navigate down */
+    /* Navigate down (including vim keys) */
     if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_S))
+        grl_input_is_key_pressed (GRL_KEY_J))
     {
         self->selected_option++;
         if (self->selected_option >= MENU_OPTION_COUNT)

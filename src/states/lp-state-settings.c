@@ -228,8 +228,10 @@ lp_state_settings_update (LrgGameState *state,
 
     option_count = get_option_count (self->current_tab);
 
-    /* Navigate tabs with TAB key */
-    if (grl_input_is_key_pressed (GRL_KEY_TAB))
+    /* Navigate tabs with TAB/H/L keys */
+    if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
+        grl_input_is_key_pressed (GRL_KEY_H) ||
+        grl_input_is_key_pressed (GRL_KEY_L))
     {
         self->current_tab++;
         if (self->current_tab >= SETTINGS_TAB_COUNT)
@@ -239,11 +241,11 @@ lp_state_settings_update (LrgGameState *state,
         self->selected_option = 0;  /* Reset selection when changing tabs */
     }
 
-    /* Navigate options with UP/DOWN */
+    /* Navigate options with UP/DOWN (including vim keys) */
     if (option_count > 0)
     {
         if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-            grl_input_is_key_pressed (GRL_KEY_W))
+            grl_input_is_key_pressed (GRL_KEY_K))
         {
             self->selected_option--;
             if (self->selected_option < 0)
@@ -253,7 +255,7 @@ lp_state_settings_update (LrgGameState *state,
         }
 
         if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-            grl_input_is_key_pressed (GRL_KEY_S))
+            grl_input_is_key_pressed (GRL_KEY_J))
         {
             self->selected_option++;
             if (self->selected_option >= option_count)

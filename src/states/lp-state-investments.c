@@ -182,9 +182,9 @@ lp_state_investments_update (LrgGameState *state,
         max_items = NUM_AVAILABLE_INVESTMENTS;
     }
 
-    /* Navigation: Up/Down */
+    /* Navigation: Up/Down (including vim keys) */
     if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_W))
+        grl_input_is_key_pressed (GRL_KEY_K))
     {
         if (self->selected_index > 0)
         {
@@ -197,7 +197,8 @@ lp_state_investments_update (LrgGameState *state,
         }
     }
 
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN))
+    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+        grl_input_is_key_pressed (GRL_KEY_J))
     {
         if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
         {
@@ -210,8 +211,10 @@ lp_state_investments_update (LrgGameState *state,
         }
     }
 
-    /* Tab to switch between portfolio and market views */
-    if (grl_input_is_key_pressed (GRL_KEY_TAB))
+    /* Tab/H/L to switch between portfolio and market views */
+    if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
+        grl_input_is_key_pressed (GRL_KEY_H) ||
+        grl_input_is_key_pressed (GRL_KEY_L))
     {
         if (self->view_mode == VIEW_MODE_PORTFOLIO)
         {
