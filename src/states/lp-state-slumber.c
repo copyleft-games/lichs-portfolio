@@ -8,7 +8,11 @@
 #include "../lp-log.h"
 
 #include "lp-state-slumber.h"
+#include "lp-state-simulating.h"
+#include "../core/lp-game.h"
 #include "../tutorial/lp-tutorial-sequences.h"
+#include <graylib.h>
+#include <libregnum.h>
 
 /* Default and range for slumber duration */
 #define DEFAULT_SLUMBER_YEARS (10)
@@ -57,21 +61,121 @@ static void
 lp_state_slumber_update (LrgGameState *state,
                          gdouble       delta)
 {
-    /* Update UI animations */
+    LpStateSlumber *self = LP_STATE_SLUMBER (state);
+
+    (void)delta;
+
+    /* Up to increase years */
+    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
+        grl_input_is_key_pressed (GRL_KEY_W))
+    {
+        if (self->slumber_years < MAX_SLUMBER_YEARS)
+            self->slumber_years += 10;
+    }
+
+    /* Down to decrease years */
+    if (grl_input_is_key_pressed (GRL_KEY_DOWN))
+    {
+        if (self->slumber_years > MIN_SLUMBER_YEARS)
+        {
+            if (self->slumber_years >= 10)
+                self->slumber_years -= 10;
+            else
+                self->slumber_years = MIN_SLUMBER_YEARS;
+        }
+    }
+
+    /* Enter to confirm and begin slumber */
+    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
+        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    {
+        LpGame *game;
+        LrgGameStateManager *manager;
+        LpStateSimulating *simulating;
+
+        lp_log_info ("Beginning slumber for %u years", self->slumber_years);
+
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
+
+        simulating = lp_state_simulating_new ();
+        lp_state_simulating_set_years (simulating, self->slumber_years);
+
+        /* Replace slumber with simulating */
+        lrg_game_state_manager_replace (manager,
+            LRG_GAME_STATE (simulating));
+    }
+
+    /* Escape to cancel */
+    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    {
+        LpGame *game;
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Cancelling slumber configuration");
+
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
+        lrg_game_state_manager_pop (manager);
+    }
 }
 
 static void
 lp_state_slumber_draw (LrgGameState *state)
 {
-    /*
-     * Phase 1 skeleton: Placeholder drawing.
-     * Full UI will show:
-     * - Year slider/selector
-     * - Standing orders configuration
-     * - Projected outcomes
-     * - Confirm/Cancel buttons
-     */
-    lp_log_debug ("Drawing slumber state (skeleton)");
+    LpStateSlumber *self = LP_STATE_SLUMBER (state);
+    LpGame *game = lp_game_get_from_state (state);
+    g_autoptr(GrlColor) title_color = NULL;
+    g_autoptr(GrlColor) text_color = NULL;
+    g_autoptr(GrlColor) value_color = NULL;
+    g_autoptr(GrlColor) dim_color = NULL;
+    g_autoptr(GrlColor) panel_color = NULL;
+    gint screen_w, screen_h;
+    gint center_x, center_y;
+    gint panel_x, panel_y, panel_w, panel_h;
+    gchar years_str[32];
+
+    screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
+    screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
+    center_x = screen_w / 2;
+    center_y = screen_h / 2;
+
+    /* Panel dimensions */
+    panel_w = 500;
+    panel_h = 350;
+    panel_x = center_x - panel_w / 2;
+    panel_y = center_y - panel_h / 2;
+
+    /* Colors */
+    title_color = grl_color_new (180, 150, 200, 255);
+    text_color = grl_color_new (200, 200, 200, 255);
+    value_color = grl_color_new (255, 215, 0, 255);
+    dim_color = grl_color_new (100, 100, 100, 255);
+    panel_color = grl_color_new (25, 25, 35, 255);
+
+    /* Draw panel background */
+    grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
+
+    /* Title */
+    grl_draw_text ("PREPARE FOR SLUMBER", center_x - 180, panel_y + 30, 36, title_color);
+
+    /* Malachar's question */
+    grl_draw_text ("\"How long shall you rest, my lord?\"",
+                   center_x - 180, panel_y + 90, 18, text_color);
+
+    /* Year selector */
+    grl_draw_text ("Duration:", center_x - 60, panel_y + 150, 20, text_color);
+
+    g_snprintf (years_str, sizeof (years_str), "%u years", self->slumber_years);
+    grl_draw_text (years_str, center_x - 50, panel_y + 190, 32, value_color);
+
+    /* Instructions */
+    grl_draw_text ("UP/DOWN to adjust duration",
+                   center_x - 130, panel_y + 260, 16, dim_color);
+    grl_draw_text ("ENTER to confirm, ESC to cancel",
+                   center_x - 150, panel_y + 285, 16, dim_color);
 }
 
 static gboolean

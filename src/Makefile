@@ -72,6 +72,8 @@ SOURCES += states/lp-state-simulating.c
 SOURCES += states/lp-state-pause.c
 SOURCES += states/lp-state-settings.c
 SOURCES += states/lp-state-welcome-back.c
+SOURCES += states/lp-state-investments.c
+SOURCES += states/lp-state-agents.c
 
 # UI (Phase 6)
 SOURCES += ui/lp-theme.c
@@ -247,18 +249,30 @@ $(OBJDIR)/src/states/lp-state-wake.o: states/lp-state-wake.c \
 	core/lp-game-data.h narrative/lp-malachar-voice.h \
 	tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-analyze.o: states/lp-state-analyze.c \
-	states/lp-state-analyze.h states/lp-state-main-menu.h \
+	states/lp-state-analyze.h states/lp-state-main-menu.h states/lp-state-slumber.h \
+	states/lp-state-investments.h states/lp-state-agents.h \
 	core/lp-game.h core/lp-game-data.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-decide.o: states/lp-state-decide.c \
 	states/lp-state-decide.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-slumber.o: states/lp-state-slumber.c \
-	states/lp-state-slumber.h tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
+	states/lp-state-slumber.h states/lp-state-simulating.h \
+	core/lp-game.h tutorial/lp-tutorial-sequences.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-simulating.o: states/lp-state-simulating.c \
-	states/lp-state-simulating.h lp-log.h lp-types.h
+	states/lp-state-simulating.h states/lp-state-wake.h \
+	core/lp-game.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-pause.o: states/lp-state-pause.c \
 	states/lp-state-pause.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-settings.o: states/lp-state-settings.c \
 	states/lp-state-settings.h core/lp-game.h lp-log.h lp-types.h
+$(OBJDIR)/src/states/lp-state-investments.o: states/lp-state-investments.c \
+	states/lp-state-investments.h core/lp-game.h core/lp-game-data.h \
+	investment/lp-portfolio.h investment/lp-investment.h \
+	investment/lp-investment-property.h investment/lp-investment-trade.h \
+	investment/lp-investment-financial.h lp-log.h lp-types.h lp-enums.h
+$(OBJDIR)/src/states/lp-state-agents.o: states/lp-state-agents.c \
+	states/lp-state-agents.h core/lp-game.h core/lp-game-data.h \
+	investment/lp-portfolio.h agent/lp-agent-manager.h agent/lp-agent.h \
+	agent/lp-agent-individual.h lp-log.h lp-types.h lp-enums.h
 
 # UI (Phase 6)
 $(OBJDIR)/src/ui/lp-theme.o: ui/lp-theme.c ui/lp-theme.h lp-log.h

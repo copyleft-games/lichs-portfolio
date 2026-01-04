@@ -9,6 +9,9 @@
 
 #include "lp-state-analyze.h"
 #include "lp-state-main-menu.h"
+#include "lp-state-slumber.h"
+#include "lp-state-investments.h"
+#include "lp-state-agents.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
 #include <graylib.h>
@@ -43,8 +46,52 @@ static void
 lp_state_analyze_update (LrgGameState *state,
                          gdouble       delta)
 {
-    (void)state;
     (void)delta;
+
+    /* I for Investments */
+    if (grl_input_is_key_pressed (GRL_KEY_I))
+    {
+        LpGame *game;
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Opening investments screen");
+
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
+        lrg_game_state_manager_push (manager,
+            LRG_GAME_STATE (lp_state_investments_new ()));
+    }
+
+    /* A for Agents */
+    if (grl_input_is_key_pressed (GRL_KEY_A))
+    {
+        LpGame *game;
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Opening agents screen");
+
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
+        lrg_game_state_manager_push (manager,
+            LRG_GAME_STATE (lp_state_agents_new ()));
+    }
+
+    /* S to enter slumber configuration */
+    if (grl_input_is_key_pressed (GRL_KEY_S))
+    {
+        LpGame *game;
+        LrgGameStateManager *manager;
+
+        lp_log_info ("Opening slumber configuration");
+
+        game = lp_game_get_from_state (state);
+        manager = lrg_game_template_get_state_manager (
+            LRG_GAME_TEMPLATE (game));
+        lrg_game_state_manager_push (manager,
+            LRG_GAME_STATE (lp_state_slumber_new ()));
+    }
 
     /* ESC to return to main menu */
     if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))

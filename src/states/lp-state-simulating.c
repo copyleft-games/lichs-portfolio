@@ -8,6 +8,10 @@
 #include "../lp-log.h"
 
 #include "lp-state-simulating.h"
+#include "lp-state-wake.h"
+#include "../core/lp-game.h"
+#include <graylib.h>
+#include <libregnum.h>
 
 /* Simulation speed (years per second displayed) */
 #define SIMULATION_SPEED (2.0)
@@ -34,6 +38,30 @@ static guint signals[N_SIGNALS];
 G_DEFINE_TYPE (LpStateSimulating, lp_state_simulating, LRG_TYPE_GAME_STATE)
 
 /* ==========================================================================
+ * Signal Callbacks
+ * ========================================================================== */
+
+static void
+on_simulation_complete (LpStateSimulating *self,
+                        gpointer           user_data)
+{
+    LpGame *game;
+    LrgGameStateManager *manager;
+
+    (void)user_data;
+
+    lp_log_info ("Simulation complete, transitioning to wake");
+
+    game = lp_game_get_from_state (LRG_GAME_STATE (self));
+    manager = lrg_game_template_get_state_manager (
+        LRG_GAME_TEMPLATE (game));
+
+    /* Replace simulating with wake state */
+    lrg_game_state_manager_replace (manager,
+        LRG_GAME_STATE (lp_state_wake_new ()));
+}
+
+/* ==========================================================================
  * LrgGameState Virtual Methods
  * ========================================================================== */
 
@@ -47,6 +75,10 @@ lp_state_simulating_enter (LrgGameState *state)
     self->current_year = 0;
     self->accumulated_time = 0.0;
     self->complete = FALSE;
+
+    /* Connect to complete signal for state transition */
+    g_signal_connect (self, "simulation-complete",
+                      G_CALLBACK (on_simulation_complete), NULL);
 }
 
 static void
@@ -93,15 +125,58 @@ lp_state_simulating_update (LrgGameState *state,
 static void
 lp_state_simulating_draw (LrgGameState *state)
 {
-    /*
-     * Phase 1 skeleton: Placeholder drawing.
-     * Full UI will show:
-     * - Year counter animation
-     * - Progress bar
-     * - Key events as they occur
-     * - Background world map effects
-     */
-    lp_log_debug ("Drawing simulating state (skeleton)");
+    LpStateSimulating *self = LP_STATE_SIMULATING (state);
+    LpGame *game = lp_game_get_from_state (state);
+    g_autoptr(GrlColor) title_color = NULL;
+    g_autoptr(GrlColor) text_color = NULL;
+    g_autoptr(GrlColor) progress_color = NULL;
+    g_autoptr(GrlColor) bar_bg_color = NULL;
+    g_autoptr(GrlColor) hint_color = NULL;
+    gint screen_w, screen_h;
+    gint center_x, center_y;
+    gchar year_str[64];
+    gint bar_width, bar_height, bar_x, bar_y;
+    gint progress_width;
+
+    screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
+    screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
+    center_x = screen_w / 2;
+    center_y = screen_h / 2;
+
+    /* Colors */
+    title_color = grl_color_new (180, 150, 200, 255);
+    text_color = grl_color_new (200, 200, 200, 255);
+    progress_color = grl_color_new (100, 80, 140, 255);
+    bar_bg_color = grl_color_new (40, 40, 50, 255);
+    hint_color = grl_color_new (255, 215, 0, 255);
+
+    /* Title */
+    grl_draw_text ("SLUMBERING...", center_x - 130, center_y - 120, 42, title_color);
+
+    /* Malachar's hint */
+    grl_draw_text ("\"Time flows like sand through an hourglass...\"",
+                   center_x - 220, center_y - 60, 18, hint_color);
+
+    /* Year counter */
+    g_snprintf (year_str, sizeof (year_str), "Year %u of %u",
+                self->current_year, self->total_years);
+    grl_draw_text (year_str, center_x - 80, center_y, 24, text_color);
+
+    /* Progress bar */
+    bar_width = 400;
+    bar_height = 30;
+    bar_x = center_x - bar_width / 2;
+    bar_y = center_y + 50;
+
+    /* Bar background */
+    grl_draw_rectangle (bar_x, bar_y, bar_width, bar_height, bar_bg_color);
+
+    /* Bar fill */
+    if (self->total_years > 0)
+    {
+        progress_width = (bar_width * self->current_year) / self->total_years;
+        grl_draw_rectangle (bar_x, bar_y, progress_width, bar_height, progress_color);
+    }
 }
 
 static gboolean

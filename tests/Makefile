@@ -100,6 +100,8 @@ GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-simulating.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-pause.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-settings.o
 GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-welcome-back.o
+GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-investments.o
+GAME_OBJECTS += $(OBJDIR)/src/states/lp-state-agents.o
 
 # Phase 9: Polish and Content
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-strings.o
