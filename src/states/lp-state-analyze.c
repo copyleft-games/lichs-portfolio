@@ -8,7 +8,7 @@
 #include "../lp-log.h"
 
 #include "lp-state-analyze.h"
-#include "lp-state-main-menu.h"
+#include "lp-state-pause.h"
 #include "lp-state-slumber.h"
 #include "lp-state-investments.h"
 #include "lp-state-agents.h"
@@ -150,19 +150,19 @@ lp_state_analyze_update (LrgGameState *state,
             LRG_GAME_STATE (lp_state_slumber_new ()));
     }
 
-    /* ESC to return to main menu */
+    /* ESC to open pause menu */
     if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
     {
         LpGame *game;
         LrgGameStateManager *manager;
 
-        lp_log_info ("Returning to main menu");
+        lp_log_info ("Opening pause menu");
 
         game = lp_game_get_from_state (state);
         manager = lrg_game_template_get_state_manager (
             LRG_GAME_TEMPLATE (game));
-        lrg_game_state_manager_replace (manager,
-            LRG_GAME_STATE (lp_state_main_menu_new ()));
+        lrg_game_state_manager_push (manager,
+            LRG_GAME_STATE (lp_state_pause_new ()));
     }
 }
 
@@ -260,7 +260,7 @@ lp_state_analyze_draw (LrgGameState *state)
     grl_draw_rectangle (margin, bottom_panel_y, screen_w - (margin * 2), bottom_panel_h, panel_color);
     draw_label (get_pool_label (self), "Actions",
                 margin + 15, bottom_panel_y + 10, 20, title_color);
-    draw_label (get_pool_label (self), "[I] Investments    [A] Agents    [S] Enter Slumber    [ESC] Main Menu",
+    draw_label (get_pool_label (self), "[I] Investments    [A] Agents    [S] Enter Slumber    [ESC] Pause",
                 margin + 15, bottom_panel_y + 50, 16, text_color);
 
     /* Malachar hint */
@@ -272,13 +272,9 @@ static gboolean
 lp_state_analyze_handle_input (LrgGameState *state,
                                gpointer      event)
 {
-    /*
-     * Phase 1 skeleton: Basic input handling.
-     * - Tab: Cycle through panels
-     * - Click: Select investment/agent
-     * - Escape: Open pause menu
-     * - S: Enter slumber configuration
-     */
+    /* Input handled in update via polling */
+    (void)state;
+    (void)event;
     return FALSE;
 }
 

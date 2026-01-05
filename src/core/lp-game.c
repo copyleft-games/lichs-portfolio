@@ -15,6 +15,7 @@
 #include "../achievement/lp-achievement-manager.h"
 #include "../investment/lp-portfolio.h"
 #include "../investment/lp-investment.h"
+#include "../save/lp-save-manager.h"
 #include "../states/lp-state-main-menu.h"
 #include "../states/lp-state-pause.h"
 #include "../states/lp-state-settings.h"
@@ -192,6 +193,24 @@ lp_game_real_shutdown (LrgGameTemplate *template)
     LrgSettings *settings;
 
     lp_log_info ("Shutting down...");
+
+    /* Autosave game data before shutdown */
+    if (self->game_data != NULL)
+    {
+        LpSaveManager *save_mgr;
+        g_autoptr(GError) error = NULL;
+
+        save_mgr = lp_save_manager_get_default ();
+        if (!lp_save_manager_autosave (save_mgr, self->game_data, &error))
+        {
+            lp_log_warning ("Autosave on shutdown failed: %s",
+                            error ? error->message : "unknown error");
+        }
+        else
+        {
+            lp_log_info ("Autosaved game on shutdown");
+        }
+    }
 
     /* Save settings if modified */
     settings = lrg_settings_get_default ();
@@ -701,20 +720,44 @@ lp_game_load_game (LpGame   *self,
                    guint     slot,
                    GError  **error)
 {
+    LpSaveManager *save_mgr;
+    LpPrestige    *prestige;
+    LpPortfolio   *portfolio;
+    LpPhylactery  *phylactery;
+
     g_return_val_if_fail (LP_IS_GAME (self), FALSE);
 
     lp_log_info ("Loading game from slot %u", slot);
 
-    /*
-     * TODO: Implement save/load using LrgSaveManager.
-     * For now, this is a skeleton.
-     */
-    g_set_error (error,
-                 G_IO_ERROR,
-                 G_IO_ERROR_NOT_SUPPORTED,
-                 "Save/load not yet implemented");
+    save_mgr = lp_save_manager_get_default ();
 
-    return FALSE;
+    /* Clear existing game data and create fresh container for loading */
+    g_clear_object (&self->game_data);
+    self->game_data = lp_game_data_new ();
+
+    if (!lp_save_manager_load_game (save_mgr, self->game_data, slot, error))
+    {
+        lp_log_warning ("Failed to load game from slot %u", slot);
+        g_clear_object (&self->game_data);
+        return FALSE;
+    }
+
+    /* Configure prestige layer with loaded game's phylactery and portfolio */
+    prestige = lp_game_get_prestige_layer (self);
+    if (prestige != NULL)
+    {
+        portfolio = lp_game_data_get_portfolio (self->game_data);
+        phylactery = lp_game_data_get_phylactery (self->game_data);
+
+        lp_prestige_set_portfolio (prestige, portfolio);
+        lp_prestige_set_phylactery (prestige, phylactery);
+    }
+
+    /* Sync investments to idle calculator */
+    lp_game_sync_generators_internal (self);
+
+    lp_log_info ("Game loaded successfully from slot %u", slot);
+    return TRUE;
 }
 
 /**
@@ -732,6 +775,8 @@ lp_game_save_game (LpGame   *self,
                    guint     slot,
                    GError  **error)
 {
+    LpSaveManager *save_mgr;
+
     g_return_val_if_fail (LP_IS_GAME (self), FALSE);
 
     if (self->game_data == NULL)
@@ -745,16 +790,16 @@ lp_game_save_game (LpGame   *self,
 
     lp_log_info ("Saving game to slot %u", slot);
 
-    /*
-     * TODO: Implement save/load using LrgSaveManager.
-     * For now, this is a skeleton.
-     */
-    g_set_error (error,
-                 G_IO_ERROR,
-                 G_IO_ERROR_NOT_SUPPORTED,
-                 "Save/load not yet implemented");
+    save_mgr = lp_save_manager_get_default ();
 
-    return FALSE;
+    if (!lp_save_manager_save_game (save_mgr, self->game_data, slot, error))
+    {
+        lp_log_warning ("Failed to save game to slot %u", slot);
+        return FALSE;
+    }
+
+    lp_log_info ("Game saved successfully to slot %u", slot);
+    return TRUE;
 }
 
 /* ==========================================================================
