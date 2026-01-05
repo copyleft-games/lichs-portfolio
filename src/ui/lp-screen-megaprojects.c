@@ -13,13 +13,58 @@
 struct _LpScreenMegaprojects
 {
     LrgContainer parent_instance;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpScreenMegaprojects, lp_screen_megaprojects, LRG_TYPE_CONTAINER)
 
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpScreenMegaprojects *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpScreenMegaprojects *self)
+{
+    self->label_pool_index = 0;
+}
+
 static void
 lp_screen_megaprojects_draw (LrgWidget *widget)
 {
+    LpScreenMegaprojects *self;
     LrgTheme *theme;
     gfloat x, y, width, height;
     gfloat padding;
@@ -31,6 +76,11 @@ lp_screen_megaprojects_draw (LrgWidget *widget)
     const GrlColor *secondary_color;
     const GrlColor *border_color;
     const GrlColor *surface_color;
+
+    self = LP_SCREEN_MEGAPROJECTS (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     theme = lrg_theme_get_default ();
 
@@ -61,14 +111,15 @@ lp_screen_megaprojects_draw (LrgWidget *widget)
     grl_draw_line (x, y + header_height,
                    x + width, y + header_height, border_color);
 
-    grl_draw_text ("Megaprojects", x + padding, y + padding,
-                   font_size_large, text_color);
+    draw_label (get_pool_label (self), "Megaprojects",
+                x + padding, y + padding,
+                font_size_large, text_color);
 
     /* Draw placeholder content */
-    grl_draw_text ("Multi-century projects - coming soon",
-                   x + padding,
-                   y + header_height + padding,
-                   font_size, secondary_color);
+    draw_label (get_pool_label (self), "Multi-century projects - coming soon",
+                x + padding,
+                y + header_height + padding,
+                font_size, secondary_color);
 
     LRG_WIDGET_CLASS (lp_screen_megaprojects_parent_class)->draw (widget);
 }
@@ -81,10 +132,24 @@ lp_screen_megaprojects_layout_children (LrgContainer *container)
 }
 
 static void
+lp_screen_megaprojects_dispose (GObject *object)
+{
+    LpScreenMegaprojects *self = LP_SCREEN_MEGAPROJECTS (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_screen_megaprojects_parent_class)->dispose (object);
+}
+
+static void
 lp_screen_megaprojects_class_init (LpScreenMegaprojectsClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgWidgetClass *widget_class = LRG_WIDGET_CLASS (klass);
     LrgContainerClass *container_class = LRG_CONTAINER_CLASS (klass);
+
+    object_class->dispose = lp_screen_megaprojects_dispose;
 
     widget_class->draw = lp_screen_megaprojects_draw;
     container_class->layout_children = lp_screen_megaprojects_layout_children;
@@ -93,7 +158,16 @@ lp_screen_megaprojects_class_init (LpScreenMegaprojectsClass *klass)
 static void
 lp_screen_megaprojects_init (LpScreenMegaprojects *self)
 {
-    (void)self;
+    guint i;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 5; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpScreenMegaprojects *

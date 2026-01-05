@@ -30,6 +30,9 @@ struct _LpFloatingText
     gfloat   font_size;
 
     GrlColor *color;
+
+    /* UI Label */
+    LrgLabel *label;
 };
 
 enum
@@ -69,7 +72,11 @@ lp_floating_text_draw (LrgWidget *widget)
             grl_color_get_b (self->color),
             (guint8)(self->alpha * 255.0f));
 
-        grl_draw_text (self->text, x, y, self->font_size, draw_color);
+        lrg_label_set_text (self->label, self->text);
+        lrg_widget_set_position (LRG_WIDGET (self->label), x, y);
+        lrg_label_set_font_size (self->label, self->font_size);
+        lrg_label_set_color (self->label, draw_color);
+        lrg_widget_draw (LRG_WIDGET (self->label));
     }
 
     LRG_WIDGET_CLASS (lp_floating_text_parent_class)->draw (widget);
@@ -150,6 +157,7 @@ lp_floating_text_dispose (GObject *object)
 
     g_clear_pointer (&self->text, g_free);
     g_clear_pointer (&self->color, grl_color_free);
+    g_clear_object (&self->label);
 
     G_OBJECT_CLASS (lp_floating_text_parent_class)->dispose (object);
 }
@@ -207,6 +215,9 @@ lp_floating_text_init (LpFloatingText *self)
     self->alpha = 1.0f;
     self->font_size = DEFAULT_FONT_SIZE;
     self->color = NULL;
+
+    /* Create label */
+    self->label = lrg_label_new (NULL);
 }
 
 LpFloatingText *

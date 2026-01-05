@@ -18,6 +18,11 @@ struct _LpDialogEvent
     LpEvent *event;
     gint     selected_choice;
     guint    choice_count;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -40,6 +45,49 @@ static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (LpDialogEvent, lp_dialog_event, LRG_TYPE_CONTAINER)
 
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpDialogEvent *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpDialogEvent *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * Widget Draw
+ * ========================================================================== */
+
 static void
 lp_dialog_event_draw (LrgWidget *widget)
 {
@@ -60,6 +108,9 @@ lp_dialog_event_draw (LrgWidget *widget)
 
     self = LP_DIALOG_EVENT (widget);
     theme = lrg_theme_get_default ();
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     /* Get widget position and size */
     x = lrg_widget_get_world_x (widget);
@@ -103,9 +154,9 @@ lp_dialog_event_draw (LrgWidget *widget)
 
     if (self->event == NULL)
     {
-        grl_draw_text ("No event to display",
-                       dialog_x + padding, content_y,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), "No event to display",
+                    dialog_x + padding, content_y,
+                    font_size, secondary_color);
     }
     else
     {
@@ -114,8 +165,9 @@ lp_dialog_event_draw (LrgWidget *widget)
         GPtrArray *choices;
 
         /* Draw event title */
-        grl_draw_text (name, dialog_x + padding, content_y,
-                       font_size_large, text_color);
+        draw_label (get_pool_label (self), name,
+                    dialog_x + padding, content_y,
+                    font_size_large, text_color);
         content_y += font_size_large + padding;
 
         /* Draw separator */
@@ -124,8 +176,9 @@ lp_dialog_event_draw (LrgWidget *widget)
         content_y += padding;
 
         /* Draw description */
-        grl_draw_text (description, dialog_x + padding, content_y,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), description,
+                    dialog_x + padding, content_y,
+                    font_size, secondary_color);
         content_y += font_size * 3 + padding * 2;
 
         /* Draw choices */
@@ -134,8 +187,9 @@ lp_dialog_event_draw (LrgWidget *widget)
         {
             guint i;
 
-            grl_draw_text ("Choose your response:", dialog_x + padding, content_y,
-                           font_size, text_color);
+            draw_label (get_pool_label (self), "Choose your response:",
+                        dialog_x + padding, content_y,
+                        font_size, text_color);
             content_y += font_size + padding;
 
             for (i = 0; i < choices->len && i < 4; i++)
@@ -149,13 +203,15 @@ lp_dialog_event_draw (LrgWidget *widget)
                     grl_draw_rectangle (dialog_x + padding / 2, content_y,
                                          dialog_width - padding, font_size + padding,
                                          accent_color);
-                    grl_draw_text (label, dialog_x + padding, content_y + padding / 2,
-                                   font_size, bg_color);
+                    draw_label (get_pool_label (self), label,
+                                dialog_x + padding, content_y + padding / 2,
+                                font_size, bg_color);
                 }
                 else
                 {
-                    grl_draw_text (label, dialog_x + padding, content_y + padding / 2,
-                                   font_size, text_color);
+                    draw_label (get_pool_label (self), label,
+                                dialog_x + padding, content_y + padding / 2,
+                                font_size, text_color);
                 }
 
                 content_y += font_size + padding;
@@ -164,16 +220,17 @@ lp_dialog_event_draw (LrgWidget *widget)
         else
         {
             /* No choices - just acknowledgement */
-            grl_draw_text ("[Enter] Acknowledge", dialog_x + padding, content_y,
-                           font_size, secondary_color);
+            draw_label (get_pool_label (self), "[Enter] Acknowledge",
+                        dialog_x + padding, content_y,
+                        font_size, secondary_color);
         }
     }
 
     /* Draw instructions at bottom */
-    grl_draw_text ("[1-4] Select  [Enter] Confirm  [Esc] Dismiss",
-                   dialog_x + padding,
-                   dialog_y + dialog_height - font_size_small - padding,
-                   font_size_small, secondary_color);
+    draw_label (get_pool_label (self), "[1-4] Select  [Enter] Confirm  [Esc] Dismiss",
+                dialog_x + padding,
+                dialog_y + dialog_height - font_size_small - padding,
+                font_size_small, secondary_color);
 
     LRG_WIDGET_CLASS (lp_dialog_event_parent_class)->draw (widget);
 }
@@ -287,6 +344,8 @@ lp_dialog_event_dispose (GObject *object)
     LpDialogEvent *self = LP_DIALOG_EVENT (object);
 
     g_clear_object (&self->event);
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
     G_OBJECT_CLASS (lp_dialog_event_parent_class)->dispose (object);
 }
@@ -338,9 +397,20 @@ lp_dialog_event_class_init (LpDialogEventClass *klass)
 static void
 lp_dialog_event_init (LpDialogEvent *self)
 {
+    guint i;
+
     self->event = NULL;
     self->selected_choice = 0;
     self->choice_count = 0;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 15; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpDialogEvent *

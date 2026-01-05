@@ -23,6 +23,11 @@ struct _LpScreenWorldMap
     /* Selection state */
     LpKingdom *selected_kingdom;
     gint       selection_index;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -46,6 +51,45 @@ static guint signals[N_SIGNALS];
 G_DEFINE_TYPE (LpScreenWorldMap, lp_screen_world_map, LRG_TYPE_CONTAINER)
 
 /* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpScreenWorldMap *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpScreenWorldMap *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
  * LrgWidget Virtual Methods
  * ========================================================================== */
 
@@ -66,6 +110,10 @@ lp_screen_world_map_draw (LrgWidget *widget)
     gfloat header_height;
 
     self = LP_SCREEN_WORLD_MAP (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     theme = lrg_theme_get_default ();
 
     /* Get widget position and size */
@@ -94,8 +142,9 @@ lp_screen_world_map_draw (LrgWidget *widget)
     grl_draw_line (x, y + header_height,
                    x + width, y + header_height, border_color);
 
-    grl_draw_text ("World Map", x + padding, y + padding,
-                   font_size_large, text_color);
+    draw_label (get_pool_label (self), "World Map",
+                x + padding, y + padding,
+                font_size_large, text_color);
 
     /* Draw current year if simulation is set */
     if (self->simulation != NULL)
@@ -104,10 +153,10 @@ lp_screen_world_map_draw (LrgWidget *widget)
         g_autofree gchar *year_text = g_strdup_printf ("Year: %lu", (unsigned long)year);
         gfloat year_width = grl_measure_text (year_text, font_size);
 
-        grl_draw_text (year_text,
-                       x + width - year_width - padding,
-                       y + padding + (font_size_large - font_size) / 2,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), year_text,
+                    x + width - year_width - padding,
+                    y + padding + (font_size_large - font_size) / 2,
+                    font_size, secondary_color);
     }
 
     /* Draw placeholder map area */
@@ -119,10 +168,10 @@ lp_screen_world_map_draw (LrgWidget *widget)
 
         grl_draw_rectangle_lines_ex (map_rect, 1.0f, border_color);
 
-        grl_draw_text ("Kingdom map visualization - coming soon",
-                       x + width / 2 - 150,
-                       map_y + map_h / 2,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), "Kingdom map visualization - coming soon",
+                    x + width / 2 - 150,
+                    map_y + map_h / 2,
+                    font_size, secondary_color);
     }
 
     /* Draw child widgets */
@@ -186,6 +235,9 @@ lp_screen_world_map_dispose (GObject *object)
     g_clear_object (&self->simulation);
     self->selected_kingdom = NULL;
 
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
     G_OBJECT_CLASS (lp_screen_world_map_parent_class)->dispose (object);
 }
 
@@ -235,9 +287,20 @@ lp_screen_world_map_class_init (LpScreenWorldMapClass *klass)
 static void
 lp_screen_world_map_init (LpScreenWorldMap *self)
 {
+    guint i;
+
     self->simulation = NULL;
     self->selected_kingdom = NULL;
     self->selection_index = -1;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 10; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

@@ -60,9 +60,68 @@ struct _LpStateInvestments
     ViewMode view_mode;       /* Current view mode */
     gint     selected_index;  /* Currently selected item */
     gint     scroll_offset;   /* Scroll offset for long lists */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateInvestments, lp_state_investments, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateInvestments *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateInvestments *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_investments_dispose (GObject *object)
+{
+    LpStateInvestments *self = LP_STATE_INVESTMENTS (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_investments_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * Helper Functions
@@ -333,6 +392,9 @@ lp_state_investments_draw (LrgGameState *state)
     guint i, idx;
     guint count, visible_count;
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get virtual resolution */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
@@ -359,7 +421,7 @@ lp_state_investments_draw (LrgGameState *state)
     tab_inactive_color = grl_color_new (40, 40, 50, 255);
 
     /* Draw header */
-    grl_draw_text ("INVESTMENT MANAGEMENT", center_x - 200, 30, 36, title_color);
+    draw_label (self->label_title, "INVESTMENT MANAGEMENT", center_x - 200, 30, 36, title_color);
 
     /* Draw gold display */
     if (portfolio != NULL)
@@ -372,7 +434,7 @@ lp_state_investments_draw (LrgGameState *state)
     {
         g_snprintf (str_buf, sizeof (str_buf), "Gold: -- gp");
     }
-    grl_draw_text (str_buf, screen_w - 250, 35, 20, gold_color);
+    draw_label (get_pool_label (self), str_buf, screen_w - 250, 35, 20, gold_color);
 
     /* Draw main panel */
     grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
@@ -380,21 +442,21 @@ lp_state_investments_draw (LrgGameState *state)
     /* Draw tabs */
     grl_draw_rectangle (panel_x + 10, panel_y + 10, 150, 35,
                         self->view_mode == VIEW_MODE_PORTFOLIO ? tab_active_color : tab_inactive_color);
-    grl_draw_text ("My Portfolio", panel_x + 25, panel_y + 17, 18, text_color);
+    draw_label (get_pool_label (self), "My Portfolio", panel_x + 25, panel_y + 17, 18, text_color);
 
     grl_draw_rectangle (panel_x + 170, panel_y + 10, 150, 35,
                         self->view_mode == VIEW_MODE_MARKET ? tab_active_color : tab_inactive_color);
-    grl_draw_text ("Market", panel_x + 210, panel_y + 17, 18, text_color);
+    draw_label (get_pool_label (self), "Market", panel_x + 210, panel_y + 17, 18, text_color);
 
     /* Draw column headers */
-    grl_draw_text ("Name", panel_x + 20, panel_y + 65, 16, dim_color);
-    grl_draw_text ("Type", panel_x + 300, panel_y + 65, 16, dim_color);
-    grl_draw_text ("Value", panel_x + 450, panel_y + 65, 16, dim_color);
+    draw_label (get_pool_label (self), "Name", panel_x + 20, panel_y + 65, 16, dim_color);
+    draw_label (get_pool_label (self), "Type", panel_x + 300, panel_y + 65, 16, dim_color);
+    draw_label (get_pool_label (self), "Value", panel_x + 450, panel_y + 65, 16, dim_color);
 
     if (self->view_mode == VIEW_MODE_PORTFOLIO)
     {
         GPtrArray *investments;
-        grl_draw_text ("Return", panel_x + 580, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Return", panel_x + 580, panel_y + 65, 16, dim_color);
 
         /* Draw owned investments */
         investments = (portfolio != NULL) ? lp_portfolio_get_investments (portfolio) : NULL;
@@ -402,8 +464,8 @@ lp_state_investments_draw (LrgGameState *state)
 
         if (count == 0)
         {
-            grl_draw_text ("No investments owned. Press TAB to browse market.",
-                           panel_x + 50, list_y + 50, 18, dim_color);
+            draw_label (get_pool_label (self), "No investments owned. Press TAB to browse market.",
+                        panel_x + 50, list_y + 50, 18, dim_color);
         }
         else
         {
@@ -429,28 +491,28 @@ lp_state_investments_draw (LrgGameState *state)
                 }
 
                 /* Draw investment details */
-                grl_draw_text (lp_investment_get_name (inv),
-                               panel_x + 20, item_y, 16,
-                               is_selected ? gold_color : text_color);
+                draw_label (get_pool_label (self), lp_investment_get_name (inv),
+                            panel_x + 20, item_y, 16,
+                            is_selected ? gold_color : text_color);
 
-                grl_draw_text (asset_class_to_string (lp_investment_get_asset_class (inv)),
-                               panel_x + 300, item_y, 16, text_color);
+                draw_label (get_pool_label (self), asset_class_to_string (lp_investment_get_asset_class (inv)),
+                            panel_x + 300, item_y, 16, text_color);
 
                 value = lp_investment_get_current_value (inv);
                 g_snprintf (str_buf, sizeof (str_buf), "%.0f gp",
                             lrg_big_number_to_double (value));
-                grl_draw_text (str_buf, panel_x + 450, item_y, 16, gold_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 450, item_y, 16, gold_color);
 
                 ret_pct = lp_investment_get_return_percentage (inv);
                 g_snprintf (str_buf, sizeof (str_buf), "%+.1f%%", ret_pct);
-                grl_draw_text (str_buf, panel_x + 580, item_y, 16,
-                               ret_pct >= 0 ? text_color : dim_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 580, item_y, 16,
+                            ret_pct >= 0 ? text_color : dim_color);
             }
         }
     }
     else
     {
-        grl_draw_text ("Cost", panel_x + 450, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Cost", panel_x + 450, panel_y + 65, 16, dim_color);
 
         /* Draw available investments */
         visible_count = MIN (NUM_AVAILABLE_INVESTMENTS - self->scroll_offset, MAX_VISIBLE_ITEMS);
@@ -479,16 +541,16 @@ lp_state_investments_draw (LrgGameState *state)
             }
 
             /* Draw option details */
-            grl_draw_text (option->name, panel_x + 20, item_y, 16,
-                           is_selected ? gold_color : (can_afford ? text_color : dim_color));
+            draw_label (get_pool_label (self), option->name, panel_x + 20, item_y, 16,
+                        is_selected ? gold_color : (can_afford ? text_color : dim_color));
 
-            grl_draw_text (asset_class_to_string (option->asset_class),
-                           panel_x + 300, item_y, 16,
-                           can_afford ? text_color : dim_color);
+            draw_label (get_pool_label (self), asset_class_to_string (option->asset_class),
+                        panel_x + 300, item_y, 16,
+                        can_afford ? text_color : dim_color);
 
             g_snprintf (str_buf, sizeof (str_buf), "%.0f gp", option->base_cost);
-            grl_draw_text (str_buf, panel_x + 450, item_y, 16,
-                           can_afford ? gold_color : dim_color);
+            draw_label (get_pool_label (self), str_buf, panel_x + 450, item_y, 16,
+                        can_afford ? gold_color : dim_color);
         }
 
         /* Draw selected item description below the list */
@@ -496,19 +558,19 @@ lp_state_investments_draw (LrgGameState *state)
             self->selected_index < (gint)NUM_AVAILABLE_INVESTMENTS)
         {
             const InvestmentOption *selected = &available_investments[self->selected_index];
-            grl_draw_text (selected->description,
-                           panel_x + 20, list_y + (MAX_VISIBLE_ITEMS * item_h) + 20,
-                           16, dim_color);
+            draw_label (get_pool_label (self), selected->description,
+                        panel_x + 20, list_y + (MAX_VISIBLE_ITEMS * item_h) + 20,
+                        16, dim_color);
         }
     }
 
     /* Draw instructions */
-    grl_draw_text ("[UP/DOWN] Select    [TAB] Switch View    [ENTER] Buy/Sell    [ESC] Back",
-                   panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
+    draw_label (get_pool_label (self), "[UP/DOWN] Select    [TAB] Switch View    [ENTER] Buy/Sell    [ESC] Back",
+                panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
 
     /* Malachar hint */
-    grl_draw_text ("\"Choose wisely, my lord. These assets will generate wealth while you slumber...\"",
-                   panel_x + 20, panel_y + panel_h - 60, 14, gold_color);
+    draw_label (get_pool_label (self), "\"Choose wisely, my lord. These assets will generate wealth while you slumber...\"",
+                panel_x + 20, panel_y + panel_h - 60, 14, gold_color);
 }
 
 static gboolean
@@ -525,7 +587,10 @@ lp_state_investments_handle_input (LrgGameState *state,
 static void
 lp_state_investments_class_init (LpStateInvestmentsClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_investments_dispose;
 
     state_class->enter = lp_state_investments_enter;
     state_class->exit = lp_state_investments_exit;
@@ -537,6 +602,8 @@ lp_state_investments_class_init (LpStateInvestmentsClass *klass)
 static void
 lp_state_investments_init (LpStateInvestments *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Investments");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
@@ -544,6 +611,15 @@ lp_state_investments_init (LpStateInvestments *self)
     self->view_mode = VIEW_MODE_PORTFOLIO;
     self->selected_index = 0;
     self->scroll_offset = 0;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text (8 items * 4 columns + headers/static) */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 50; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

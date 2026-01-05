@@ -25,6 +25,11 @@ struct _LpStateSimulating
     gdouble  accumulated_time;  /* Time accumulator for year progression */
     gboolean complete;          /* Whether simulation is complete */
     GList   *events;            /* Accumulated events */
+
+    /* UI Labels */
+    LrgLabel *label_title;
+    LrgLabel *label_hint;
+    LrgLabel *label_year;
 };
 
 enum
@@ -36,6 +41,41 @@ enum
 static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (LpStateSimulating, lp_state_simulating, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_simulating_dispose (GObject *object)
+{
+    LpStateSimulating *self = LP_STATE_SIMULATING (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_object (&self->label_hint);
+    g_clear_object (&self->label_year);
+
+    G_OBJECT_CLASS (lp_state_simulating_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * Signal Callbacks
@@ -151,16 +191,18 @@ lp_state_simulating_draw (LrgGameState *state)
     hint_color = grl_color_new (255, 215, 0, 255);
 
     /* Title */
-    grl_draw_text ("SLUMBERING...", center_x - 130, center_y - 120, 42, title_color);
+    draw_label (self->label_title, "SLUMBERING...",
+                center_x - 130, center_y - 120, 42, title_color);
 
     /* Malachar's hint */
-    grl_draw_text ("\"Time flows like sand through an hourglass...\"",
-                   center_x - 220, center_y - 60, 18, hint_color);
+    draw_label (self->label_hint, "\"Time flows like sand through an hourglass...\"",
+                center_x - 220, center_y - 60, 18, hint_color);
 
     /* Year counter */
     g_snprintf (year_str, sizeof (year_str), "Year %u of %u",
                 self->current_year, self->total_years);
-    grl_draw_text (year_str, center_x - 80, center_y, 24, text_color);
+    draw_label (self->label_year, year_str,
+                center_x - 80, center_y, 24, text_color);
 
     /* Progress bar */
     bar_width = 400;
@@ -198,7 +240,10 @@ lp_state_simulating_handle_input (LrgGameState *state,
 static void
 lp_state_simulating_class_init (LpStateSimulatingClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_simulating_dispose;
 
     state_class->enter = lp_state_simulating_enter;
     state_class->exit = lp_state_simulating_exit;
@@ -234,6 +279,11 @@ lp_state_simulating_init (LpStateSimulating *self)
     self->accumulated_time = 0.0;
     self->complete = FALSE;
     self->events = NULL;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+    self->label_hint = lrg_label_new (NULL);
+    self->label_year = lrg_label_new (NULL);
 }
 
 /* ==========================================================================

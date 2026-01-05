@@ -41,6 +41,11 @@ struct _LpAchievementPopup
     gfloat      visible_elapsed;
     gfloat      offset_x;
     gfloat      border_pulse;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -81,6 +86,49 @@ ease_in_cubic (gfloat t)
     return t * t * t;
 }
 
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpAchievementPopup *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpAchievementPopup *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * Widget Draw
+ * ========================================================================== */
+
 static void
 lp_achievement_popup_draw (LrgWidget *widget)
 {
@@ -102,6 +150,9 @@ lp_achievement_popup_draw (LrgWidget *widget)
 
     if (self->state == POPUP_STATE_HIDDEN)
         return;
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     theme = lrg_theme_get_default ();
 
@@ -149,8 +200,9 @@ lp_achievement_popup_draw (LrgWidget *widget)
     /* Draw "Achievement Unlocked!" header with star */
     {
         g_autofree gchar *header = g_strdup_printf ("★ Achievement Unlocked!");
-        grl_draw_text (header, popup_x + padding, content_y,
-                       font_size_small, gold_color);
+        draw_label (get_pool_label (self), header,
+                    popup_x + padding, content_y,
+                    font_size_small, gold_color);
     }
     content_y += font_size_small + padding / 2;
 
@@ -170,16 +222,18 @@ lp_achievement_popup_draw (LrgWidget *widget)
     /* Draw achievement name */
     if (self->name != NULL)
     {
-        grl_draw_text (self->name, popup_x + padding, content_y,
-                       font_size_large, text_color);
+        draw_label (get_pool_label (self), self->name,
+                    popup_x + padding, content_y,
+                    font_size_large, text_color);
         content_y += font_size_large + padding / 2;
     }
 
     /* Draw achievement description */
     if (self->description != NULL)
     {
-        grl_draw_text (self->description, popup_x + padding, content_y,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), self->description,
+                    popup_x + padding, content_y,
+                    font_size, secondary_color);
     }
 
     LRG_WIDGET_CLASS (lp_achievement_popup_parent_class)->draw (widget);
@@ -267,6 +321,8 @@ lp_achievement_popup_dispose (GObject *object)
 
     g_clear_pointer (&self->name, g_free);
     g_clear_pointer (&self->description, g_free);
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
     G_OBJECT_CLASS (lp_achievement_popup_parent_class)->dispose (object);
 }
@@ -316,6 +372,8 @@ lp_achievement_popup_class_init (LpAchievementPopupClass *klass)
 static void
 lp_achievement_popup_init (LpAchievementPopup *self)
 {
+    guint i;
+
     self->name = NULL;
     self->description = NULL;
     self->state = POPUP_STATE_HIDDEN;
@@ -324,6 +382,15 @@ lp_achievement_popup_init (LpAchievementPopup *self)
     self->visible_elapsed = 0.0f;
     self->offset_x = POPUP_WIDTH + POPUP_MARGIN;  /* Start offscreen */
     self->border_pulse = 0.0f;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 5; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpAchievementPopup *

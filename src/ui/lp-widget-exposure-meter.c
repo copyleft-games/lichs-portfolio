@@ -21,6 +21,11 @@ struct _LpWidgetExposureMeter
     gboolean        show_label;
     gboolean        show_percentage;
     LrgOrientation  orientation;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpWidgetExposureMeter, lp_widget_exposure_meter, LRG_TYPE_WIDGET)
@@ -122,6 +127,45 @@ get_label_for_level (LpExposureLevel level)
 }
 
 /* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpWidgetExposureMeter *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpWidgetExposureMeter *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
  * Virtual Method: draw
  * ========================================================================== */
 
@@ -143,6 +187,10 @@ lp_widget_exposure_meter_draw (LrgWidget *widget)
     const GrlColor *border_color;
 
     self = LP_WIDGET_EXPOSURE_METER (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     theme = lrg_theme_get_default ();
 
     x = lrg_widget_get_world_x (widget);
@@ -221,43 +269,49 @@ lp_widget_exposure_meter_draw (LrgWidget *widget)
     /* Draw label if enabled */
     if (self->show_label)
     {
-        const gchar *label;
-        g_autoptr(GrlVector2) text_pos = NULL;
+        const gchar *label_text;
+        gfloat text_x;
+        gfloat text_y;
 
-        label = get_label_for_level (self->level);
+        label_text = get_label_for_level (self->level);
 
         if (self->orientation == LRG_ORIENTATION_HORIZONTAL)
-            text_pos = grl_vector2_new (x, y);
+        {
+            text_x = x;
+            text_y = y;
+        }
         else
-            text_pos = grl_vector2_new (x, y + h / 2.0f - 8.0f);
+        {
+            text_x = x;
+            text_y = y + h / 2.0f - 8.0f;
+        }
 
-        grl_draw_text (label, (gint) text_pos->x, (gint) text_pos->y,
-                       (gint) lrg_theme_get_font_size_normal (theme),
-                       text_color);
+        draw_label (get_pool_label (self), label_text, text_x, text_y,
+                    lrg_theme_get_font_size_normal (theme), text_color);
     }
 
     /* Draw percentage if enabled */
     if (self->show_percentage)
     {
         gchar percent_str[8];
-        g_autoptr(GrlVector2) percent_pos = NULL;
+        gfloat percent_x;
+        gfloat percent_y;
 
         g_snprintf (percent_str, sizeof (percent_str), "%u%%", self->value);
 
         if (self->orientation == LRG_ORIENTATION_HORIZONTAL)
         {
-            percent_pos = grl_vector2_new (x + w / 2.0f - 16.0f,
-                                           bar_rect.y + bar_rect.height + 2.0f);
+            percent_x = x + w / 2.0f - 16.0f;
+            percent_y = bar_rect.y + bar_rect.height + 2.0f;
         }
         else
         {
-            percent_pos = grl_vector2_new (bar_rect.x + bar_rect.width + 4.0f,
-                                           y + h / 2.0f - 8.0f);
+            percent_x = bar_rect.x + bar_rect.width + 4.0f;
+            percent_y = y + h / 2.0f - 8.0f;
         }
 
-        grl_draw_text (percent_str, (gint) percent_pos->x, (gint) percent_pos->y,
-                       (gint) lrg_theme_get_font_size_small (theme),
-                       text_color);
+        draw_label (get_pool_label (self), percent_str, percent_x, percent_y,
+                    lrg_theme_get_font_size_small (theme), text_color);
     }
 }
 
@@ -293,6 +347,17 @@ lp_widget_exposure_meter_measure (LrgWidget *widget,
 /* ==========================================================================
  * GObject Implementation
  * ========================================================================== */
+
+static void
+lp_widget_exposure_meter_dispose (GObject *object)
+{
+    LpWidgetExposureMeter *self = LP_WIDGET_EXPOSURE_METER (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_widget_exposure_meter_parent_class)->dispose (object);
+}
 
 static void
 lp_widget_exposure_meter_get_property (GObject    *object,
@@ -354,11 +419,22 @@ lp_widget_exposure_meter_set_property (GObject      *object,
 static void
 lp_widget_exposure_meter_init (LpWidgetExposureMeter *self)
 {
+    guint i;
+
     self->value = 0;
     self->level = LP_EXPOSURE_LEVEL_HIDDEN;
     self->show_label = TRUE;
     self->show_percentage = TRUE;
     self->orientation = LRG_ORIENTATION_HORIZONTAL;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 5; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 
     lrg_widget_set_width (LRG_WIDGET (self), 200.0f);
     lrg_widget_set_height (LRG_WIDGET (self), 60.0f);
@@ -372,6 +448,7 @@ lp_widget_exposure_meter_class_init (LpWidgetExposureMeterClass *klass)
 
     object_class->get_property = lp_widget_exposure_meter_get_property;
     object_class->set_property = lp_widget_exposure_meter_set_property;
+    object_class->dispose = lp_widget_exposure_meter_dispose;
 
     widget_class->draw = lp_widget_exposure_meter_draw;
     widget_class->measure = lp_widget_exposure_meter_measure;

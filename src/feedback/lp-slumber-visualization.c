@@ -53,6 +53,11 @@ struct _LpSlumberVisualization
     GPtrArray   *events;        /* TimelineEntry* */
     gfloat       timeline_scroll;
     gfloat       year_pulse;    /* For year counter animation */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -69,6 +74,49 @@ enum
 static GParamSpec *properties[N_PROPS];
 
 G_DEFINE_TYPE (LpSlumberVisualization, lp_slumber_visualization, LRG_TYPE_CONTAINER)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpSlumberVisualization *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpSlumberVisualization *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * Widget Draw
+ * ========================================================================== */
 
 static void
 lp_slumber_visualization_draw (LrgWidget *widget)
@@ -91,6 +139,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
 
     if (!self->is_active)
         return;
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     theme = lrg_theme_get_default ();
 
@@ -131,8 +182,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
             grl_color_get_b (gold_color),
             pulse_alpha);
 
-        grl_draw_text (year_text, year_x, center_y - YEAR_FONT_SIZE / 2,
-                       YEAR_FONT_SIZE, year_color);
+        draw_label (get_pool_label (self), year_text,
+                    year_x, center_y - YEAR_FONT_SIZE / 2,
+                    YEAR_FONT_SIZE, year_color);
     }
 
     /* Draw progress bar */
@@ -165,9 +217,10 @@ lp_slumber_visualization_draw (LrgWidget *widget)
                 self->target_year - self->start_year);
             gfloat text_width = grl_measure_text (progress_text, font_size_small);
 
-            grl_draw_text (progress_text, center_x - text_width / 2,
-                           bar_y + bar_height + padding / 2,
-                           font_size_small, secondary_color);
+            draw_label (get_pool_label (self), progress_text,
+                        center_x - text_width / 2,
+                        bar_y + bar_height + padding / 2,
+                        font_size_small, secondary_color);
         }
     }
 
@@ -177,8 +230,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
     /* Timeline header */
     {
         gfloat header_width = grl_measure_text ("Event Timeline", font_size);
-        grl_draw_text ("Event Timeline", center_x - header_width / 2, timeline_y,
-                       font_size, text_color);
+        draw_label (get_pool_label (self), "Event Timeline",
+                    center_x - header_width / 2, timeline_y,
+                    font_size, text_color);
     }
     timeline_y += font_size + padding;
 
@@ -217,8 +271,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
                     grl_color_get_g (synergy_color),
                     grl_color_get_b (synergy_color),
                     alpha);
-                grl_draw_text (line_text, x + padding * 2, timeline_y,
-                               font_size, event_color);
+                draw_label (get_pool_label (self), line_text,
+                            x + padding * 2, timeline_y,
+                            font_size, event_color);
             }
             else
             {
@@ -228,8 +283,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
                     grl_color_get_g (secondary_color),
                     grl_color_get_b (secondary_color),
                     alpha);
-                grl_draw_text (line_text, x + padding * 2, timeline_y,
-                               font_size, event_color);
+                draw_label (get_pool_label (self), line_text,
+                            x + padding * 2, timeline_y,
+                            font_size, event_color);
             }
 
             timeline_y += font_size + padding / 2;
@@ -237,8 +293,9 @@ lp_slumber_visualization_draw (LrgWidget *widget)
     }
     else
     {
-        grl_draw_text ("Awaiting events...", x + padding * 2, timeline_y,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), "Awaiting events...",
+                    x + padding * 2, timeline_y,
+                    font_size, secondary_color);
     }
 
     /* Draw acceleration hint at bottom */
@@ -249,9 +306,10 @@ lp_slumber_visualization_draw (LrgWidget *widget)
         gfloat hint_width = grl_measure_text (hint_text, font_size_small);
         const GrlColor *hint_color = self->is_accelerating ? gold_color : secondary_color;
 
-        grl_draw_text (hint_text, center_x - hint_width / 2,
-                       y + height - font_size_small - padding,
-                       font_size_small, hint_color);
+        draw_label (get_pool_label (self), hint_text,
+                    center_x - hint_width / 2,
+                    y + height - font_size_small - padding,
+                    font_size_small, hint_color);
     }
 
     LRG_WIDGET_CLASS (lp_slumber_visualization_parent_class)->draw (widget);
@@ -334,6 +392,8 @@ lp_slumber_visualization_dispose (GObject *object)
     LpSlumberVisualization *self = LP_SLUMBER_VISUALIZATION (object);
 
     g_clear_pointer (&self->events, g_ptr_array_unref);
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
     G_OBJECT_CLASS (lp_slumber_visualization_parent_class)->dispose (object);
 }
@@ -388,6 +448,8 @@ lp_slumber_visualization_class_init (LpSlumberVisualizationClass *klass)
 static void
 lp_slumber_visualization_init (LpSlumberVisualization *self)
 {
+    guint i;
+
     self->start_year = 0;
     self->current_year = 0;
     self->target_year = 0;
@@ -397,6 +459,15 @@ lp_slumber_visualization_init (LpSlumberVisualization *self)
     self->events = g_ptr_array_new_with_free_func (timeline_entry_free);
     self->timeline_scroll = 0.0f;
     self->year_pulse = 0.0f;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 20; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpSlumberVisualization *

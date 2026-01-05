@@ -26,6 +26,11 @@ struct _LpWidgetSynergyIndicator
     /* Manager connection */
     LpSynergyManager *manager;
     gulong            synergies_changed_handler;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -122,6 +127,45 @@ draw_diamond (gfloat          cx,
 }
 
 /* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpWidgetSynergyIndicator *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpWidgetSynergyIndicator *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
  * LrgWidget Virtual Methods
  * ========================================================================== */
 
@@ -153,6 +197,10 @@ lp_widget_synergy_indicator_draw (LrgWidget *widget)
     gboolean has_synergies;
 
     self = LP_WIDGET_SYNERGY_INDICATOR (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     theme = lrg_theme_get_default ();
 
     /* Get bounds */
@@ -207,8 +255,9 @@ lp_widget_synergy_indicator_draw (LrgWidget *widget)
         text_x = x + padding * 2 + icon_size;
         text_y = y + height / 2.0f - font_size / 2.0f;
 
-        grl_draw_text (bonus_text, (gint)text_x, (gint)text_y, (gint)font_size,
-                       has_synergies ? text_color : inactive_color);
+        draw_label (get_pool_label (self), bonus_text,
+                    text_x, text_y, font_size,
+                    has_synergies ? text_color : inactive_color);
     }
     else
     {
@@ -232,22 +281,25 @@ lp_widget_synergy_indicator_draw (LrgWidget *widget)
         text_y = y + height / 2.0f - font_size / 2.0f;
 
         /* Draw label */
-        grl_draw_text ("Synergies: ", (gint)current_x, (gint)text_y, (gint)font_size,
-                       has_synergies ? text_color : inactive_color);
+        draw_label (get_pool_label (self), "Synergies: ",
+                    current_x, text_y, font_size,
+                    has_synergies ? text_color : inactive_color);
         text_width = grl_measure_text ("Synergies: ", (gint)font_size);
         current_x += text_width;
 
         /* Draw count */
         count_text = g_strdup_printf ("%u", self->synergy_count);
-        grl_draw_text (count_text, (gint)current_x, (gint)text_y, (gint)font_size,
-                       has_synergies ? synergy_color : inactive_color);
+        draw_label (get_pool_label (self), count_text,
+                    current_x, text_y, font_size,
+                    has_synergies ? synergy_color : inactive_color);
         text_width = grl_measure_text (count_text, (gint)font_size);
         current_x += text_width;
 
         /* Draw bonus in parentheses */
         bonus_text = g_strdup_printf (" (x%.1f)", self->total_bonus);
-        grl_draw_text (bonus_text, (gint)current_x, (gint)text_y, (gint)font_size,
-                       has_synergies ? synergy_color : inactive_color);
+        draw_label (get_pool_label (self), bonus_text,
+                    current_x, text_y, font_size,
+                    has_synergies ? synergy_color : inactive_color);
 
         /* Draw details if enabled and synergies exist */
         if (self->show_details && has_synergies)
@@ -274,10 +326,10 @@ lp_widget_synergy_indicator_draw (LrgWidget *widget)
                      * LpSynergy type not yet implemented - this will be
                      * expanded in Phase 2+ to show actual synergy details
                      */
-                    grl_draw_text ("* Active synergy",
-                                   (gint)(x + padding * 3),
-                                   (gint)(detail_y + i * (detail_font_size + 2.0f)),
-                                   (gint)detail_font_size, synergy_color);
+                    draw_label (get_pool_label (self), "* Active synergy",
+                                x + padding * 3,
+                                detail_y + i * (detail_font_size + 2.0f),
+                                detail_font_size, synergy_color);
                 }
 
                 /* Show "and N more" if truncated */
@@ -286,10 +338,10 @@ lp_widget_synergy_indicator_draw (LrgWidget *widget)
                     g_autofree gchar *more_text = NULL;
                     more_text = g_strdup_printf ("  ...and %u more",
                                                  synergies->len - 5);
-                    grl_draw_text (more_text,
-                                   (gint)(x + padding * 3),
-                                   (gint)(detail_y + 5 * (detail_font_size + 2.0f)),
-                                   (gint)detail_font_size, inactive_color);
+                    draw_label (get_pool_label (self), more_text,
+                                x + padding * 3,
+                                detail_y + 5 * (detail_font_size + 2.0f),
+                                detail_font_size, inactive_color);
                 }
             }
         }
@@ -424,6 +476,9 @@ lp_widget_synergy_indicator_dispose (GObject *object)
     /* Don't unref manager - it's a singleton */
     self->manager = NULL;
 
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
     G_OBJECT_CLASS (lp_widget_synergy_indicator_parent_class)->dispose (object);
 }
 
@@ -494,6 +549,8 @@ lp_widget_synergy_indicator_class_init (LpWidgetSynergyIndicatorClass *klass)
 static void
 lp_widget_synergy_indicator_init (LpWidgetSynergyIndicator *self)
 {
+    guint i;
+
     self->synergy_count = 0;
     self->total_bonus = 1.0;
     self->show_details = FALSE;
@@ -511,6 +568,15 @@ lp_widget_synergy_indicator_init (LpWidgetSynergyIndicator *self)
     /* Set default size */
     lrg_widget_set_width (LRG_WIDGET (self), 200.0f);
     lrg_widget_set_height (LRG_WIDGET (self), 32.0f);
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 15; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

@@ -20,6 +20,11 @@ struct _LpScreenAgents
     LpAgent        *selected_agent;
     gint            selection_index;
     GPtrArray      *displayed_agents;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -42,6 +47,49 @@ static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (LpScreenAgents, lp_screen_agents, LRG_TYPE_CONTAINER)
 
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpScreenAgents *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpScreenAgents *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * Widget Draw
+ * ========================================================================== */
+
 static void
 lp_screen_agents_draw (LrgWidget *widget)
 {
@@ -59,6 +107,10 @@ lp_screen_agents_draw (LrgWidget *widget)
     const GrlColor *surface_color;
 
     self = LP_SCREEN_AGENTS (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     theme = lrg_theme_get_default ();
 
     /* Get widget position and size */
@@ -88,8 +140,9 @@ lp_screen_agents_draw (LrgWidget *widget)
     grl_draw_line (x, y + header_height,
                    x + width, y + header_height, border_color);
 
-    grl_draw_text ("Agents", x + padding, y + padding,
-                   font_size_large, text_color);
+    draw_label (get_pool_label (self), "Agents",
+                x + padding, y + padding,
+                font_size_large, text_color);
 
     /* Draw agent count */
     if (self->manager != NULL)
@@ -98,17 +151,17 @@ lp_screen_agents_draw (LrgWidget *widget)
         g_autofree gchar *count_text = g_strdup_printf ("Active: %u", count);
         gfloat text_width = grl_measure_text (count_text, font_size);
 
-        grl_draw_text (count_text,
-                       x + width - text_width - padding,
-                       y + padding + (font_size_large - font_size) / 2,
-                       font_size, secondary_color);
+        draw_label (get_pool_label (self), count_text,
+                    x + width - text_width - padding,
+                    y + padding + (font_size_large - font_size) / 2,
+                    font_size, secondary_color);
     }
 
     /* Draw placeholder list */
-    grl_draw_text ("Agent management - coming soon",
-                   x + padding,
-                   y + header_height + padding,
-                   font_size, secondary_color);
+    draw_label (get_pool_label (self), "Agent management - coming soon",
+                x + padding,
+                y + header_height + padding,
+                font_size, secondary_color);
 
     LRG_WIDGET_CLASS (lp_screen_agents_parent_class)->draw (widget);
 }
@@ -162,6 +215,9 @@ lp_screen_agents_dispose (GObject *object)
 
     g_clear_object (&self->manager);
     self->selected_agent = NULL;
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
     G_OBJECT_CLASS (lp_screen_agents_parent_class)->dispose (object);
 }
@@ -223,10 +279,21 @@ lp_screen_agents_class_init (LpScreenAgentsClass *klass)
 static void
 lp_screen_agents_init (LpScreenAgents *self)
 {
+    guint i;
+
     self->manager = NULL;
     self->selected_agent = NULL;
     self->selection_index = -1;
     self->displayed_agents = g_ptr_array_new ();
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 10; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpScreenAgents *

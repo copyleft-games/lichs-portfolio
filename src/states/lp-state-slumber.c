@@ -24,9 +24,74 @@ struct _LpStateSlumber
     LrgGameState parent_instance;
 
     guint slumber_years;    /* Configured slumber duration */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    LrgLabel  *label_question;
+    LrgLabel  *label_duration;
+    LrgLabel  *label_years;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateSlumber, lp_state_slumber, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateSlumber *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateSlumber *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_slumber_dispose (GObject *object)
+{
+    LpStateSlumber *self = LP_STATE_SLUMBER (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_object (&self->label_question);
+    g_clear_object (&self->label_duration);
+    g_clear_object (&self->label_years);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_slumber_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * LrgGameState Virtual Methods
@@ -138,6 +203,9 @@ lp_state_slumber_draw (LrgGameState *state)
     gint panel_x, panel_y, panel_w, panel_h;
     gchar years_str[32];
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
     center_x = screen_w / 2;
@@ -160,23 +228,26 @@ lp_state_slumber_draw (LrgGameState *state)
     grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
 
     /* Title */
-    grl_draw_text ("PREPARE FOR SLUMBER", center_x - 180, panel_y + 30, 36, title_color);
+    draw_label (self->label_title, "PREPARE FOR SLUMBER",
+                center_x - 180, panel_y + 30, 36, title_color);
 
     /* Malachar's question */
-    grl_draw_text ("\"How long shall you rest, my lord?\"",
-                   center_x - 180, panel_y + 90, 18, text_color);
+    draw_label (self->label_question, "\"How long shall you rest, my lord?\"",
+                center_x - 180, panel_y + 90, 18, text_color);
 
     /* Year selector */
-    grl_draw_text ("Duration:", center_x - 60, panel_y + 150, 20, text_color);
+    draw_label (self->label_duration, "Duration:",
+                center_x - 60, panel_y + 150, 20, text_color);
 
     g_snprintf (years_str, sizeof (years_str), "%u years", self->slumber_years);
-    grl_draw_text (years_str, center_x - 50, panel_y + 190, 32, value_color);
+    draw_label (self->label_years, years_str,
+                center_x - 50, panel_y + 190, 32, value_color);
 
     /* Instructions */
-    grl_draw_text ("UP/DOWN to adjust duration",
-                   center_x - 130, panel_y + 260, 16, dim_color);
-    grl_draw_text ("ENTER to confirm, ESC to cancel",
-                   center_x - 150, panel_y + 285, 16, dim_color);
+    draw_label (get_pool_label (self), "UP/DOWN to adjust duration",
+                center_x - 130, panel_y + 260, 16, dim_color);
+    draw_label (get_pool_label (self), "ENTER to confirm, ESC to cancel",
+                center_x - 150, panel_y + 285, 16, dim_color);
 }
 
 static gboolean
@@ -199,7 +270,10 @@ lp_state_slumber_handle_input (LrgGameState *state,
 static void
 lp_state_slumber_class_init (LpStateSlumberClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_slumber_dispose;
 
     state_class->enter = lp_state_slumber_enter;
     state_class->exit = lp_state_slumber_exit;
@@ -211,11 +285,25 @@ lp_state_slumber_class_init (LpStateSlumberClass *klass)
 static void
 lp_state_slumber_init (LpStateSlumber *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Slumber");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
 
     self->slumber_years = DEFAULT_SLUMBER_YEARS;
+
+    /* Create dedicated labels for static text */
+    self->label_title = lrg_label_new (NULL);
+    self->label_question = lrg_label_new (NULL);
+    self->label_duration = lrg_label_new (NULL);
+    self->label_years = lrg_label_new (NULL);
+
+    /* Create label pool for instruction text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 4; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

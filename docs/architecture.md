@@ -310,6 +310,23 @@ GObject
 └── LpCompetitor (implements LrgSaveable) [Phase 4]
 ```
 
+## UI Text Rendering
+
+**All text rendering must use `LrgLabel` widgets, not `grl_draw_text()`.**
+
+The `grl_draw_text()` function bypasses the `LrgTheme` font system and uses raylib's default font. For consistent typography, all UI components use `LrgLabel` widgets with a label pool pattern:
+
+- **Label Pool**: Pre-allocated array of `LrgLabel` widgets reused each frame
+- **Reset per frame**: Pool index reset to 0 at start of each `draw()` call
+- **Helper function**: `draw_label()` configures and draws a label in one call
+
+See `CLAUDE.md` section "Text Rendering with LrgLabel" for complete implementation patterns.
+
+**Reference implementations:**
+- `src/states/lp-state-analyze.c` - Complex state with many labels
+- `src/ui/lp-screen-portfolio.c` - Screen widget with label pool
+- `src/feedback/lp-floating-text.c` - Simple widget with single label
+
 ## Build System
 
 The build system uses GNU Make with the following structure:

@@ -16,6 +16,11 @@ struct _LpScreenLedger
     LrgContainer parent_instance;
 
     LpLedger *ledger;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -28,6 +33,49 @@ enum
 static GParamSpec *properties[N_PROPS];
 
 G_DEFINE_TYPE (LpScreenLedger, lp_screen_ledger, LRG_TYPE_CONTAINER)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpScreenLedger *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpScreenLedger *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * Widget Draw
+ * ========================================================================== */
 
 static void
 lp_screen_ledger_draw (LrgWidget *widget)
@@ -46,6 +94,10 @@ lp_screen_ledger_draw (LrgWidget *widget)
     const GrlColor *surface_color;
 
     self = LP_SCREEN_LEDGER (widget);
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     theme = lrg_theme_get_default ();
 
     /* Get widget position and size */
@@ -75,8 +127,9 @@ lp_screen_ledger_draw (LrgWidget *widget)
     grl_draw_line (x, y + header_height,
                    x + width, y + header_height, border_color);
 
-    grl_draw_text ("Ledger of Secrets", x + padding, y + padding,
-                   font_size_large, text_color);
+    draw_label (get_pool_label (self), "Ledger of Secrets",
+                x + padding, y + padding,
+                font_size_large, text_color);
 
     /* Draw discovery count if ledger is set */
     if (self->ledger != NULL)
@@ -87,17 +140,17 @@ lp_screen_ledger_draw (LrgWidget *widget)
                                                          discovered, in_progress);
         gfloat text_width = grl_measure_text (count_text, font_size);
 
-        grl_draw_text (count_text,
-                       x + width - text_width - padding,
-                       y + padding + (font_size_large - font_size) / 2,
-                       font_size, lp_theme_get_hidden_color ());
+        draw_label (get_pool_label (self), count_text,
+                    x + width - text_width - padding,
+                    y + padding + (font_size_large - font_size) / 2,
+                    font_size, lp_theme_get_hidden_color ());
     }
 
     /* Draw placeholder content */
-    grl_draw_text ("Hidden knowledge and discoveries - coming soon",
-                   x + padding,
-                   y + header_height + padding,
-                   font_size, secondary_color);
+    draw_label (get_pool_label (self), "Hidden knowledge and discoveries - coming soon",
+                x + padding,
+                y + header_height + padding,
+                font_size, secondary_color);
 
     LRG_WIDGET_CLASS (lp_screen_ledger_parent_class)->draw (widget);
 }
@@ -147,6 +200,8 @@ lp_screen_ledger_dispose (GObject *object)
     LpScreenLedger *self = LP_SCREEN_LEDGER (object);
 
     g_clear_object (&self->ledger);
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
     G_OBJECT_CLASS (lp_screen_ledger_parent_class)->dispose (object);
 }
@@ -177,7 +232,18 @@ lp_screen_ledger_class_init (LpScreenLedgerClass *klass)
 static void
 lp_screen_ledger_init (LpScreenLedger *self)
 {
+    guint i;
+
     self->ledger = NULL;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 10; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 LpScreenLedger *

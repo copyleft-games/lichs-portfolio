@@ -22,9 +22,68 @@ struct _LpStateWake
 
     GList *events;          /* Events that occurred during slumber */
     guint  current_event;   /* Index of currently displayed event */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateWake, lp_state_wake, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateWake *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateWake *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_wake_dispose (GObject *object)
+{
+    LpStateWake *self = LP_STATE_WAKE (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_wake_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * LrgGameState Virtual Methods
@@ -112,7 +171,8 @@ lp_state_wake_draw (LrgGameState *state)
     gint center_x;
     gint title_y, year_y, greeting_y, portfolio_y, instructions_y;
 
-    (void)self;
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     /* Get virtual resolution (render target size) for UI positioning */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
@@ -133,7 +193,8 @@ lp_state_wake_draw (LrgGameState *state)
     gold_color = grl_color_new (255, 215, 0, 255);
 
     /* Draw title */
-    grl_draw_text ("THE LICH AWAKENS", center_x - 180, title_y, 48, title_color);
+    draw_label (self->label_title, "THE LICH AWAKENS",
+                center_x - 180, title_y, 48, title_color);
 
     /* Get game data info */
     if (game_data != NULL)
@@ -146,26 +207,31 @@ lp_state_wake_draw (LrgGameState *state)
         g_snprintf (year_str, sizeof (year_str), "Year 847 of the Third Age");
     }
 
-    grl_draw_text (year_str, center_x - 140, year_y, 24, text_color);
+    draw_label (get_pool_label (self), year_str,
+                center_x - 140, year_y, 24, text_color);
 
     /* Malachar's greeting */
-    grl_draw_text ("\"Ah, you have awakened, my eternal apprentice...\"",
-                   center_x - 280, greeting_y, 20, gold_color);
+    draw_label (get_pool_label (self), "\"Ah, you have awakened, my eternal apprentice...\"",
+                center_x - 280, greeting_y, 20, gold_color);
 
-    grl_draw_text ("\"The mortal world continues its endless dance of",
-                   center_x - 280, greeting_y + 40, 18, text_color);
-    grl_draw_text ("gold and folly. Let us see what opportunities await.\"",
-                   center_x - 280, greeting_y + 65, 18, text_color);
+    draw_label (get_pool_label (self), "\"The mortal world continues its endless dance of",
+                center_x - 280, greeting_y + 40, 18, text_color);
+    draw_label (get_pool_label (self), "gold and folly. Let us see what opportunities await.\"",
+                center_x - 280, greeting_y + 65, 18, text_color);
 
     /* Portfolio summary placeholder */
-    grl_draw_text ("Portfolio Summary:", center_x - 280, portfolio_y, 22, title_color);
-    grl_draw_text ("Starting Gold: 10,000 gp", center_x - 260, portfolio_y + 40, 18, text_color);
-    grl_draw_text ("Investments: None", center_x - 260, portfolio_y + 65, 18, text_color);
-    grl_draw_text ("Agents: None", center_x - 260, portfolio_y + 90, 18, text_color);
+    draw_label (get_pool_label (self), "Portfolio Summary:",
+                center_x - 280, portfolio_y, 22, title_color);
+    draw_label (get_pool_label (self), "Starting Gold: 10,000 gp",
+                center_x - 260, portfolio_y + 40, 18, text_color);
+    draw_label (get_pool_label (self), "Investments: None",
+                center_x - 260, portfolio_y + 65, 18, text_color);
+    draw_label (get_pool_label (self), "Agents: None",
+                center_x - 260, portfolio_y + 90, 18, text_color);
 
     /* Instructions */
-    grl_draw_text ("Press ENTER or SPACE to continue...",
-                   center_x - 180, instructions_y, 16, dim_color);
+    draw_label (get_pool_label (self), "Press ENTER or SPACE to continue...",
+                center_x - 180, instructions_y, 16, dim_color);
 }
 
 static gboolean
@@ -198,6 +264,7 @@ lp_state_wake_class_init (LpStateWakeClass *klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
 
+    object_class->dispose = lp_state_wake_dispose;
     object_class->finalize = lp_state_wake_finalize;
 
     state_class->enter = lp_state_wake_enter;
@@ -210,12 +277,23 @@ lp_state_wake_class_init (LpStateWakeClass *klass)
 static void
 lp_state_wake_init (LpStateWake *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Wake");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
 
     self->events = NULL;
     self->current_event = 0;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 12; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

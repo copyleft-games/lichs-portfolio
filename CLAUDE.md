@@ -470,7 +470,182 @@ main (int    argc,
 - `deps/libregnum/rules.mk` - Build helpers
 - `deps/libregnum/examples/Makefile` - Example game build
 
+## Text Rendering with LrgLabel
+
+**IMPORTANT:** Never use `grl_draw_text()` directly. Always use `LrgLabel` widgets for text rendering to ensure proper font support via `LrgTheme`.
+
+### Why LrgLabel?
+
+- `grl_draw_text()` uses raylib's default font which doesn't support the theme font system
+- `LrgLabel` widgets use `LrgTheme` fonts, ensuring consistent typography
+- Labels support proper text measurement and layout
+
+### Pattern: Label Pool for Dynamic Text
+
+For widgets/states that draw multiple text elements each frame, use a label pool:
+
+```c
+/* In struct definition */
+struct _LpStateFoo
+{
+    LrgGameState parent_instance;
+
+    /* ... other fields ... */
+
+    /* UI Labels */
+    LrgLabel  *label_title;      /* Dedicated label for static text */
+    GPtrArray *label_pool;       /* Pool for dynamic text */
+    guint      label_pool_index; /* Current pool index */
+};
+
+/* ==========================================================================
+ * Label Helpers (add after G_DEFINE_TYPE)
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateFoo *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateFoo *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* In init - create labels */
+static void
+lp_state_foo_init (LpStateFoo *self)
+{
+    guint i;
+
+    /* Create dedicated labels for static text */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text
+     * Size should be ~1.5x max simultaneous labels needed */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 20; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
+}
+
+/* In dispose - cleanup labels */
+static void
+lp_state_foo_dispose (GObject *object)
+{
+    LpStateFoo *self = LP_STATE_FOO (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_foo_parent_class)->dispose (object);
+}
+
+/* In draw - reset pool at start, then use labels */
+static void
+lp_state_foo_draw (LrgGameState *state)
+{
+    LpStateFoo *self = LP_STATE_FOO (state);
+    LrgTheme *theme = lrg_theme_get_default ();
+
+    /* IMPORTANT: Reset pool at start of each frame */
+    reset_label_pool (self);
+
+    /* Draw static text with dedicated label */
+    draw_label (self->label_title, "Title Text",
+                100, 50,
+                lrg_theme_get_font_size_large (theme),
+                lrg_theme_get_text_color (theme));
+
+    /* Draw dynamic text with pool labels */
+    for (i = 0; i < count; i++)
+    {
+        g_autofree gchar *text = g_strdup_printf ("Item %d", i);
+        draw_label (get_pool_label (self), text,
+                    100, 100 + i * 20,
+                    lrg_theme_get_font_size_normal (theme),
+                    lrg_theme_get_text_secondary_color (theme));
+    }
+
+    LRG_GAME_STATE_CLASS (lp_state_foo_parent_class)->draw (state);
+}
+```
+
+### Pattern: Single Label for Simple Widgets
+
+For widgets that only display one piece of text:
+
+```c
+struct _LpSimpleWidget
+{
+    LrgWidget parent_instance;
+    LrgLabel *label;
+};
+
+/* In init */
+self->label = lrg_label_new (NULL);
+
+/* In dispose */
+g_clear_object (&self->label);
+
+/* In draw */
+lrg_label_set_text (self->label, text);
+lrg_widget_set_position (LRG_WIDGET (self->label), x, y);
+lrg_label_set_font_size (self->label, font_size);
+lrg_label_set_color (self->label, color);
+lrg_widget_draw (LRG_WIDGET (self->label));
+```
+
+### Checklist for New UI Components
+
+When creating a new state, screen, or widget that displays text:
+
+1. Add `LrgLabel *label_title` and/or `GPtrArray *label_pool` to struct
+2. Add `guint label_pool_index` if using pool
+3. Add `draw_label()`, `get_pool_label()`, `reset_label_pool()` helpers after `G_DEFINE_TYPE`
+4. Create labels in `_init()`
+5. Clean up labels in `_dispose()` (add dispose if it doesn't exist)
+6. Register dispose in `_class_init()` if newly added
+7. Call `reset_label_pool()` at start of `_draw()`
+8. Use `draw_label()` instead of `grl_draw_text()`
+
 ## Common Mistakes to Avoid
+
+### Using grl_draw_text() Directly
+
+```c
+/* WRONG - bypasses theme font system */
+grl_draw_text ("Hello", x, y, 20, color);
+
+/* CORRECT - uses LrgLabel with theme fonts */
+draw_label (get_pool_label (self), "Hello", x, y,
+            lrg_theme_get_font_size_normal (theme), color);
+```
 
 ### GBoxed vs GObject (from graylib)
 

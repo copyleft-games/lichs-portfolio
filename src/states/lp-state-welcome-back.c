@@ -22,9 +22,70 @@ struct _LpStateWelcomeBack
     /* Animation */
     gdouble       anim_timer;
     gboolean      show_prompt;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    LrgLabel  *label_greeting;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateWelcomeBack, lp_state_welcome_back, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateWelcomeBack *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateWelcomeBack *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_welcome_back_dispose (GObject *object)
+{
+    LpStateWelcomeBack *self = LP_STATE_WELCOME_BACK (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_object (&self->label_greeting);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_welcome_back_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * Helper Functions
@@ -195,6 +256,9 @@ lp_state_welcome_back_draw (LrgGameState *state)
     gchar time_str[64];
     gchar gold_str[64];
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get virtual resolution (render target size) for UI positioning */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
@@ -222,34 +286,39 @@ lp_state_welcome_back_draw (LrgGameState *state)
     grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
 
     /* Draw title */
-    grl_draw_text ("WELCOME BACK", center_x - 130, panel_y + 30, 36, title_color);
+    draw_label (self->label_title, "WELCOME BACK",
+                center_x - 130, panel_y + 30, 36, title_color);
 
     /* Malachar's greeting */
-    grl_draw_text ("\"Ah, you have returned, my eternal apprentice...\"",
-                   center_x - 210, panel_y + 90, 18, text_color);
+    draw_label (self->label_greeting, "\"Ah, you have returned, my eternal apprentice...\"",
+                center_x - 210, panel_y + 90, 18, text_color);
 
     /* Format time away */
     format_time_offline (self->seconds_offline, time_str, sizeof (time_str));
 
-    grl_draw_text ("Time in slumber:", center_x - 100, panel_y + 140, 20, text_color);
-    grl_draw_text (time_str, center_x - 60, panel_y + 170, 24, title_color);
+    draw_label (get_pool_label (self), "Time in slumber:",
+                center_x - 100, panel_y + 140, 20, text_color);
+    draw_label (get_pool_label (self), time_str,
+                center_x - 60, panel_y + 170, 24, title_color);
 
     /* Format gold earned */
     format_gold_amount (self->gold_earned, gold_str, sizeof (gold_str));
 
-    grl_draw_text ("Gold earned:", center_x - 80, panel_y + 210, 20, text_color);
+    draw_label (get_pool_label (self), "Gold earned:",
+                center_x - 80, panel_y + 210, 20, text_color);
 
     {
         gchar gold_display[128];
         g_snprintf (gold_display, sizeof (gold_display), "+%s gp", gold_str);
-        grl_draw_text (gold_display, center_x - 60, panel_y + 240, 28, gold_color);
+        draw_label (get_pool_label (self), gold_display,
+                    center_x - 60, panel_y + 240, 28, gold_color);
     }
 
     /* Draw prompt (blinking) */
     if (self->show_prompt)
     {
-        grl_draw_text ("Press ENTER or SPACE to continue...",
-                       center_x - 170, panel_y + panel_h - 50, 16, dim_color);
+        draw_label (get_pool_label (self), "Press ENTER or SPACE to continue...",
+                    center_x - 170, panel_y + panel_h - 50, 16, dim_color);
     }
 }
 
@@ -283,6 +352,7 @@ lp_state_welcome_back_class_init (LpStateWelcomeBackClass *klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
 
+    object_class->dispose = lp_state_welcome_back_dispose;
     object_class->finalize = lp_state_welcome_back_finalize;
 
     state_class->enter = lp_state_welcome_back_enter;
@@ -295,6 +365,8 @@ lp_state_welcome_back_class_init (LpStateWelcomeBackClass *klass)
 static void
 lp_state_welcome_back_init (LpStateWelcomeBack *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "WelcomeBack");
 
     /*
@@ -308,6 +380,16 @@ lp_state_welcome_back_init (LpStateWelcomeBack *self)
     self->gold_earned = NULL;
     self->anim_timer = 0.0;
     self->show_prompt = TRUE;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+    self->label_greeting = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 8; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

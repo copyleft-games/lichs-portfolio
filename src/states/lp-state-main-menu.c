@@ -30,9 +30,72 @@ struct _LpStateMainMenu
 
     gint      selected_option;
     gboolean  has_save_file;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    LrgLabel  *label_subtitle;
+    LrgLabel  *label_instructions;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateMainMenu, lp_state_main_menu, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateMainMenu *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateMainMenu *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_main_menu_dispose (GObject *object)
+{
+    LpStateMainMenu *self = LP_STATE_MAIN_MENU (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_object (&self->label_subtitle);
+    g_clear_object (&self->label_instructions);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_main_menu_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * LrgGameState Virtual Methods
@@ -77,6 +140,9 @@ lp_state_main_menu_draw (LrgGameState *state)
         "Quit"
     };
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get virtual resolution (render target size) for UI positioning */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
@@ -97,10 +163,12 @@ lp_state_main_menu_draw (LrgGameState *state)
     disabled_color = grl_color_new (100, 100, 100, 255);  /* Dark gray */
 
     /* Draw title */
-    grl_draw_text ("LICH'S PORTFOLIO", center_x - 200, title_y, 48, title_color);
+    draw_label (self->label_title, "LICH'S PORTFOLIO",
+                center_x - 200, title_y, 48, title_color);
 
     /* Draw subtitle */
-    grl_draw_text ("An Immortal Investment Strategy", center_x - 180, subtitle_y, 20, normal_color);
+    draw_label (self->label_subtitle, "An Immortal Investment Strategy",
+                center_x - 180, subtitle_y, 20, normal_color);
 
     /* Draw menu options */
     for (i = 0; i < MENU_OPTION_COUNT; i++)
@@ -128,15 +196,17 @@ lp_state_main_menu_draw (LrgGameState *state)
         /* Draw selection indicator for selected item */
         if (i == self->selected_option)
         {
-            grl_draw_text (">", center_x - 100 + x_offset, menu_y + (i * y_spacing), 24, color);
+            draw_label (get_pool_label (self), ">",
+                        center_x - 100 + x_offset, menu_y + (i * y_spacing), 24, color);
         }
 
-        grl_draw_text (menu_items[i], center_x - 70 + x_offset, menu_y + (i * y_spacing), 24, color);
+        draw_label (get_pool_label (self), menu_items[i],
+                    center_x - 70 + x_offset, menu_y + (i * y_spacing), 24, color);
     }
 
     /* Draw instructions at bottom */
-    grl_draw_text ("Use UP/DOWN to navigate, ENTER to select",
-                   center_x - 200, instructions_y, 16, disabled_color);
+    draw_label (self->label_instructions, "Use UP/DOWN to navigate, ENTER to select",
+                center_x - 200, instructions_y, 16, disabled_color);
 }
 
 static void
@@ -253,7 +323,10 @@ lp_state_main_menu_handle_input (LrgGameState *state,
 static void
 lp_state_main_menu_class_init (LpStateMainMenuClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_main_menu_dispose;
 
     state_class->enter = lp_state_main_menu_enter;
     state_class->exit = lp_state_main_menu_exit;
@@ -265,12 +338,25 @@ lp_state_main_menu_class_init (LpStateMainMenuClass *klass)
 static void
 lp_state_main_menu_init (LpStateMainMenu *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "MainMenu");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
 
     self->selected_option = MENU_OPTION_NEW_GAME;
     self->has_save_file = FALSE;
+
+    /* Create dedicated labels for static text */
+    self->label_title = lrg_label_new (NULL);
+    self->label_subtitle = lrg_label_new (NULL);
+    self->label_instructions = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text (menu items + selection indicators) */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 10; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

@@ -60,9 +60,68 @@ struct _LpStateSettings
     gboolean auto_save;
     gboolean tutorials;
     gint  difficulty;          /* 0=Easy, 1=Normal, 2=Hard */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateSettings, lp_state_settings, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateSettings *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateSettings *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_settings_dispose (GObject *object)
+{
+    LpStateSettings *self = LP_STATE_SETTINGS (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_settings_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * Settings Access Helpers
@@ -456,29 +515,30 @@ lp_state_settings_update (LrgGameState *state,
 }
 
 static void
-draw_option (gint         base_x,
-             const gchar *label,
-             const gchar *value,
-             gint         y,
-             gboolean     selected,
-             GrlColor    *text_color,
-             GrlColor    *selected_color,
-             GrlColor    *value_color)
+draw_option (LpStateSettings *self,
+             gint             base_x,
+             const gchar     *option_label,
+             const gchar     *value,
+             gint             y,
+             gboolean         selected,
+             GrlColor        *text_color,
+             GrlColor        *selected_color,
+             GrlColor        *value_color)
 {
     GrlColor *label_c = selected ? selected_color : text_color;
 
     if (selected)
     {
-        grl_draw_text (">", base_x, y, 18, selected_color);
+        draw_label (get_pool_label (self), ">", base_x, y, 18, selected_color);
     }
 
-    grl_draw_text (label, base_x + 20, y, 18, label_c);
-    grl_draw_text (value, base_x + 280, y, 18, value_color);
+    draw_label (get_pool_label (self), option_label, base_x + 20, y, 18, label_c);
+    draw_label (get_pool_label (self), value, base_x + 280, y, 18, value_color);
 
     if (selected)
     {
-        grl_draw_text ("<", base_x + 260, y, 18, selected_color);
-        grl_draw_text (">", base_x + 380, y, 18, selected_color);
+        draw_label (get_pool_label (self), "<", base_x + 260, y, 18, selected_color);
+        draw_label (get_pool_label (self), ">", base_x + 380, y, 18, selected_color);
     }
 }
 
@@ -520,6 +580,9 @@ lp_state_settings_draw (LrgGameState *state)
         "Hard"
     };
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get virtual resolution (render target size) for UI positioning */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
@@ -549,7 +612,8 @@ lp_state_settings_draw (LrgGameState *state)
     grl_draw_rectangle (0, 0, screen_w, screen_h, bg_color);
 
     /* Draw title */
-    grl_draw_text ("SETTINGS", center_x - 80, panel_y - 60, 40, title_color);
+    draw_label (self->label_title, "SETTINGS",
+                center_x - 80, panel_y - 60, 40, title_color);
 
     /* Draw tabs */
     for (i = 0; i < SETTINGS_TAB_COUNT; i++)
@@ -562,7 +626,7 @@ lp_state_settings_draw (LrgGameState *state)
         tab_x = panel_x + (i * tab_spacing) + 20;
         color = (i == (gint)self->current_tab) ? selected_color : text_color;
 
-        grl_draw_text (tab_names[i], tab_x, panel_y - 20, 20, color);
+        draw_label (get_pool_label (self), tab_names[i], tab_x, panel_y - 20, 20, color);
 
         if (i == (gint)self->current_tab)
         {
@@ -578,60 +642,69 @@ lp_state_settings_draw (LrgGameState *state)
     switch (self->current_tab)
     {
     case SETTINGS_TAB_GRAPHICS:
-        draw_option (content_x, "Resolution:", resolution_strs[self->resolution_idx],
+        draw_option (self, content_x, "Resolution:", resolution_strs[self->resolution_idx],
                      content_y, self->selected_option == 0,
                      text_color, selected_color, value_color);
 
-        draw_option (content_x, "Fullscreen:", self->fullscreen ? "On" : "Off",
+        draw_option (self, content_x, "Fullscreen:", self->fullscreen ? "On" : "Off",
                      content_y + 40, self->selected_option == 1,
                      text_color, selected_color, value_color);
 
-        draw_option (content_x, "VSync:", self->vsync ? "On" : "Off",
+        draw_option (self, content_x, "VSync:", self->vsync ? "On" : "Off",
                      content_y + 80, self->selected_option == 2,
                      text_color, selected_color, value_color);
         break;
 
     case SETTINGS_TAB_AUDIO:
         g_snprintf (value_str, sizeof (value_str), "%d%%", self->master_volume);
-        draw_option (content_x, "Master Volume:", value_str,
+        draw_option (self, content_x, "Master Volume:", value_str,
                      content_y, self->selected_option == 0,
                      text_color, selected_color, value_color);
 
         g_snprintf (value_str, sizeof (value_str), "%d%%", self->music_volume);
-        draw_option (content_x, "Music Volume:", value_str,
+        draw_option (self, content_x, "Music Volume:", value_str,
                      content_y + 40, self->selected_option == 1,
                      text_color, selected_color, value_color);
 
         g_snprintf (value_str, sizeof (value_str), "%d%%", self->sfx_volume);
-        draw_option (content_x, "SFX Volume:", value_str,
+        draw_option (self, content_x, "SFX Volume:", value_str,
                      content_y + 80, self->selected_option == 2,
                      text_color, selected_color, value_color);
         break;
 
     case SETTINGS_TAB_GAMEPLAY:
-        draw_option (content_x, "Auto-Save:", self->auto_save ? "On" : "Off",
+        draw_option (self, content_x, "Auto-Save:", self->auto_save ? "On" : "Off",
                      content_y, self->selected_option == 0,
                      text_color, selected_color, value_color);
 
-        draw_option (content_x, "Tutorials:", self->tutorials ? "On" : "Off",
+        draw_option (self, content_x, "Tutorials:", self->tutorials ? "On" : "Off",
                      content_y + 40, self->selected_option == 1,
                      text_color, selected_color, value_color);
 
-        draw_option (content_x, "Difficulty:", difficulties[self->difficulty],
+        draw_option (self, content_x, "Difficulty:", difficulties[self->difficulty],
                      content_y + 80, self->selected_option == 2,
                      text_color, selected_color, value_color);
         break;
 
     case SETTINGS_TAB_CONTROLS:
-        grl_draw_text ("Key Bindings (read-only):", content_x, content_y, 18, title_color);
-        grl_draw_text ("Navigate Menu:", content_x + 20, content_y + 40, 16, text_color);
-        grl_draw_text ("Arrow Keys / WASD", content_x + 260, content_y + 40, 16, dim_color);
-        grl_draw_text ("Select / Confirm:", content_x + 20, content_y + 70, 16, text_color);
-        grl_draw_text ("Enter / Space", content_x + 260, content_y + 70, 16, dim_color);
-        grl_draw_text ("Back / Cancel:", content_x + 20, content_y + 100, 16, text_color);
-        grl_draw_text ("Escape", content_x + 260, content_y + 100, 16, dim_color);
-        grl_draw_text ("Switch Tabs:", content_x + 20, content_y + 130, 16, text_color);
-        grl_draw_text ("Tab", content_x + 260, content_y + 130, 16, dim_color);
+        draw_label (get_pool_label (self), "Key Bindings (read-only):",
+                    content_x, content_y, 18, title_color);
+        draw_label (get_pool_label (self), "Navigate Menu:",
+                    content_x + 20, content_y + 40, 16, text_color);
+        draw_label (get_pool_label (self), "Arrow Keys / WASD",
+                    content_x + 260, content_y + 40, 16, dim_color);
+        draw_label (get_pool_label (self), "Select / Confirm:",
+                    content_x + 20, content_y + 70, 16, text_color);
+        draw_label (get_pool_label (self), "Enter / Space",
+                    content_x + 260, content_y + 70, 16, dim_color);
+        draw_label (get_pool_label (self), "Back / Cancel:",
+                    content_x + 20, content_y + 100, 16, text_color);
+        draw_label (get_pool_label (self), "Escape",
+                    content_x + 260, content_y + 100, 16, dim_color);
+        draw_label (get_pool_label (self), "Switch Tabs:",
+                    content_x + 20, content_y + 130, 16, text_color);
+        draw_label (get_pool_label (self), "Tab",
+                    content_x + 260, content_y + 130, 16, dim_color);
         break;
 
     default:
@@ -639,8 +712,8 @@ lp_state_settings_draw (LrgGameState *state)
     }
 
     /* Draw instructions at bottom */
-    grl_draw_text ("UP/DOWN: Select    LEFT/RIGHT: Change    TAB: Switch Tab    ESC: Return",
-                   center_x - 340, screen_h - 50, 16, dim_color);
+    draw_label (get_pool_label (self), "UP/DOWN: Select    LEFT/RIGHT: Change    TAB: Switch Tab    ESC: Return",
+                center_x - 340, screen_h - 50, 16, dim_color);
 }
 
 static gboolean
@@ -659,7 +732,10 @@ lp_state_settings_handle_input (LrgGameState *state,
 static void
 lp_state_settings_class_init (LpStateSettingsClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_settings_dispose;
 
     state_class->enter = lp_state_settings_enter;
     state_class->exit = lp_state_settings_exit;
@@ -671,6 +747,8 @@ lp_state_settings_class_init (LpStateSettingsClass *klass)
 static void
 lp_state_settings_init (LpStateSettings *self)
 {
+    guint i;
+
     /* Settings menu is transparent (can show from main menu or pause) */
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Settings");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), TRUE);
@@ -693,6 +771,15 @@ lp_state_settings_init (LpStateSettings *self)
     self->auto_save = TRUE;
     self->tutorials = TRUE;
     self->difficulty = 1;  /* Normal */
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text (tabs, options, controls, instructions) */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 60; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

@@ -21,10 +21,67 @@ struct _LpStateAnalyze
 {
     LrgGameState parent_instance;
 
-    /* UI state would go here in later phases */
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateAnalyze, lp_state_analyze, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateAnalyze *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateAnalyze *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_analyze_dispose (GObject *object)
+{
+    LpStateAnalyze *self = LP_STATE_ANALYZE (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_analyze_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * LrgGameState Virtual Methods
@@ -112,6 +169,7 @@ lp_state_analyze_update (LrgGameState *state,
 static void
 lp_state_analyze_draw (LrgGameState *state)
 {
+    LpStateAnalyze *self = LP_STATE_ANALYZE (state);
     LpGame *game = lp_game_get_from_state (state);
     LpGameData *game_data = lp_game_get_game_data (game);
     g_autoptr(GrlColor) title_color = NULL;
@@ -126,6 +184,9 @@ lp_state_analyze_draw (LrgGameState *state)
     gint margin, header_h, main_area_top, main_area_h;
     gint left_panel_w, right_panel_w, center_panel_x, center_panel_w;
     gint bottom_panel_y, bottom_panel_h;
+
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
 
     /* Get virtual resolution (render target size) for UI positioning */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
@@ -154,7 +215,8 @@ lp_state_analyze_draw (LrgGameState *state)
     panel_color = grl_color_new (30, 30, 40, 255);
 
     /* Draw header */
-    grl_draw_text ("WORLD ANALYSIS", center_x - 140, 30, 32, title_color);
+    draw_label (self->label_title, "WORLD ANALYSIS",
+                center_x - 140, 30, 32, title_color);
 
     /* Get and display current year */
     if (game_data != NULL)
@@ -166,35 +228,44 @@ lp_state_analyze_draw (LrgGameState *state)
     {
         g_snprintf (year_str, sizeof (year_str), "Year 847 of the Third Age");
     }
-    grl_draw_text (year_str, center_x - 120, 70, 18, text_color);
+    draw_label (get_pool_label (self), year_str,
+                center_x - 120, 70, 18, text_color);
 
     /* Portfolio panel (left side) */
     grl_draw_rectangle (margin, main_area_top, left_panel_w, main_area_h, panel_color);
-    grl_draw_text ("Portfolio", margin + 15, main_area_top + 10, 24, title_color);
-    grl_draw_text ("Gold: 10,000 gp", margin + 15, main_area_top + 50, 18, gold_color);
-    grl_draw_text ("Investments: 0", margin + 15, main_area_top + 80, 16, text_color);
-    grl_draw_text ("Total Value: 10,000 gp", margin + 15, main_area_top + 105, 16, text_color);
+    draw_label (get_pool_label (self), "Portfolio",
+                margin + 15, main_area_top + 10, 24, title_color);
+    draw_label (get_pool_label (self), "Gold: 10,000 gp",
+                margin + 15, main_area_top + 50, 18, gold_color);
+    draw_label (get_pool_label (self), "Investments: 0",
+                margin + 15, main_area_top + 80, 16, text_color);
+    draw_label (get_pool_label (self), "Total Value: 10,000 gp",
+                margin + 15, main_area_top + 105, 16, text_color);
 
     /* World map placeholder (center) */
     grl_draw_rectangle (center_panel_x, main_area_top, center_panel_w, main_area_h, panel_color);
-    grl_draw_text ("World Map", center_panel_x + center_panel_w / 2 - 60, main_area_top + 10, 24, title_color);
-    grl_draw_text ("(Kingdoms and regions will be displayed here)",
-                   center_panel_x + center_panel_w / 2 - 190, main_area_top + main_area_h / 2, 16, dim_color);
+    draw_label (get_pool_label (self), "World Map",
+                center_panel_x + center_panel_w / 2 - 60, main_area_top + 10, 24, title_color);
+    draw_label (get_pool_label (self), "(Kingdoms and regions will be displayed here)",
+                center_panel_x + center_panel_w / 2 - 190, main_area_top + main_area_h / 2, 16, dim_color);
 
     /* Agent panel (right side) */
     grl_draw_rectangle (screen_w - right_panel_w - margin, main_area_top, right_panel_w, main_area_h, panel_color);
-    grl_draw_text ("Agents", screen_w - right_panel_w - margin + 15, main_area_top + 10, 24, title_color);
-    grl_draw_text ("No agents recruited", screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
+    draw_label (get_pool_label (self), "Agents",
+                screen_w - right_panel_w - margin + 15, main_area_top + 10, 24, title_color);
+    draw_label (get_pool_label (self), "No agents recruited",
+                screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
 
     /* Actions bar (bottom) */
     grl_draw_rectangle (margin, bottom_panel_y, screen_w - (margin * 2), bottom_panel_h, panel_color);
-    grl_draw_text ("Actions", margin + 15, bottom_panel_y + 10, 20, title_color);
-    grl_draw_text ("[I] Investments    [A] Agents    [S] Enter Slumber    [ESC] Main Menu",
-                   margin + 15, bottom_panel_y + 50, 16, text_color);
+    draw_label (get_pool_label (self), "Actions",
+                margin + 15, bottom_panel_y + 10, 20, title_color);
+    draw_label (get_pool_label (self), "[I] Investments    [A] Agents    [S] Enter Slumber    [ESC] Main Menu",
+                margin + 15, bottom_panel_y + 50, 16, text_color);
 
     /* Malachar hint */
-    grl_draw_text ("\"The mortal kingdoms await your careful analysis, my lord...\"",
-                   margin + 15, bottom_panel_y + bottom_panel_h - 30, 14, gold_color);
+    draw_label (get_pool_label (self), "\"The mortal kingdoms await your careful analysis, my lord...\"",
+                margin + 15, bottom_panel_y + bottom_panel_h - 30, 14, gold_color);
 }
 
 static gboolean
@@ -218,7 +289,10 @@ lp_state_analyze_handle_input (LrgGameState *state,
 static void
 lp_state_analyze_class_init (LpStateAnalyzeClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_analyze_dispose;
 
     state_class->enter = lp_state_analyze_enter;
     state_class->exit = lp_state_analyze_exit;
@@ -230,9 +304,20 @@ lp_state_analyze_class_init (LpStateAnalyzeClass *klass)
 static void
 lp_state_analyze_init (LpStateAnalyze *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Analyze");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 15; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

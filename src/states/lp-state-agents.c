@@ -53,9 +53,68 @@ struct _LpStateAgents
     ViewMode view_mode;       /* Current view mode */
     gint     selected_index;  /* Currently selected item */
     gint     scroll_offset;   /* Scroll offset for long lists */
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 G_DEFINE_TYPE (LpStateAgents, lp_state_agents, LRG_TYPE_GAME_STATE)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpStateAgents *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpStateAgents *self)
+{
+    self->label_pool_index = 0;
+}
+
+/* ==========================================================================
+ * GObject Virtual Methods
+ * ========================================================================== */
+
+static void
+lp_state_agents_dispose (GObject *object)
+{
+    LpStateAgents *self = LP_STATE_AGENTS (object);
+
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
+    G_OBJECT_CLASS (lp_state_agents_parent_class)->dispose (object);
+}
 
 /* ==========================================================================
  * Helper Functions
@@ -302,6 +361,9 @@ lp_state_agents_draw (LrgGameState *state)
     gint option_y;
     gboolean is_selected;
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get virtual resolution */
     screen_w = lrg_game_2d_template_get_virtual_width (LRG_GAME_2D_TEMPLATE (game));
     screen_h = lrg_game_2d_template_get_virtual_height (LRG_GAME_2D_TEMPLATE (game));
@@ -330,7 +392,7 @@ lp_state_agents_draw (LrgGameState *state)
     loyalty_low_color = grl_color_new (200, 100, 100, 255);
 
     /* Draw header */
-    grl_draw_text ("AGENT NETWORK", center_x - 150, 30, 36, title_color);
+    draw_label (self->label_title, "AGENT NETWORK", center_x - 150, 30, 36, title_color);
 
     /* Draw gold display */
     if (portfolio != NULL)
@@ -343,7 +405,7 @@ lp_state_agents_draw (LrgGameState *state)
     {
         g_snprintf (str_buf, sizeof (str_buf), "Gold: -- gp");
     }
-    grl_draw_text (str_buf, screen_w - 250, 35, 20, gold_color);
+    draw_label (get_pool_label (self), str_buf, screen_w - 250, 35, 20, gold_color);
 
     /* Draw main panel */
     grl_draw_rectangle (panel_x, panel_y, panel_w, panel_h, panel_color);
@@ -351,11 +413,11 @@ lp_state_agents_draw (LrgGameState *state)
     /* Draw tabs */
     grl_draw_rectangle (panel_x + 10, panel_y + 10, 150, 35,
                         self->view_mode == VIEW_MODE_AGENTS ? tab_active_color : tab_inactive_color);
-    grl_draw_text ("My Agents", panel_x + 35, panel_y + 17, 18, text_color);
+    draw_label (get_pool_label (self), "My Agents", panel_x + 35, panel_y + 17, 18, text_color);
 
     grl_draw_rectangle (panel_x + 170, panel_y + 10, 150, 35,
                         self->view_mode == VIEW_MODE_RECRUIT ? tab_active_color : tab_inactive_color);
-    grl_draw_text ("Recruit", panel_x + 210, panel_y + 17, 18, text_color);
+    draw_label (get_pool_label (self), "Recruit", panel_x + 210, panel_y + 17, 18, text_color);
 
     /* Draw stats summary */
     if (agent_manager != NULL)
@@ -365,19 +427,19 @@ lp_state_agents_draw (LrgGameState *state)
         avg_competence = lp_agent_manager_get_average_competence (agent_manager);
 
         g_snprintf (str_buf, sizeof (str_buf), "Total Agents: %u", count);
-        grl_draw_text (str_buf, panel_x + 400, panel_y + 20, 16, text_color);
+        draw_label (get_pool_label (self), str_buf, panel_x + 400, panel_y + 20, 16, text_color);
 
         if (avg_loyalty >= 0)
         {
             g_snprintf (str_buf, sizeof (str_buf), "Avg Loyalty: %d", avg_loyalty);
-            grl_draw_text (str_buf, panel_x + 550, panel_y + 20, 16,
-                           avg_loyalty >= 50 ? loyalty_high_color : loyalty_low_color);
+            draw_label (get_pool_label (self), str_buf, panel_x + 550, panel_y + 20, 16,
+                        avg_loyalty >= 50 ? loyalty_high_color : loyalty_low_color);
         }
 
         if (avg_competence >= 0)
         {
             g_snprintf (str_buf, sizeof (str_buf), "Avg Competence: %d", avg_competence);
-            grl_draw_text (str_buf, panel_x + 700, panel_y + 20, 16, text_color);
+            draw_label (get_pool_label (self), str_buf, panel_x + 700, panel_y + 20, 16, text_color);
         }
     }
 
@@ -387,12 +449,12 @@ lp_state_agents_draw (LrgGameState *state)
         guint i, idx, visible_count;
 
         /* Draw column headers */
-        grl_draw_text ("Name", panel_x + 20, panel_y + 65, 16, dim_color);
-        grl_draw_text ("Type", panel_x + 250, panel_y + 65, 16, dim_color);
-        grl_draw_text ("Age", panel_x + 370, panel_y + 65, 16, dim_color);
-        grl_draw_text ("Loyalty", panel_x + 450, panel_y + 65, 16, dim_color);
-        grl_draw_text ("Competence", panel_x + 550, panel_y + 65, 16, dim_color);
-        grl_draw_text ("Cover", panel_x + 680, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Name", panel_x + 20, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Type", panel_x + 250, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Age", panel_x + 370, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Loyalty", panel_x + 450, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Competence", panel_x + 550, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Cover", panel_x + 680, panel_y + 65, 16, dim_color);
 
         /* Draw agents list */
         agents = (agent_manager != NULL) ? lp_agent_manager_get_agents (agent_manager) : NULL;
@@ -400,8 +462,8 @@ lp_state_agents_draw (LrgGameState *state)
 
         if (count == 0)
         {
-            grl_draw_text ("No agents in your network. Press TAB to recruit.",
-                           panel_x + 50, list_y + 50, 18, dim_color);
+            draw_label (get_pool_label (self), "No agents in your network. Press TAB to recruit.",
+                        panel_x + 50, list_y + 50, 18, dim_color);
         }
         else
         {
@@ -428,31 +490,31 @@ lp_state_agents_draw (LrgGameState *state)
                 }
 
                 /* Draw agent details */
-                grl_draw_text (lp_agent_get_name (agent),
-                               panel_x + 20, agent_item_y, 18,
-                               agent_selected ? gold_color : text_color);
+                draw_label (get_pool_label (self), lp_agent_get_name (agent),
+                            panel_x + 20, agent_item_y, 18,
+                            agent_selected ? gold_color : text_color);
 
-                grl_draw_text (agent_type_to_string (lp_agent_get_agent_type (agent)),
-                               panel_x + 250, agent_item_y, 16, text_color);
+                draw_label (get_pool_label (self), agent_type_to_string (lp_agent_get_agent_type (agent)),
+                            panel_x + 250, agent_item_y, 16, text_color);
 
                 g_snprintf (str_buf, sizeof (str_buf), "%u/%u",
                             lp_agent_get_age (agent), lp_agent_get_max_age (agent));
-                grl_draw_text (str_buf, panel_x + 370, agent_item_y, 16, text_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 370, agent_item_y, 16, text_color);
 
                 g_snprintf (str_buf, sizeof (str_buf), "%d", loyalty);
-                grl_draw_text (str_buf, panel_x + 450, agent_item_y, 16,
-                               loyalty >= 50 ? loyalty_high_color : loyalty_low_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 450, agent_item_y, 16,
+                            loyalty >= 50 ? loyalty_high_color : loyalty_low_color);
 
                 g_snprintf (str_buf, sizeof (str_buf), "%d", lp_agent_get_competence (agent));
-                grl_draw_text (str_buf, panel_x + 550, agent_item_y, 16, text_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 550, agent_item_y, 16, text_color);
 
-                grl_draw_text (cover_status_to_string (lp_agent_get_cover_status (agent)),
-                               panel_x + 680, agent_item_y, 16, dim_color);
+                draw_label (get_pool_label (self), cover_status_to_string (lp_agent_get_cover_status (agent)),
+                            panel_x + 680, agent_item_y, 16, dim_color);
 
                 /* Second line: years remaining */
                 years_left = lp_agent_get_years_remaining (agent);
                 g_snprintf (str_buf, sizeof (str_buf), "%u years of service remaining", years_left);
-                grl_draw_text (str_buf, panel_x + 40, agent_item_y + 22, 14, dim_color);
+                draw_label (get_pool_label (self), str_buf, panel_x + 40, agent_item_y + 22, 14, dim_color);
             }
         }
     }
@@ -462,8 +524,8 @@ lp_state_agents_draw (LrgGameState *state)
         cost_bn = lrg_big_number_new (RECRUIT_BASE_COST);
         can_afford = portfolio != NULL && lp_portfolio_can_afford (portfolio, cost_bn);
 
-        grl_draw_text ("Recruit new agents to manage your investments and gather intelligence.",
-                       panel_x + 20, panel_y + 70, 16, text_color);
+        draw_label (get_pool_label (self), "Recruit new agents to manage your investments and gather intelligence.",
+                    panel_x + 20, panel_y + 70, 16, text_color);
 
         /* Recruitment option */
         option_y = list_y;
@@ -475,36 +537,36 @@ lp_state_agents_draw (LrgGameState *state)
                                 panel_w - 20, item_h - 2, selected_color);
         }
 
-        grl_draw_text ("Recruit Individual Agent",
-                       panel_x + 20, option_y, 20,
-                       is_selected ? gold_color : (can_afford ? text_color : dim_color));
+        draw_label (get_pool_label (self), "Recruit Individual Agent",
+                    panel_x + 20, option_y, 20,
+                    is_selected ? gold_color : (can_afford ? text_color : dim_color));
 
-        grl_draw_text ("A mortal servant who will manage investments and can train successors.",
-                       panel_x + 40, option_y + 25, 14, dim_color);
+        draw_label (get_pool_label (self), "A mortal servant who will manage investments and can train successors.",
+                    panel_x + 40, option_y + 25, 14, dim_color);
 
         g_snprintf (str_buf, sizeof (str_buf), "Cost: %.0f gp", RECRUIT_BASE_COST);
-        grl_draw_text (str_buf, panel_x + 600, option_y, 16,
-                       can_afford ? gold_color : dim_color);
+        draw_label (get_pool_label (self), str_buf, panel_x + 600, option_y, 16,
+                    can_afford ? gold_color : dim_color);
 
         /* Future options (disabled) */
         option_y += item_h + 10;
-        grl_draw_text ("Recruit Noble Family (Locked)", panel_x + 20, option_y, 20, dim_color);
-        grl_draw_text ("Establish a bloodline of loyal servants. Requires: 5000 gp, Phylactery Upgrade",
-                       panel_x + 40, option_y + 25, 14, dim_color);
+        draw_label (get_pool_label (self), "Recruit Noble Family (Locked)", panel_x + 20, option_y, 20, dim_color);
+        draw_label (get_pool_label (self), "Establish a bloodline of loyal servants. Requires: 5000 gp, Phylactery Upgrade",
+                    panel_x + 40, option_y + 25, 14, dim_color);
 
         option_y += item_h + 10;
-        grl_draw_text ("Found Secret Cult (Locked)", panel_x + 20, option_y, 20, dim_color);
-        grl_draw_text ("Create an organization devoted to your will. Requires: 10000 gp, Dark Arts Mastery",
-                       panel_x + 40, option_y + 25, 14, dim_color);
+        draw_label (get_pool_label (self), "Found Secret Cult (Locked)", panel_x + 20, option_y, 20, dim_color);
+        draw_label (get_pool_label (self), "Create an organization devoted to your will. Requires: 10000 gp, Dark Arts Mastery",
+                    panel_x + 40, option_y + 25, 14, dim_color);
     }
 
     /* Draw instructions */
-    grl_draw_text ("[UP/DOWN] Select    [TAB] Switch View    [ENTER] Select/Recruit    [ESC] Back",
-                   panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
+    draw_label (get_pool_label (self), "[UP/DOWN] Select    [TAB] Switch View    [ENTER] Select/Recruit    [ESC] Back",
+                panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
 
     /* Malachar hint */
-    grl_draw_text ("\"Mortals are fleeting, but their service can span generations with proper planning...\"",
-                   panel_x + 20, panel_y + panel_h - 60, 14, gold_color);
+    draw_label (get_pool_label (self), "\"Mortals are fleeting, but their service can span generations with proper planning...\"",
+                panel_x + 20, panel_y + panel_h - 60, 14, gold_color);
 }
 
 static gboolean
@@ -521,7 +583,10 @@ lp_state_agents_handle_input (LrgGameState *state,
 static void
 lp_state_agents_class_init (LpStateAgentsClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
     LrgGameStateClass *state_class = LRG_GAME_STATE_CLASS (klass);
+
+    object_class->dispose = lp_state_agents_dispose;
 
     state_class->enter = lp_state_agents_enter;
     state_class->exit = lp_state_agents_exit;
@@ -533,6 +598,8 @@ lp_state_agents_class_init (LpStateAgentsClass *klass)
 static void
 lp_state_agents_init (LpStateAgents *self)
 {
+    guint i;
+
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Agents");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
     lrg_game_state_set_blocking (LRG_GAME_STATE (self), TRUE);
@@ -540,6 +607,15 @@ lp_state_agents_init (LpStateAgents *self)
     self->view_mode = VIEW_MODE_AGENTS;
     self->selected_index = 0;
     self->scroll_offset = 0;
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text (6 items * 8 columns + headers/static) */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 70; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================

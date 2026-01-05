@@ -32,6 +32,11 @@ struct _LpScreenPortfolio
 
     /* Cached display data */
     GPtrArray *displayed_investments;
+
+    /* UI Labels */
+    LrgLabel  *label_title;
+    GPtrArray *label_pool;
+    guint      label_pool_index;
 };
 
 enum
@@ -55,6 +60,45 @@ static GParamSpec *properties[N_PROPS];
 static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (LpScreenPortfolio, lp_screen_portfolio, LRG_TYPE_CONTAINER)
+
+/* ==========================================================================
+ * Label Helpers
+ * ========================================================================== */
+
+static void
+draw_label (LrgLabel       *label,
+            const gchar    *text,
+            gfloat          x,
+            gfloat          y,
+            gfloat          font_size,
+            const GrlColor *color)
+{
+    lrg_label_set_text (label, text);
+    lrg_widget_set_position (LRG_WIDGET (label), x, y);
+    lrg_label_set_font_size (label, font_size);
+    lrg_label_set_color (label, color);
+    lrg_widget_draw (LRG_WIDGET (label));
+}
+
+static LrgLabel *
+get_pool_label (LpScreenPortfolio *self)
+{
+    LrgLabel *label;
+
+    if (self->label_pool_index >= self->label_pool->len)
+        return g_ptr_array_index (self->label_pool, self->label_pool->len - 1);
+
+    label = g_ptr_array_index (self->label_pool, self->label_pool_index);
+    self->label_pool_index++;
+
+    return label;
+}
+
+static void
+reset_label_pool (LpScreenPortfolio *self)
+{
+    self->label_pool_index = 0;
+}
 
 /* ==========================================================================
  * Forward Declarations
@@ -189,6 +233,9 @@ lp_screen_portfolio_draw (LrgWidget *widget)
     self = LP_SCREEN_PORTFOLIO (widget);
     theme = lrg_theme_get_default ();
 
+    /* Reset label pool for this frame */
+    reset_label_pool (self);
+
     /* Get bounds using individual accessors */
     x = lrg_widget_get_world_x (widget);
     y = lrg_widget_get_world_y (widget);
@@ -220,8 +267,8 @@ lp_screen_portfolio_draw (LrgWidget *widget)
                    border_color);
 
     /* Draw title */
-    grl_draw_text ("Portfolio", (gint)(x + padding), (gint)(y + padding),
-                   (gint)font_size_large, text_color);
+    draw_label (self->label_title, "Portfolio", x + padding, y + padding,
+                font_size_large, text_color);
 
     /* Draw total wealth if portfolio is set */
     if (self->portfolio != NULL)
@@ -231,9 +278,9 @@ lp_screen_portfolio_draw (LrgWidget *widget)
         g_autofree gchar *wealth_text = g_strdup_printf ("Total: %s gold", wealth_str);
         gint text_width = grl_measure_text (wealth_text, (gint)font_size);
 
-        grl_draw_text (wealth_text, (gint)(x + width - text_width - padding),
-                       (gint)(y + padding + (font_size_large - font_size) / 2),
-                       (gint)font_size, lp_theme_get_gold_color ());
+        draw_label (get_pool_label (self), wealth_text, x + width - text_width - padding,
+                    y + padding + (font_size_large - font_size) / 2,
+                    font_size, lp_theme_get_gold_color ());
     }
 
     /* Investment list area */
@@ -261,14 +308,14 @@ lp_screen_portfolio_draw (LrgWidget *widget)
             if (selected)
             {
                 grl_draw_rectangle_rec (&rect, accent_color);
-                grl_draw_text (tabs[j], (gint)(tab_x + padding), (gint)(tab_y + padding / 2),
-                               (gint)font_size_small, bg_color);
+                draw_label (get_pool_label (self), tabs[j], tab_x + padding, tab_y + padding / 2,
+                            font_size_small, bg_color);
             }
             else
             {
                 grl_draw_rectangle_lines_ex (&rect, 1.0f, border_color);
-                grl_draw_text (tabs[j], (gint)(tab_x + padding), (gint)(tab_y + padding / 2),
-                               (gint)font_size_small, secondary_color);
+                draw_label (get_pool_label (self), tabs[j], tab_x + padding, tab_y + padding / 2,
+                            font_size_small, secondary_color);
             }
 
             tab_x += tab_width + padding / 2;
@@ -282,9 +329,9 @@ lp_screen_portfolio_draw (LrgWidget *widget)
     {
         if (self->displayed_investments->len == 0)
         {
-            grl_draw_text ("No investments. Press B to buy.",
-                           (gint)(x + padding), (gint)(list_y + padding),
-                           (gint)font_size, secondary_color);
+            draw_label (get_pool_label (self), "No investments. Press B to buy.",
+                        x + padding, list_y + padding,
+                        font_size, secondary_color);
         }
         else
         {
@@ -324,16 +371,16 @@ lp_screen_portfolio_draw (LrgWidget *widget)
                                      4, (gint)font_size, class_color);
 
                 /* Draw investment name */
-                grl_draw_text (name, (gint)(x + padding * 2 + 4.0f), (gint)(item_y + padding / 2),
-                               (gint)font_size, is_selected ? text_color : secondary_color);
+                draw_label (get_pool_label (self), name, x + padding * 2 + 4.0f, item_y + padding / 2,
+                            font_size, is_selected ? text_color : secondary_color);
 
                 /* Draw value */
                 {
                     gint val_width = grl_measure_text (value_str, (gint)font_size_small);
-                    grl_draw_text (value_str,
-                                   (gint)(x + width - val_width - padding),
-                                   (gint)(item_y + padding / 2 + font_size - font_size_small),
-                                   (gint)font_size_small, lp_theme_get_gold_color ());
+                    draw_label (get_pool_label (self), value_str,
+                                x + width - val_width - padding,
+                                item_y + padding / 2 + font_size - font_size_small,
+                                font_size_small, lp_theme_get_gold_color ());
                 }
             }
         }
@@ -341,16 +388,16 @@ lp_screen_portfolio_draw (LrgWidget *widget)
     else if (self->view_mode == LP_PORTFOLIO_VIEW_ALLOCATION)
     {
         /* Placeholder for allocation view */
-        grl_draw_text ("Asset allocation view - coming soon",
-                       (gint)(x + padding), (gint)(list_y + padding),
-                       (gint)font_size, secondary_color);
+        draw_label (get_pool_label (self), "Asset allocation view - coming soon",
+                    x + padding, list_y + padding,
+                    font_size, secondary_color);
     }
     else if (self->view_mode == LP_PORTFOLIO_VIEW_PERFORMANCE)
     {
         /* Placeholder for performance view */
-        grl_draw_text ("Performance history view - coming soon",
-                       (gint)(x + padding), (gint)(list_y + padding),
-                       (gint)font_size, secondary_color);
+        draw_label (get_pool_label (self), "Performance history view - coming soon",
+                    x + padding, list_y + padding,
+                    font_size, secondary_color);
     }
 
     /* Draw footer with controls hint */
@@ -359,8 +406,8 @@ lp_screen_portfolio_draw (LrgWidget *widget)
         grl_draw_line ((gint)x, (gint)(footer_y - padding),
                        (gint)(x + width), (gint)(footer_y - padding),
                        border_color);
-        grl_draw_text ("[B]uy  [S]ell  [Tab]View  [Up/Down]Select",
-                       (gint)(x + padding), (gint)footer_y, (gint)font_size_small, secondary_color);
+        draw_label (get_pool_label (self), "[B]uy  [S]ell  [Tab]View  [Up/Down]Select",
+                    x + padding, footer_y, font_size_small, secondary_color);
     }
 
     /* Draw child widgets (exposure meter, synergy indicator) */
@@ -571,6 +618,10 @@ lp_screen_portfolio_dispose (GObject *object)
     self->exposure_meter = NULL;
     self->synergy_indicator = NULL;
 
+    /* Clean up labels */
+    g_clear_object (&self->label_title);
+    g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+
     G_OBJECT_CLASS (lp_screen_portfolio_parent_class)->dispose (object);
 }
 
@@ -691,6 +742,8 @@ lp_screen_portfolio_class_init (LpScreenPortfolioClass *klass)
 static void
 lp_screen_portfolio_init (LpScreenPortfolio *self)
 {
+    guint i;
+
     self->portfolio = NULL;
     self->view_mode = LP_PORTFOLIO_VIEW_LIST;
     self->selected_investment = NULL;
@@ -706,6 +759,15 @@ lp_screen_portfolio_init (LpScreenPortfolio *self)
 
     /* Initialize display list */
     self->displayed_investments = g_ptr_array_new ();
+
+    /* Create labels */
+    self->label_title = lrg_label_new (NULL);
+
+    /* Create label pool for dynamic text */
+    self->label_pool = g_ptr_array_new_with_free_func (g_object_unref);
+    for (i = 0; i < 30; i++)
+        g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
+    self->label_pool_index = 0;
 }
 
 /* ==========================================================================
