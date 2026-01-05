@@ -10,6 +10,7 @@
 #include "lp-state-simulating.h"
 #include "lp-state-wake.h"
 #include "../core/lp-game.h"
+#include "../core/lp-game-data.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -86,19 +87,30 @@ on_simulation_complete (LpStateSimulating *self,
                         gpointer           user_data)
 {
     LpGame *game;
+    LpGameData *game_data;
     LrgGameStateManager *manager;
+    LpStateWake *wake_state;
+    GList *events;
 
     (void)user_data;
 
-    lp_log_info ("Simulation complete, transitioning to wake");
+    lp_log_info ("Simulation complete, processing %u years of slumber",
+                 self->total_years);
 
     game = lp_game_get_from_state (LRG_GAME_STATE (self));
+    game_data = lp_game_get_game_data (game);
     manager = lrg_game_template_get_state_manager (
         LRG_GAME_TEMPLATE (game));
 
+    /* Process actual slumber - advances world, calculates returns, etc. */
+    events = lp_game_data_slumber (game_data, self->total_years);
+
+    /* Create wake state and pass events */
+    wake_state = lp_state_wake_new ();
+    lp_state_wake_set_events (wake_state, events);
+
     /* Replace simulating with wake state */
-    lrg_game_state_manager_replace (manager,
-        LRG_GAME_STATE (lp_state_wake_new ()));
+    lrg_game_state_manager_replace (manager, LRG_GAME_STATE (wake_state));
 }
 
 /* ==========================================================================

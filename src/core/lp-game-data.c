@@ -497,9 +497,8 @@ lp_game_data_slumber (LpGameData *self,
     /* Apply exposure decay */
     lp_exposure_manager_apply_decay (lp_exposure_manager_get_default (), years);
 
-    /*
-     * Phase 2+: Calculate investment returns, process events, etc.
-     */
+    /* Apply slumber to portfolio - calculate returns and update values */
+    lp_portfolio_apply_slumber (self->portfolio, years);
 
     return events;
 }

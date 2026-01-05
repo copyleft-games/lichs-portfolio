@@ -10,7 +10,7 @@
 #include "lp-state-slumber.h"
 #include "lp-state-simulating.h"
 #include "../core/lp-game.h"
-#include "../tutorial/lp-tutorial-sequences.h"
+/* #include "../tutorial/lp-tutorial-sequences.h" */
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -106,9 +106,14 @@ lp_state_slumber_enter (LrgGameState *state)
 
     self->slumber_years = DEFAULT_SLUMBER_YEARS;
 
-    /* Maybe start slumber tutorial for first-time users */
-    lp_tutorial_sequences_maybe_start_slumber (
-        lp_tutorial_sequences_get_default ());
+    /*
+     * TODO: Re-enable tutorial when LrgTutorialManager is initialized
+     * in lp_game_real_pre_startup(). The tutorial system requires calling
+     * lp_tutorial_sequences_init_tutorials() before use.
+     *
+     * lp_tutorial_sequences_maybe_start_slumber (
+     *     lp_tutorial_sequences_get_default ());
+     */
 }
 
 static void

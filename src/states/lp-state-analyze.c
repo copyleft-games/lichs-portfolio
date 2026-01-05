@@ -14,6 +14,8 @@
 #include "lp-state-agents.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
+#include "../investment/lp-portfolio.h"
+#include "../agent/lp-agent-manager.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -235,12 +237,31 @@ lp_state_analyze_draw (LrgGameState *state)
     grl_draw_rectangle (margin, main_area_top, left_panel_w, main_area_h, panel_color);
     draw_label (get_pool_label (self), "Portfolio",
                 margin + 15, main_area_top + 10, 24, title_color);
-    draw_label (get_pool_label (self), "Gold: 10,000 gp",
-                margin + 15, main_area_top + 50, 18, gold_color);
-    draw_label (get_pool_label (self), "Investments: 0",
-                margin + 15, main_area_top + 80, 16, text_color);
-    draw_label (get_pool_label (self), "Total Value: 10,000 gp",
-                margin + 15, main_area_top + 105, 16, text_color);
+
+    /* Display dynamic portfolio values */
+    {
+        LpPortfolio *portfolio = lp_game_data_get_portfolio (game_data);
+        gchar str_buf[64];
+
+        if (portfolio != NULL)
+        {
+            LrgBigNumber *gold = lp_portfolio_get_gold (portfolio);
+            guint inv_count = lp_portfolio_get_investment_count (portfolio);
+            gdouble gold_val = lrg_big_number_to_double (gold);
+
+            g_snprintf (str_buf, sizeof (str_buf), "Gold: %.0f gp", gold_val);
+            draw_label (get_pool_label (self), str_buf,
+                        margin + 15, main_area_top + 50, 18, gold_color);
+
+            g_snprintf (str_buf, sizeof (str_buf), "Investments: %u", inv_count);
+            draw_label (get_pool_label (self), str_buf,
+                        margin + 15, main_area_top + 80, 16, text_color);
+
+            g_snprintf (str_buf, sizeof (str_buf), "Total Value: %.0f gp", gold_val);
+            draw_label (get_pool_label (self), str_buf,
+                        margin + 15, main_area_top + 105, 16, text_color);
+        }
+    }
 
     /* World map placeholder (center) */
     grl_draw_rectangle (center_panel_x, main_area_top, center_panel_w, main_area_h, panel_color);
@@ -253,8 +274,43 @@ lp_state_analyze_draw (LrgGameState *state)
     grl_draw_rectangle (screen_w - right_panel_w - margin, main_area_top, right_panel_w, main_area_h, panel_color);
     draw_label (get_pool_label (self), "Agents",
                 screen_w - right_panel_w - margin + 15, main_area_top + 10, 24, title_color);
-    draw_label (get_pool_label (self), "No agents recruited",
-                screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
+
+    /* Display dynamic agent information */
+    {
+        LpAgentManager *agent_mgr = lp_game_data_get_agent_manager (game_data);
+        gchar str_buf[64];
+
+        if (agent_mgr != NULL)
+        {
+            guint agent_count = lp_agent_manager_get_agent_count (agent_mgr);
+
+            if (agent_count == 0)
+            {
+                draw_label (get_pool_label (self), "No agents recruited",
+                            screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
+            }
+            else
+            {
+                gint avg_loyalty = lp_agent_manager_get_average_loyalty (agent_mgr);
+
+                g_snprintf (str_buf, sizeof (str_buf), "Active Agents: %u", agent_count);
+                draw_label (get_pool_label (self), str_buf,
+                            screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, text_color);
+
+                if (avg_loyalty >= 0)
+                {
+                    g_snprintf (str_buf, sizeof (str_buf), "Avg Loyalty: %d%%", avg_loyalty);
+                    draw_label (get_pool_label (self), str_buf,
+                                screen_w - right_panel_w - margin + 15, main_area_top + 75, 16, text_color);
+                }
+            }
+        }
+        else
+        {
+            draw_label (get_pool_label (self), "No agents recruited",
+                        screen_w - right_panel_w - margin + 15, main_area_top + 50, 16, dim_color);
+        }
+    }
 
     /* Actions bar (bottom) */
     grl_draw_rectangle (margin, bottom_panel_y, screen_w - (margin * 2), bottom_panel_h, panel_color);

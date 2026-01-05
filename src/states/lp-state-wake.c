@@ -10,6 +10,8 @@
 #include "lp-state-wake.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
+#include "../investment/lp-portfolio.h"
+#include "../agent/lp-agent-manager.h"
 /* #include "../narrative/lp-malachar-voice.h" */
 /* #include "../tutorial/lp-tutorial-sequences.h" */
 #include "lp-state-analyze.h"
@@ -219,15 +221,69 @@ lp_state_wake_draw (LrgGameState *state)
     draw_label (get_pool_label (self), "gold and folly. Let us see what opportunities await.\"",
                 center_x - 280, greeting_y + 65, 18, text_color);
 
-    /* Portfolio summary placeholder */
+    /* Portfolio summary - display dynamic values */
     draw_label (get_pool_label (self), "Portfolio Summary:",
                 center_x - 280, portfolio_y, 22, title_color);
-    draw_label (get_pool_label (self), "Starting Gold: 10,000 gp",
-                center_x - 260, portfolio_y + 40, 18, text_color);
-    draw_label (get_pool_label (self), "Investments: None",
-                center_x - 260, portfolio_y + 65, 18, text_color);
-    draw_label (get_pool_label (self), "Agents: None",
-                center_x - 260, portfolio_y + 90, 18, text_color);
+
+    {
+        LpPortfolio *portfolio = lp_game_data_get_portfolio (game_data);
+        LpAgentManager *agent_mgr = lp_game_data_get_agent_manager (game_data);
+        gchar str_buf[64];
+
+        /* Gold display */
+        if (portfolio != NULL)
+        {
+            LrgBigNumber *gold = lp_portfolio_get_gold (portfolio);
+            guint inv_count = lp_portfolio_get_investment_count (portfolio);
+            gdouble gold_val = lrg_big_number_to_double (gold);
+
+            g_snprintf (str_buf, sizeof (str_buf), "Gold: %.0f gp", gold_val);
+            draw_label (get_pool_label (self), str_buf,
+                        center_x - 260, portfolio_y + 40, 18, gold_color);
+
+            if (inv_count == 0)
+            {
+                draw_label (get_pool_label (self), "Investments: None",
+                            center_x - 260, portfolio_y + 65, 18, text_color);
+            }
+            else
+            {
+                g_snprintf (str_buf, sizeof (str_buf), "Investments: %u", inv_count);
+                draw_label (get_pool_label (self), str_buf,
+                            center_x - 260, portfolio_y + 65, 18, text_color);
+            }
+        }
+        else
+        {
+            draw_label (get_pool_label (self), "Gold: 0 gp",
+                        center_x - 260, portfolio_y + 40, 18, gold_color);
+            draw_label (get_pool_label (self), "Investments: None",
+                        center_x - 260, portfolio_y + 65, 18, text_color);
+        }
+
+        /* Agent display */
+        if (agent_mgr != NULL)
+        {
+            guint agent_count = lp_agent_manager_get_agent_count (agent_mgr);
+
+            if (agent_count == 0)
+            {
+                draw_label (get_pool_label (self), "Agents: None",
+                            center_x - 260, portfolio_y + 90, 18, text_color);
+            }
+            else
+            {
+                g_snprintf (str_buf, sizeof (str_buf), "Agents: %u", agent_count);
+                draw_label (get_pool_label (self), str_buf,
+                            center_x - 260, portfolio_y + 90, 18, text_color);
+            }
+        }
+        else
+        {
+            draw_label (get_pool_label (self), "Agents: None",
+                        center_x - 260, portfolio_y + 90, 18, text_color);
+        }
+    }
 
     /* Instructions */
     draw_label (get_pool_label (self), "Press ENTER or SPACE to continue...",
