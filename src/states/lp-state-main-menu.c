@@ -11,6 +11,7 @@
 #include "lp-state-wake.h"
 #include "lp-state-settings.h"
 #include "../core/lp-game.h"
+#include "../save/lp-save-manager.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -105,11 +106,15 @@ static void
 lp_state_main_menu_enter (LrgGameState *state)
 {
     LpStateMainMenu *self = LP_STATE_MAIN_MENU (state);
+    LpSaveManager *save_mgr;
 
     lp_log_info ("Entering main menu");
 
     self->selected_option = MENU_OPTION_NEW_GAME;
-    self->has_save_file = FALSE;  /* TODO: Check for save file */
+
+    /* Check if autosave exists */
+    save_mgr = lp_save_manager_get_default ();
+    self->has_save_file = lp_save_manager_autosave_exists (save_mgr);
 }
 
 static void
@@ -267,8 +272,33 @@ lp_state_main_menu_update (LrgGameState *state,
         case MENU_OPTION_CONTINUE:
             if (self->has_save_file)
             {
-                lp_log_info ("Continue selected");
-                /* TODO: Load game and transition */
+                LpGame *game = lp_game_get_from_state (state);
+                LpSaveManager *save_mgr;
+                LpGameData *game_data;
+                LrgGameStateManager *manager;
+                g_autoptr(GError) error = NULL;
+
+                lp_log_info ("Continue selected - loading autosave");
+
+                /* Create fresh game data to load into */
+                lp_game_new_game (game);
+                game_data = lp_game_get_game_data (game);
+
+                /* Load the autosave */
+                save_mgr = lp_save_manager_get_default ();
+                if (lp_save_manager_load_autosave (save_mgr, game_data, &error))
+                {
+                    /* Replace main menu with wake state */
+                    manager = lrg_game_template_get_state_manager (
+                        LRG_GAME_TEMPLATE (game));
+                    lrg_game_state_manager_replace (manager,
+                        LRG_GAME_STATE (lp_state_wake_new ()));
+                }
+                else
+                {
+                    lp_log_warning ("Failed to load autosave: %s",
+                                   error ? error->message : "unknown error");
+                }
             }
             break;
 

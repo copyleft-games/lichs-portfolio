@@ -259,6 +259,31 @@ lp_save_manager_autosave (LpSaveManager  *self,
  * ========================================================================== */
 
 /**
+ * lp_save_manager_load_autosave:
+ * @self: an #LpSaveManager
+ * @game_data: the #LpGameData to load into
+ * @error: (nullable): return location for error
+ *
+ * Loads the autosave file.
+ *
+ * Returns: %TRUE on success, %FALSE on error
+ */
+gboolean
+lp_save_manager_load_autosave (LpSaveManager  *self,
+                               LpGameData     *game_data,
+                               GError        **error)
+{
+    g_autofree gchar *path = NULL;
+
+    g_return_val_if_fail (LP_IS_SAVE_MANAGER (self), FALSE);
+    g_return_val_if_fail (LP_IS_GAME_DATA (game_data), FALSE);
+
+    lp_log_info ("Loading autosave");
+    path = g_build_filename (self->save_directory, AUTOSAVE_FILENAME, NULL);
+    return lp_save_manager_load_from_file (self, game_data, path, error);
+}
+
+/**
  * lp_save_manager_load_from_file:
  * @self: an #LpSaveManager
  * @game_data: the #LpGameData to load into
@@ -417,6 +442,25 @@ lp_save_manager_slot_exists (LpSaveManager *self,
     g_return_val_if_fail (slot < LP_MAX_SAVE_SLOTS, FALSE);
 
     path = lp_save_manager_get_slot_path (self, slot);
+    return g_file_test (path, G_FILE_TEST_EXISTS);
+}
+
+/**
+ * lp_save_manager_autosave_exists:
+ * @self: an #LpSaveManager
+ *
+ * Checks if an autosave file exists.
+ *
+ * Returns: %TRUE if autosave exists
+ */
+gboolean
+lp_save_manager_autosave_exists (LpSaveManager *self)
+{
+    g_autofree gchar *path = NULL;
+
+    g_return_val_if_fail (LP_IS_SAVE_MANAGER (self), FALSE);
+
+    path = g_build_filename (self->save_directory, AUTOSAVE_FILENAME, NULL);
     return g_file_test (path, G_FILE_TEST_EXISTS);
 }
 

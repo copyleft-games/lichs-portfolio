@@ -114,6 +114,20 @@ gboolean lp_save_manager_autosave (LpSaveManager  *self,
  * ========================================================================== */
 
 /**
+ * lp_save_manager_load_autosave:
+ * @self: an #LpSaveManager
+ * @game_data: the #LpGameData to load into
+ * @error: (nullable): return location for error
+ *
+ * Loads the autosave file.
+ *
+ * Returns: %TRUE on success, %FALSE on error
+ */
+gboolean lp_save_manager_load_autosave (LpSaveManager  *self,
+                                        LpGameData     *game_data,
+                                        GError        **error);
+
+/**
  * lp_save_manager_load_game:
  * @self: an #LpSaveManager
  * @game_data: the #LpGameData to load into
@@ -174,6 +188,16 @@ gboolean lp_save_manager_quickload (LpSaveManager  *self,
  */
 gboolean lp_save_manager_slot_exists (LpSaveManager *self,
                                       guint          slot);
+
+/**
+ * lp_save_manager_autosave_exists:
+ * @self: an #LpSaveManager
+ *
+ * Checks if an autosave file exists.
+ *
+ * Returns: %TRUE if autosave exists
+ */
+gboolean lp_save_manager_autosave_exists (LpSaveManager *self);
 
 /**
  * lp_save_manager_get_slot_info:
