@@ -68,6 +68,31 @@ lp_application_startup (LpApplication  *self,
         return FALSE;
     }
 
+    /* Configure fonts with larger base sizes for crisp rendering */
+    {
+        LrgFontManager *font_mgr;
+        LrgTheme *theme;
+        GrlFont *font;
+
+        font_mgr = lrg_font_manager_get_default ();
+
+        /* Load fonts at larger base sizes to avoid upscaling blur */
+        lrg_font_manager_initialize_with_sizes (font_mgr, 24, 32, 48, NULL);
+
+        /* Apply bilinear filter for smooth edges */
+        font = lrg_font_manager_get_default_font (font_mgr);
+        if (font != NULL)
+        {
+            grl_font_set_filter (font, GRL_TEXTURE_FILTER_BILINEAR);
+        }
+
+        /* Set theme render sizes (now <= base sizes, so no upscaling) */
+        theme = lrg_theme_get_default ();
+        lrg_theme_set_font_size_small (theme, 16.0f);
+        lrg_theme_set_font_size_normal (theme, 20.0f);
+        lrg_theme_set_font_size_large (theme, 32.0f);
+    }
+
     /* Create the game window */
     self->window = lrg_grl_window_new (WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
     if (self->window == NULL)
