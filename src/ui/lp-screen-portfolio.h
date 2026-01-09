@@ -144,6 +144,21 @@ void lp_screen_portfolio_show_buy_dialog (LpScreenPortfolio *self);
 void lp_screen_portfolio_sell_selected (LpScreenPortfolio *self);
 
 /* ==========================================================================
+ * Portfolio History
+ * ========================================================================== */
+
+/**
+ * lp_screen_portfolio_set_history:
+ * @self: an #LpScreenPortfolio
+ * @history: (nullable): the portfolio history
+ *
+ * Sets the portfolio history for performance chart display.
+ * The history is used to populate the performance line chart.
+ */
+void lp_screen_portfolio_set_history (LpScreenPortfolio  *self,
+                                       LpPortfolioHistory *history);
+
+/* ==========================================================================
  * Refresh
  * ========================================================================== */
 

@@ -10,11 +10,13 @@
 #include "lp-state-wake.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
+#include "../core/lp-portfolio-history.h"
 #include "../investment/lp-portfolio.h"
 #include "../agent/lp-agent-manager.h"
 /* #include "../narrative/lp-malachar-voice.h" */
 /* #include "../tutorial/lp-tutorial-sequences.h" */
 #include "lp-state-analyze.h"
+#include "../ui/lp-theme.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -24,6 +26,10 @@ struct _LpStateWake
 
     GList *events;          /* Events that occurred during slumber */
     guint  current_event;   /* Index of currently displayed event */
+
+    /* Slumber growth data */
+    GPtrArray      *slumber_snapshots;  /* Array of LpPortfolioSnapshot */
+    LrgLineChart2D *slumber_chart;      /* Year-by-year portfolio growth chart */
 
     /* UI Labels */
     LrgLabel  *label_title;
@@ -83,6 +89,8 @@ lp_state_wake_dispose (GObject *object)
 
     g_clear_object (&self->label_title);
     g_clear_pointer (&self->label_pool, g_ptr_array_unref);
+    g_clear_pointer (&self->slumber_snapshots, g_ptr_array_unref);
+    g_clear_object (&self->slumber_chart);
 
     G_OBJECT_CLASS (lp_state_wake_parent_class)->dispose (object);
 }
@@ -285,6 +293,32 @@ lp_state_wake_draw (LrgGameState *state)
         }
     }
 
+    /* Draw slumber growth chart if we have data */
+    if (self->slumber_snapshots != NULL && self->slumber_snapshots->len > 0)
+    {
+        gint chart_x;
+        gint chart_y;
+        gint chart_w;
+        gint chart_h;
+        guint series_count;
+
+        /* Position chart on right side of screen */
+        chart_w = 300;
+        chart_h = 180;
+        chart_x = center_x + 60;
+        chart_y = portfolio_y - 20;
+
+        series_count = lrg_chart_get_series_count (LRG_CHART (self->slumber_chart));
+        if (series_count > 0)
+        {
+            lrg_widget_set_position (LRG_WIDGET (self->slumber_chart),
+                                      (gfloat)chart_x, (gfloat)chart_y);
+            lrg_widget_set_size (LRG_WIDGET (self->slumber_chart),
+                                  (gfloat)chart_w, (gfloat)chart_h);
+            lrg_widget_draw (LRG_WIDGET (self->slumber_chart));
+        }
+    }
+
     /* Instructions */
     draw_label (get_pool_label (self), "Press ENTER or SPACE to continue...",
                 center_x - 180, instructions_y, 16, dim_color);
@@ -334,6 +368,8 @@ static void
 lp_state_wake_init (LpStateWake *self)
 {
     guint i;
+    g_autoptr(LrgChartAxisConfig) x_axis = NULL;
+    g_autoptr(LrgChartAxisConfig) y_axis = NULL;
 
     lrg_game_state_set_name (LRG_GAME_STATE (self), "Wake");
     lrg_game_state_set_transparent (LRG_GAME_STATE (self), FALSE);
@@ -341,6 +377,25 @@ lp_state_wake_init (LpStateWake *self)
 
     self->events = NULL;
     self->current_event = 0;
+    self->slumber_snapshots = NULL;
+
+    /* Create slumber growth chart */
+    self->slumber_chart = lrg_line_chart2d_new ();
+    lrg_chart_set_title (LRG_CHART (self->slumber_chart), "Slumber Growth");
+    lrg_chart2d_set_show_legend (LRG_CHART2D (self->slumber_chart), FALSE);
+    lrg_line_chart2d_set_show_markers (self->slumber_chart, TRUE);
+    lrg_line_chart2d_set_smooth (self->slumber_chart, TRUE);
+    lrg_line_chart2d_set_fill_area (self->slumber_chart, TRUE);
+    lrg_line_chart2d_set_fill_opacity (self->slumber_chart, 0.3f);
+
+    /* Configure axes */
+    x_axis = lrg_chart_axis_config_new_with_title ("Year");
+    lrg_chart_axis_config_set_show_grid (x_axis, TRUE);
+    lrg_chart2d_set_x_axis (LRG_CHART2D (self->slumber_chart), x_axis);
+
+    y_axis = lrg_chart_axis_config_new_with_title ("Value");
+    lrg_chart_axis_config_set_show_grid (y_axis, TRUE);
+    lrg_chart2d_set_y_axis (LRG_CHART2D (self->slumber_chart), y_axis);
 
     /* Create labels */
     self->label_title = lrg_label_new (NULL);
@@ -385,4 +440,56 @@ lp_state_wake_set_events (LpStateWake *self,
     g_list_free_full (self->events, g_object_unref);
     self->events = events;
     self->current_event = 0;
+}
+
+/**
+ * lp_state_wake_set_slumber_snapshots:
+ * @self: an #LpStateWake
+ * @snapshots: (transfer full) (element-type LpPortfolioSnapshot): Portfolio snapshots
+ *
+ * Sets the portfolio snapshots from the slumber period for charting.
+ */
+void
+lp_state_wake_set_slumber_snapshots (LpStateWake *self,
+                                      GPtrArray   *snapshots)
+{
+    LrgChartDataSeries *series;
+    guint i;
+
+    g_return_if_fail (LP_IS_STATE_WAKE (self));
+
+    /* Store snapshots */
+    if (self->slumber_snapshots != NULL)
+        g_ptr_array_unref (self->slumber_snapshots);
+    self->slumber_snapshots = snapshots;
+
+    /* Clear and rebuild chart data */
+    lrg_chart_clear_series (LRG_CHART (self->slumber_chart));
+
+    if (snapshots == NULL || snapshots->len == 0)
+        return;
+
+    /* Create series from snapshots */
+    series = lrg_chart_data_series_new ("Portfolio");
+    lrg_chart_data_series_set_color (series, lp_theme_get_gold_color ());
+
+    for (i = 0; i < snapshots->len; i++)
+    {
+        LpPortfolioSnapshot *snapshot;
+        LrgBigNumber *value;
+        guint64 year;
+        gdouble value_double;
+        LrgChartDataPoint *pt;
+
+        snapshot = g_ptr_array_index (snapshots, i);
+        year = lp_portfolio_snapshot_get_year (snapshot);
+        value = lp_portfolio_snapshot_get_total_value (snapshot);
+        value_double = lrg_big_number_to_double (value);
+
+        pt = lrg_chart_data_point_new ((gdouble)year, value_double);
+        lrg_chart_data_series_add_point_full (series, pt);
+    }
+
+    lrg_chart_add_series (LRG_CHART (self->slumber_chart), series);
+    lrg_chart_animate_to_data (LRG_CHART (self->slumber_chart), LRG_CHART_ANIM_GROW, 0.5f);
 }

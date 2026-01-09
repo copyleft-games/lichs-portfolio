@@ -11,6 +11,9 @@
 #include "lp-state-wake.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
+#include "../core/lp-portfolio-history.h"
+#include "../investment/lp-portfolio.h"
+#include "../simulation/lp-world-simulation.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -91,6 +94,18 @@ on_simulation_complete (LpStateSimulating *self,
     LrgGameStateManager *manager;
     LpStateWake *wake_state;
     GList *events;
+    GPtrArray *slumber_snapshots;
+    LpPortfolio *portfolio;
+    LpWorldSimulation *world;
+    g_autoptr(LrgBigNumber) start_total = NULL;
+    LrgBigNumber *start_gold;
+    g_autoptr(LrgBigNumber) start_investment = NULL;
+    g_autoptr(LrgBigNumber) end_total = NULL;
+    LrgBigNumber *end_gold;
+    g_autoptr(LrgBigNumber) end_investment = NULL;
+    guint64 start_year;
+    guint64 end_year;
+    LpPortfolioSnapshot *snapshot;
 
     (void)user_data;
 
@@ -101,13 +116,40 @@ on_simulation_complete (LpStateSimulating *self,
     game_data = lp_game_get_game_data (game);
     manager = lrg_game_template_get_state_manager (
         LRG_GAME_TEMPLATE (game));
+    portfolio = lp_game_data_get_portfolio (game_data);
+    world = lp_game_data_get_world_simulation (game_data);
+
+    /* Capture starting portfolio state */
+    start_year = lp_world_simulation_get_current_year (world);
+    start_total = lp_portfolio_get_total_value (portfolio);
+    start_gold = lp_portfolio_get_gold (portfolio);
+    start_investment = lp_portfolio_get_investment_value (portfolio);
 
     /* Process actual slumber - advances world, calculates returns, etc. */
     events = lp_game_data_slumber (game_data, self->total_years);
 
-    /* Create wake state and pass events */
+    /* Capture ending portfolio state */
+    end_year = lp_world_simulation_get_current_year (world);
+    end_total = lp_portfolio_get_total_value (portfolio);
+    end_gold = lp_portfolio_get_gold (portfolio);
+    end_investment = lp_portfolio_get_investment_value (portfolio);
+
+    /* Create snapshots array with start and end values */
+    slumber_snapshots = g_ptr_array_new_with_free_func (
+        (GDestroyNotify)lp_portfolio_snapshot_free);
+
+    snapshot = lp_portfolio_snapshot_new (start_year, start_total,
+                                           start_gold, start_investment);
+    g_ptr_array_add (slumber_snapshots, snapshot);
+
+    snapshot = lp_portfolio_snapshot_new (end_year, end_total,
+                                           end_gold, end_investment);
+    g_ptr_array_add (slumber_snapshots, snapshot);
+
+    /* Create wake state and pass events + snapshots */
     wake_state = lp_state_wake_new ();
     lp_state_wake_set_events (wake_state, events);
+    lp_state_wake_set_slumber_snapshots (wake_state, slumber_snapshots);
 
     /* Replace simulating with wake state */
     lrg_game_state_manager_replace (manager, LRG_GAME_STATE (wake_state));

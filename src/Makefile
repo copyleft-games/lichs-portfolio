@@ -28,6 +28,7 @@ SOURCES += core/lp-exposure-manager.c
 SOURCES += core/lp-synergy-manager.c
 SOURCES += core/lp-ledger.c
 SOURCES += core/lp-gameplay-settings.c
+SOURCES += core/lp-portfolio-history.c
 
 # Progression (Phase 5)
 SOURCES += core/lp-prestige-manager.c

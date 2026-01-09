@@ -37,6 +37,10 @@ typedef struct _LpLedger                LpLedger;
 typedef struct _LpMegaproject           LpMegaproject;
 typedef struct _LpStrings               LpStrings;
 typedef struct _LpGameplaySettings      LpGameplaySettings;
+typedef struct _LpPortfolioHistory      LpPortfolioHistory;
+
+/* Boxed types */
+typedef struct _LpPortfolioSnapshot     LpPortfolioSnapshot;
 
 /* Derivable types: both instance and class */
 typedef struct _LpPrestigeManager       LpPrestigeManager;

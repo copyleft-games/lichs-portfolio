@@ -122,6 +122,17 @@ lp_game_data_get_ledger (LpGameData *self);
 LpWorldSimulation *
 lp_game_data_get_world_simulation (LpGameData *self);
 
+/**
+ * lp_game_data_get_portfolio_history:
+ * @self: an #LpGameData
+ *
+ * Gets the portfolio history tracker.
+ *
+ * Returns: (transfer none): The #LpPortfolioHistory
+ */
+LpPortfolioHistory *
+lp_game_data_get_portfolio_history (LpGameData *self);
+
 /* ==========================================================================
  * Game Actions
  * ========================================================================== */

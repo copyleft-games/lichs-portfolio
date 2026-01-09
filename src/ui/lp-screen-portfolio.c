@@ -13,6 +13,7 @@
 #include "lp-widget-synergy-indicator.h"
 #include "../investment/lp-portfolio.h"
 #include "../investment/lp-investment.h"
+#include "../core/lp-portfolio-history.h"
 
 struct _LpScreenPortfolio
 {
@@ -25,10 +26,16 @@ struct _LpScreenPortfolio
     LpPortfolioViewMode view_mode;
     LpInvestment *selected_investment;
     gint          selection_index;
+    gboolean      show_risk_chart;  /* Toggle between asset class / risk in allocation view */
 
     /* Child widgets */
     LpWidgetExposureMeter    *exposure_meter;
     LpWidgetSynergyIndicator *synergy_indicator;
+
+    /* Charts */
+    LrgPieChart2D  *allocation_chart;   /* Asset class distribution */
+    LrgPieChart2D  *risk_chart;         /* Risk level distribution */
+    LrgLineChart2D *performance_chart;  /* Portfolio value over time */
 
     /* Cached display data */
     GPtrArray *displayed_investments;
@@ -108,6 +115,10 @@ static void lp_screen_portfolio_draw           (LrgWidget *widget);
 static void lp_screen_portfolio_layout_children (LrgContainer *container);
 static gboolean lp_screen_portfolio_handle_event (LrgWidget        *widget,
                                                    const LrgUIEvent *event);
+static void rebuild_allocation_chart   (LpScreenPortfolio *self);
+static void rebuild_risk_chart         (LpScreenPortfolio *self);
+static void rebuild_performance_chart  (LpScreenPortfolio *self,
+                                        LpPortfolioHistory *history);
 
 /* ==========================================================================
  * Helper Functions
@@ -167,7 +178,13 @@ static void
 on_portfolio_changed (LpPortfolio       *portfolio,
                       LpScreenPortfolio *self)
 {
+    (void)portfolio;
+
     rebuild_investment_list (self);
+
+    /* Rebuild charts with updated data */
+    rebuild_allocation_chart (self);
+    rebuild_risk_chart (self);
 }
 
 /*
@@ -195,6 +212,256 @@ get_asset_class_color (LpAssetClass asset_class)
         default:
             return lrg_theme_get_text_color (lrg_theme_get_default ());
     }
+}
+
+/*
+ * get_asset_class_name:
+ *
+ * Gets a display name for an asset class.
+ */
+static const gchar *
+get_asset_class_name (LpAssetClass asset_class)
+{
+    switch (asset_class)
+    {
+        case LP_ASSET_CLASS_PROPERTY:
+            return "Property";
+        case LP_ASSET_CLASS_TRADE:
+            return "Trade";
+        case LP_ASSET_CLASS_FINANCIAL:
+            return "Financial";
+        case LP_ASSET_CLASS_MAGICAL:
+            return "Magical";
+        case LP_ASSET_CLASS_POLITICAL:
+            return "Political";
+        case LP_ASSET_CLASS_DARK:
+            return "Dark";
+        default:
+            return "Unknown";
+    }
+}
+
+/*
+ * get_risk_level_name:
+ *
+ * Gets a display name for a risk level.
+ */
+static const gchar *
+get_risk_level_name (LpRiskLevel risk_level)
+{
+    switch (risk_level)
+    {
+        case LP_RISK_LEVEL_LOW:
+            return "Low Risk";
+        case LP_RISK_LEVEL_MEDIUM:
+            return "Medium Risk";
+        case LP_RISK_LEVEL_HIGH:
+            return "High Risk";
+        case LP_RISK_LEVEL_EXTREME:
+            return "Extreme Risk";
+        default:
+            return "Unknown";
+    }
+}
+
+/*
+ * get_risk_level_color:
+ *
+ * Gets the color for a risk level.
+ */
+static GrlColor *
+get_risk_level_color (LpRiskLevel risk_level)
+{
+    switch (risk_level)
+    {
+        case LP_RISK_LEVEL_LOW:
+            return grl_color_new (76, 175, 80, 255);   /* Green #4CAF50 */
+        case LP_RISK_LEVEL_MEDIUM:
+            return grl_color_new (255, 193, 7, 255);  /* Yellow #FFC107 */
+        case LP_RISK_LEVEL_HIGH:
+            return grl_color_new (255, 152, 0, 255);  /* Orange #FF9800 */
+        case LP_RISK_LEVEL_EXTREME:
+            return grl_color_new (244, 67, 54, 255);  /* Red #F44336 */
+        default:
+            return grl_color_new (158, 158, 158, 255); /* Grey */
+    }
+}
+
+/*
+ * rebuild_allocation_chart:
+ *
+ * Rebuilds the asset allocation pie chart from portfolio data.
+ */
+static void
+rebuild_allocation_chart (LpScreenPortfolio *self)
+{
+    LrgChartDataSeries *series;
+    LpAssetClass asset_class;
+
+    if (self->allocation_chart == NULL || self->portfolio == NULL)
+        return;
+
+    lrg_chart_clear_series (LRG_CHART (self->allocation_chart));
+
+    series = lrg_chart_data_series_new ("Asset Allocation");
+
+    for (asset_class = LP_ASSET_CLASS_PROPERTY;
+         asset_class <= LP_ASSET_CLASS_DARK;
+         asset_class++)
+    {
+        g_autoptr(GPtrArray) investments = NULL;
+        g_autoptr(LrgBigNumber) class_total = NULL;
+        gdouble class_value;
+        guint i;
+
+        /* Skip DARK class unless unlocked (for now, always show if has investments) */
+        investments = lp_portfolio_get_investments_by_class (self->portfolio, asset_class);
+        if (investments == NULL || investments->len == 0)
+            continue;
+
+        /* Sum all investments in this class */
+        class_total = lrg_big_number_new (0.0);
+        for (i = 0; i < investments->len; i++)
+        {
+            LpInvestment *inv = g_ptr_array_index (investments, i);
+            LrgBigNumber *value = lp_investment_get_current_value (inv);
+
+            if (value != NULL)
+            {
+                g_autoptr(LrgBigNumber) new_total = lrg_big_number_add (class_total, value);
+                lrg_big_number_free (class_total);
+                class_total = g_steal_pointer (&new_total);
+            }
+        }
+
+        class_value = lrg_big_number_to_double (class_total);
+        if (class_value > 0.0)
+        {
+            const GrlColor *color;
+            LrgChartDataPoint *pt;
+
+            color = get_asset_class_color (asset_class);
+            pt = lrg_chart_data_point_new_labeled (
+                (gdouble)asset_class, class_value, get_asset_class_name (asset_class));
+            lrg_chart_data_point_set_color (pt, color);
+            lrg_chart_data_series_add_point_full (series, pt);
+        }
+    }
+
+    lrg_chart_add_series (LRG_CHART (self->allocation_chart), series);
+    lrg_chart_animate_to_data (LRG_CHART (self->allocation_chart), LRG_CHART_ANIM_GROW, 0.5f);
+}
+
+/*
+ * rebuild_risk_chart:
+ *
+ * Rebuilds the risk distribution pie chart from portfolio data.
+ */
+static void
+rebuild_risk_chart (LpScreenPortfolio *self)
+{
+    LrgChartDataSeries *series;
+    LpRiskLevel risk_level;
+
+    if (self->risk_chart == NULL || self->portfolio == NULL)
+        return;
+
+    lrg_chart_clear_series (LRG_CHART (self->risk_chart));
+
+    series = lrg_chart_data_series_new ("Risk Distribution");
+
+    for (risk_level = LP_RISK_LEVEL_LOW;
+         risk_level <= LP_RISK_LEVEL_EXTREME;
+         risk_level++)
+    {
+        g_autoptr(GPtrArray) investments = NULL;
+        g_autoptr(LrgBigNumber) risk_total = NULL;
+        g_autoptr(GrlColor) color = NULL;
+        gdouble risk_value;
+        guint i;
+
+        investments = lp_portfolio_get_investments_by_risk (self->portfolio, risk_level);
+        if (investments == NULL || investments->len == 0)
+            continue;
+
+        /* Sum all investments at this risk level */
+        risk_total = lrg_big_number_new (0.0);
+        for (i = 0; i < investments->len; i++)
+        {
+            LpInvestment *inv = g_ptr_array_index (investments, i);
+            LrgBigNumber *value = lp_investment_get_current_value (inv);
+
+            if (value != NULL)
+            {
+                g_autoptr(LrgBigNumber) new_total = lrg_big_number_add (risk_total, value);
+                lrg_big_number_free (risk_total);
+                risk_total = g_steal_pointer (&new_total);
+            }
+        }
+
+        risk_value = lrg_big_number_to_double (risk_total);
+        if (risk_value > 0.0)
+        {
+            LrgChartDataPoint *pt;
+
+            color = get_risk_level_color (risk_level);
+            pt = lrg_chart_data_point_new_labeled (
+                (gdouble)risk_level, risk_value, get_risk_level_name (risk_level));
+            lrg_chart_data_point_set_color (pt, color);
+            lrg_chart_data_series_add_point_full (series, pt);
+        }
+    }
+
+    lrg_chart_add_series (LRG_CHART (self->risk_chart), series);
+    lrg_chart_animate_to_data (LRG_CHART (self->risk_chart), LRG_CHART_ANIM_GROW, 0.5f);
+}
+
+/*
+ * rebuild_performance_chart:
+ *
+ * Rebuilds the performance line chart from portfolio history data.
+ */
+static void
+rebuild_performance_chart (LpScreenPortfolio  *self,
+                           LpPortfolioHistory *history)
+{
+    LrgChartDataSeries *series;
+    GPtrArray *snapshots;
+    guint i;
+
+    if (self->performance_chart == NULL || history == NULL)
+        return;
+
+    lrg_chart_clear_series (LRG_CHART (self->performance_chart));
+
+    snapshots = lp_portfolio_history_get_snapshots (history);
+    if (snapshots == NULL || snapshots->len == 0)
+        return;
+
+    series = lrg_chart_data_series_new ("Portfolio Value");
+    lrg_chart_data_series_set_color (series, lp_theme_get_gold_color ());
+
+    for (i = 0; i < snapshots->len; i++)
+    {
+        const LpPortfolioSnapshot *snapshot;
+        LrgBigNumber *value;
+        guint64 year;
+        gdouble value_double;
+        LrgChartDataPoint *pt;
+
+        snapshot = g_ptr_array_index (snapshots, i);
+        year = lp_portfolio_snapshot_get_year (snapshot);
+        value = lp_portfolio_snapshot_get_total_value (snapshot);
+        value_double = lrg_big_number_to_double (value);
+
+        pt = lrg_chart_data_point_new ((gdouble)year, value_double);
+        lrg_chart_data_series_add_point_full (series, pt);
+    }
+
+    lrg_chart_add_series (LRG_CHART (self->performance_chart), series);
+    lrg_line_chart2d_set_show_markers (self->performance_chart, TRUE);
+    lrg_line_chart2d_set_smooth (self->performance_chart, TRUE);
+    lrg_chart_animate_to_data (LRG_CHART (self->performance_chart), LRG_CHART_ANIM_GROW, 0.5f);
 }
 
 /* ==========================================================================
@@ -387,26 +654,134 @@ lp_screen_portfolio_draw (LrgWidget *widget)
     }
     else if (self->view_mode == LP_PORTFOLIO_VIEW_ALLOCATION)
     {
-        /* Placeholder for allocation view */
-        draw_label (get_pool_label (self), "Asset allocation view - coming soon",
-                    x + padding, list_y + padding,
-                    font_size, secondary_color);
+        gfloat chart_width;
+        gfloat chart_height;
+        gfloat chart_x;
+        gfloat chart_y;
+        gfloat footer_y_temp;
+        gfloat toggle_x;
+        gfloat toggle_y;
+        const gchar *toggle_labels[] = {"Asset Class", "Risk Level"};
+        gint k;
+
+        /* Calculate chart area (leave room for footer and toggle) */
+        footer_y_temp = y + height - font_size_small - padding * 2;
+        toggle_y = list_y;
+        chart_y = toggle_y + font_size_small + padding * 2;
+        chart_height = footer_y_temp - chart_y - padding * 2;
+        chart_width = MIN (width - padding * 2, chart_height);
+        chart_x = x + (width - chart_width) / 2;
+
+        /* Draw toggle buttons for Asset Class / Risk Level */
+        toggle_x = x + padding;
+        for (k = 0; k < 2; k++)
+        {
+            gint toggle_text_width = grl_measure_text (toggle_labels[k], (gint)font_size_small);
+            gfloat toggle_btn_width = toggle_text_width + padding * 2;
+            gboolean toggle_selected = (k == 0 && !self->show_risk_chart) ||
+                                        (k == 1 && self->show_risk_chart);
+
+            rect.x = toggle_x;
+            rect.y = toggle_y;
+            rect.width = toggle_btn_width;
+            rect.height = font_size_small + padding;
+
+            if (toggle_selected)
+            {
+                grl_draw_rectangle_rec (&rect, accent_color);
+                draw_label (get_pool_label (self), toggle_labels[k],
+                            toggle_x + padding, toggle_y + padding / 2,
+                            font_size_small, bg_color);
+            }
+            else
+            {
+                grl_draw_rectangle_lines_ex (&rect, 1.0f, border_color);
+                draw_label (get_pool_label (self), toggle_labels[k],
+                            toggle_x + padding, toggle_y + padding / 2,
+                            font_size_small, secondary_color);
+            }
+
+            toggle_x += toggle_btn_width + padding / 2;
+        }
+
+        /* Position and draw the appropriate chart */
+        if (self->portfolio != NULL && lp_portfolio_get_investment_count (self->portfolio) > 0)
+        {
+            LrgPieChart2D *chart = self->show_risk_chart ? self->risk_chart : self->allocation_chart;
+
+            if (chart != NULL)
+            {
+                lrg_widget_set_position (LRG_WIDGET (chart), chart_x, chart_y);
+                lrg_widget_set_size (LRG_WIDGET (chart), chart_width, chart_height);
+                lrg_widget_draw (LRG_WIDGET (chart));
+            }
+        }
+        else
+        {
+            /* No investments - show message */
+            draw_label (get_pool_label (self), "No investments to display.",
+                        x + padding, chart_y + padding,
+                        font_size, secondary_color);
+            draw_label (get_pool_label (self), "Buy investments to see allocation.",
+                        x + padding, chart_y + padding + font_size * 1.5f,
+                        font_size_small, secondary_color);
+        }
     }
     else if (self->view_mode == LP_PORTFOLIO_VIEW_PERFORMANCE)
     {
-        /* Placeholder for performance view */
-        draw_label (get_pool_label (self), "Performance history view - coming soon",
-                    x + padding, list_y + padding,
-                    font_size, secondary_color);
+        /* Performance history line chart */
+        gfloat chart_x;
+        gfloat chart_y;
+        gfloat chart_width;
+        gfloat chart_height;
+        gfloat footer_y_temp;
+        guint series_count;
+
+        /* Calculate chart area (leave room for footer) */
+        footer_y_temp = y + height - font_size_small - padding * 2;
+        chart_x = x + padding;
+        chart_y = list_y + padding;
+        chart_width = width - padding * 2;
+        chart_height = footer_y_temp - chart_y - padding * 2;
+
+        series_count = (self->performance_chart != NULL)
+                       ? lrg_chart_get_series_count (LRG_CHART (self->performance_chart))
+                       : 0;
+
+        if (series_count > 0)
+        {
+            /* Position and draw the chart */
+            lrg_widget_set_position (LRG_WIDGET (self->performance_chart), chart_x, chart_y);
+            lrg_widget_set_size (LRG_WIDGET (self->performance_chart), chart_width, chart_height);
+            lrg_widget_draw (LRG_WIDGET (self->performance_chart));
+        }
+        else
+        {
+            /* No history data yet */
+            draw_label (get_pool_label (self), "No Performance Data",
+                        chart_x, chart_y + padding,
+                        font_size, text_color);
+            draw_label (get_pool_label (self), "Complete a slumber cycle to see portfolio growth over time.",
+                        chart_x, chart_y + padding + font_size * 1.5f,
+                        font_size_small, secondary_color);
+        }
     }
 
     /* Draw footer with controls hint */
     {
         gfloat footer_y = y + height - font_size_small - padding * 2;
+        const gchar *hint_text;
+
         grl_draw_line ((gint)x, (gint)(footer_y - padding),
                        (gint)(x + width), (gint)(footer_y - padding),
                        border_color);
-        draw_label (get_pool_label (self), "[B]uy  [S]ell  [Tab]View  [Up/Down]Select",
+
+        if (self->view_mode == LP_PORTFOLIO_VIEW_ALLOCATION)
+            hint_text = "[R]isk/Asset Toggle  [Tab]View";
+        else
+            hint_text = "[B]uy  [S]ell  [Tab]View  [Up/Down]Select";
+
+        draw_label (get_pool_label (self), hint_text,
                     x + padding, footer_y, font_size_small, secondary_color);
     }
 
@@ -527,6 +902,21 @@ lp_screen_portfolio_handle_event (LrgWidget        *widget,
             /* Cycle view mode */
             self->view_mode = (self->view_mode + 1) % 3;
             g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_VIEW_MODE]);
+
+            /* Rebuild charts when entering allocation view */
+            if (self->view_mode == LP_PORTFOLIO_VIEW_ALLOCATION)
+            {
+                rebuild_allocation_chart (self);
+                rebuild_risk_chart (self);
+            }
+            return TRUE;
+
+        case GRL_KEY_R:
+            /* Toggle between asset class and risk chart in allocation view */
+            if (self->view_mode == LP_PORTFOLIO_VIEW_ALLOCATION)
+            {
+                self->show_risk_chart = !self->show_risk_chart;
+            }
             return TRUE;
 
         case GRL_KEY_B:
@@ -617,6 +1007,11 @@ lp_screen_portfolio_dispose (GObject *object)
     /* Child widgets are managed by container */
     self->exposure_meter = NULL;
     self->synergy_indicator = NULL;
+
+    /* Clean up charts */
+    g_clear_object (&self->allocation_chart);
+    g_clear_object (&self->risk_chart);
+    g_clear_object (&self->performance_chart);
 
     /* Clean up labels */
     g_clear_object (&self->label_title);
@@ -768,6 +1163,43 @@ lp_screen_portfolio_init (LpScreenPortfolio *self)
     for (i = 0; i < 30; i++)
         g_ptr_array_add (self->label_pool, lrg_label_new (NULL));
     self->label_pool_index = 0;
+
+    /* Create pie charts for allocation view */
+    self->allocation_chart = lrg_pie_chart2d_new ();
+    lrg_chart_set_title (LRG_CHART (self->allocation_chart), "Asset Allocation");
+    lrg_chart2d_set_show_legend (LRG_CHART2D (self->allocation_chart), TRUE);
+    lrg_pie_chart2d_set_show_labels (self->allocation_chart, TRUE);
+    lrg_pie_chart2d_set_show_percentages (self->allocation_chart, TRUE);
+    lrg_pie_chart2d_set_inner_radius (self->allocation_chart, 0.3f);
+
+    self->risk_chart = lrg_pie_chart2d_new ();
+    lrg_chart_set_title (LRG_CHART (self->risk_chart), "Risk Distribution");
+    lrg_chart2d_set_show_legend (LRG_CHART2D (self->risk_chart), TRUE);
+    lrg_pie_chart2d_set_show_labels (self->risk_chart, TRUE);
+    lrg_pie_chart2d_set_show_percentages (self->risk_chart, TRUE);
+    lrg_pie_chart2d_set_inner_radius (self->risk_chart, 0.3f);
+
+    /* Create line chart for performance view */
+    {
+        g_autoptr(LrgChartAxisConfig) x_axis = NULL;
+        g_autoptr(LrgChartAxisConfig) y_axis = NULL;
+
+        self->performance_chart = lrg_line_chart2d_new ();
+        lrg_chart_set_title (LRG_CHART (self->performance_chart), "Portfolio Performance");
+        lrg_chart2d_set_show_legend (LRG_CHART2D (self->performance_chart), FALSE);
+
+        /* Configure X axis (Year) */
+        x_axis = lrg_chart_axis_config_new_with_title ("Year");
+        lrg_chart_axis_config_set_show_grid (x_axis, TRUE);
+        lrg_chart2d_set_x_axis (LRG_CHART2D (self->performance_chart), x_axis);
+
+        /* Configure Y axis (Value) */
+        y_axis = lrg_chart_axis_config_new_with_title ("Value");
+        lrg_chart_axis_config_set_show_grid (y_axis, TRUE);
+        lrg_chart2d_set_y_axis (LRG_CHART2D (self->performance_chart), y_axis);
+    }
+
+    self->show_risk_chart = FALSE;
 }
 
 /* ==========================================================================
@@ -840,6 +1272,10 @@ lp_screen_portfolio_set_portfolio (LpScreenPortfolio *self,
     }
 
     rebuild_investment_list (self);
+
+    /* Rebuild charts with new portfolio data */
+    rebuild_allocation_chart (self);
+    rebuild_risk_chart (self);
 
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_PORTFOLIO]);
 }
@@ -964,6 +1400,23 @@ lp_screen_portfolio_sell_selected (LpScreenPortfolio *self)
         g_signal_emit (self, signals[SIGNAL_SELL_REQUESTED], 0,
                        self->selected_investment);
     }
+}
+
+/**
+ * lp_screen_portfolio_set_history:
+ * @self: an #LpScreenPortfolio
+ * @history: (nullable): the portfolio history
+ *
+ * Sets the portfolio history for performance chart display.
+ */
+void
+lp_screen_portfolio_set_history (LpScreenPortfolio  *self,
+                                  LpPortfolioHistory *history)
+{
+    g_return_if_fail (LP_IS_SCREEN_PORTFOLIO (self));
+    g_return_if_fail (history == NULL || LP_IS_PORTFOLIO_HISTORY (history));
+
+    rebuild_performance_chart (self, history);
 }
 
 /**

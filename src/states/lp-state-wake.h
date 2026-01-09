@@ -42,6 +42,17 @@ void
 lp_state_wake_set_events (LpStateWake *self,
                           GList       *events);
 
+/**
+ * lp_state_wake_set_slumber_snapshots:
+ * @self: an #LpStateWake
+ * @snapshots: (transfer full) (element-type LpPortfolioSnapshot): Portfolio snapshots during slumber
+ *
+ * Sets the portfolio snapshots from the slumber period for charting.
+ */
+void
+lp_state_wake_set_slumber_snapshots (LpStateWake *self,
+                                      GPtrArray   *snapshots);
+
 G_END_DECLS
 
 #endif /* LP_STATE_WAKE_H */

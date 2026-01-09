@@ -13,6 +13,7 @@
 #include "lp-phylactery.h"
 #include "lp-ledger.h"
 #include "lp-exposure-manager.h"
+#include "lp-portfolio-history.h"
 #include "../investment/lp-portfolio.h"
 #include "../agent/lp-agent-manager.h"
 #include "../simulation/lp-world-simulation.h"
@@ -31,11 +32,12 @@ struct _LpGameData
     guint64 total_years_played;
 
     /* Owned subsystems */
-    LpPortfolio       *portfolio;
-    LpAgentManager    *agent_manager;
-    LpPhylactery      *phylactery;
-    LpLedger          *ledger;
-    LpWorldSimulation *world_simulation;
+    LpPortfolio        *portfolio;
+    LpAgentManager     *agent_manager;
+    LpPhylactery       *phylactery;
+    LpLedger           *ledger;
+    LpWorldSimulation  *world_simulation;
+    LpPortfolioHistory *portfolio_history;
 };
 
 enum
@@ -101,6 +103,11 @@ lp_game_data_save (LrgSaveable    *saveable,
         return FALSE;
     lrg_save_context_end_section (context);
 
+    lrg_save_context_begin_section (context, "portfolio-history");
+    if (!lrg_saveable_save (LRG_SAVEABLE (self->portfolio_history), context, error))
+        return FALSE;
+    lrg_save_context_end_section (context);
+
     /* Save exposure manager state */
     lrg_save_context_write_uint (context, "exposure",
                                  lp_exposure_manager_get_exposure (
@@ -149,6 +156,12 @@ lp_game_data_load (LrgSaveable    *saveable,
     if (lrg_save_context_enter_section (context, "world-simulation"))
     {
         lrg_saveable_load (LRG_SAVEABLE (self->world_simulation), context, error);
+        lrg_save_context_leave_section (context);
+    }
+
+    if (lrg_save_context_enter_section (context, "portfolio-history"))
+    {
+        lrg_saveable_load (LRG_SAVEABLE (self->portfolio_history), context, error);
         lrg_save_context_leave_section (context);
     }
 
@@ -205,6 +218,7 @@ lp_game_data_dispose (GObject *object)
     g_clear_object (&self->phylactery);
     g_clear_object (&self->ledger);
     g_clear_object (&self->world_simulation);
+    g_clear_object (&self->portfolio_history);
 
     G_OBJECT_CLASS (lp_game_data_parent_class)->dispose (object);
 }
@@ -252,6 +266,7 @@ lp_game_data_init (LpGameData *self)
     self->phylactery = lp_phylactery_new ();
     self->ledger = lp_ledger_new ();
     self->world_simulation = lp_world_simulation_new ();
+    self->portfolio_history = lp_portfolio_history_new ();
 }
 
 /* ==========================================================================
@@ -381,6 +396,22 @@ lp_game_data_get_world_simulation (LpGameData *self)
     return self->world_simulation;
 }
 
+/**
+ * lp_game_data_get_portfolio_history:
+ * @self: an #LpGameData
+ *
+ * Gets the portfolio history tracker.
+ *
+ * Returns: (transfer none): The #LpPortfolioHistory
+ */
+LpPortfolioHistory *
+lp_game_data_get_portfolio_history (LpGameData *self)
+{
+    g_return_val_if_fail (LP_IS_GAME_DATA (self), NULL);
+
+    return self->portfolio_history;
+}
+
 /* ==========================================================================
  * Game Actions
  * ========================================================================== */
@@ -410,6 +441,7 @@ lp_game_data_start_new_game (LpGameData *self)
     lp_phylactery_reset_upgrades (self->phylactery);
     lp_ledger_clear_all (self->ledger);
     lp_world_simulation_reset (self->world_simulation, DEFAULT_STARTING_YEAR);
+    lp_portfolio_history_clear (self->portfolio_history);
 
     /* Reset exposure */
     lp_exposure_manager_reset (lp_exposure_manager_get_default ());
@@ -459,6 +491,7 @@ lp_game_data_prestige (LpGameData *self)
     lp_portfolio_reset (self->portfolio, lrg_big_number_copy (starting_gold));
     lp_agent_manager_reset (self->agent_manager);
     lp_world_simulation_reset (self->world_simulation, DEFAULT_STARTING_YEAR);
+    lp_portfolio_history_clear (self->portfolio_history);
     lp_exposure_manager_reset (lp_exposure_manager_get_default ());
 
     lp_log_info ("Prestige complete: earned %lu phylactery points", points_earned);
@@ -499,6 +532,25 @@ lp_game_data_slumber (LpGameData *self,
 
     /* Apply slumber to portfolio - calculate returns and update values */
     lp_portfolio_apply_slumber (self->portfolio, years);
+
+    /* Record portfolio snapshot for history tracking */
+    {
+        g_autoptr(LrgBigNumber) total_value = NULL;
+        LrgBigNumber *gold;
+        g_autoptr(LrgBigNumber) investment_value = NULL;
+        guint64 current_year;
+
+        total_value = lp_portfolio_get_total_value (self->portfolio);
+        gold = lp_portfolio_get_gold (self->portfolio);
+        investment_value = lp_portfolio_get_investment_value (self->portfolio);
+        current_year = lp_world_simulation_get_current_year (self->world_simulation);
+
+        lp_portfolio_history_record_snapshot (self->portfolio_history,
+                                               current_year,
+                                               total_value,
+                                               gold,
+                                               investment_value);
+    }
 
     return events;
 }
