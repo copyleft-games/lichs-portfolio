@@ -10,11 +10,13 @@
 #include "lp-state-investments.h"
 #include "../core/lp-game.h"
 #include "../core/lp-game-data.h"
+#include "../core/lp-portfolio-history.h"
 #include "../investment/lp-portfolio.h"
 #include "../investment/lp-investment.h"
 #include "../investment/lp-investment-property.h"
 #include "../investment/lp-investment-trade.h"
 #include "../investment/lp-investment-financial.h"
+#include "../ui/lp-screen-portfolio.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -60,6 +62,9 @@ struct _LpStateInvestments
     ViewMode view_mode;       /* Current view mode */
     gint     selected_index;  /* Currently selected item */
     gint     scroll_offset;   /* Scroll offset for long lists */
+
+    /* Portfolio screen widget (for charts and investment list) */
+    LpScreenPortfolio *portfolio_screen;
 
     /* UI Labels */
     LrgLabel  *label_title;
@@ -117,6 +122,7 @@ lp_state_investments_dispose (GObject *object)
 {
     LpStateInvestments *self = LP_STATE_INVESTMENTS (object);
 
+    g_clear_object (&self->portfolio_screen);
     g_clear_object (&self->label_title);
     g_clear_pointer (&self->label_pool, g_ptr_array_unref);
 
@@ -204,12 +210,23 @@ static void
 lp_state_investments_enter (LrgGameState *state)
 {
     LpStateInvestments *self = LP_STATE_INVESTMENTS (state);
+    LpGame *game = lp_game_get_from_state (state);
+    LpGameData *game_data = lp_game_get_game_data (game);
+    LpPortfolio *portfolio = lp_game_data_get_portfolio (game_data);
+    LpPortfolioHistory *history = lp_game_data_get_portfolio_history (game_data);
 
     lp_log_info ("Entering investments state");
 
     self->view_mode = VIEW_MODE_PORTFOLIO;
     self->selected_index = 0;
     self->scroll_offset = 0;
+
+    /* Set portfolio and history on the portfolio screen widget */
+    if (self->portfolio_screen != NULL)
+    {
+        lp_screen_portfolio_set_portfolio (self->portfolio_screen, portfolio);
+        lp_screen_portfolio_set_history (self->portfolio_screen, history);
+    }
 }
 
 static void
@@ -227,52 +244,11 @@ lp_state_investments_update (LrgGameState *state,
     LpGameData *game_data = lp_game_get_game_data (game);
     LpPortfolio *portfolio = lp_game_data_get_portfolio (game_data);
     LrgGameStateManager *manager;
-    guint max_items;
 
     (void)delta;
 
-    /* Determine max items based on view mode */
-    if (self->view_mode == VIEW_MODE_PORTFOLIO)
-    {
-        max_items = lp_portfolio_get_investment_count (portfolio);
-    }
-    else
-    {
-        max_items = NUM_AVAILABLE_INVESTMENTS;
-    }
-
-    /* Navigation: Up/Down (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_K))
-    {
-        if (self->selected_index > 0)
-        {
-            self->selected_index--;
-            /* Adjust scroll if needed */
-            if (self->selected_index < self->scroll_offset)
-            {
-                self->scroll_offset = self->selected_index;
-            }
-        }
-    }
-
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_J))
-    {
-        if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
-        {
-            self->selected_index++;
-            /* Adjust scroll if needed */
-            if (self->selected_index >= self->scroll_offset + MAX_VISIBLE_ITEMS)
-            {
-                self->scroll_offset = self->selected_index - MAX_VISIBLE_ITEMS + 1;
-            }
-        }
-    }
-
-    /* Tab/H/L to switch between portfolio and market views */
-    if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
-        grl_input_is_key_pressed (GRL_KEY_H) ||
+    /* H/L to switch between portfolio and market views at top level */
+    if (grl_input_is_key_pressed (GRL_KEY_H) ||
         grl_input_is_key_pressed (GRL_KEY_L))
     {
         if (self->view_mode == VIEW_MODE_PORTFOLIO)
@@ -287,13 +263,98 @@ lp_state_investments_update (LrgGameState *state,
         self->scroll_offset = 0;
         lp_log_info ("Switched to %s view",
                      self->view_mode == VIEW_MODE_PORTFOLIO ? "portfolio" : "market");
+        return;
     }
 
-    /* Enter to buy or sell */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    if (self->view_mode == VIEW_MODE_PORTFOLIO)
     {
-        if (self->view_mode == VIEW_MODE_MARKET)
+        /*
+         * In Portfolio view, forward input to the portfolio screen widget.
+         * The widget handles: Tab (cycle views), Up/Down/J/K (navigate),
+         * R (toggle risk/asset chart), B (buy), S (sell).
+         */
+        LrgUIEvent *event = NULL;
+
+        /* Forward Tab key for cycling List/Allocation/Performance views */
+        if (grl_input_is_key_pressed (GRL_KEY_TAB))
+        {
+            LpPortfolioViewMode mode = lp_screen_portfolio_get_view_mode (self->portfolio_screen);
+            mode = (mode + 1) % 3;
+            lp_screen_portfolio_set_view_mode (self->portfolio_screen, mode);
+        }
+
+        /* Forward navigation keys */
+        if (grl_input_is_key_pressed (GRL_KEY_UP) ||
+            grl_input_is_key_pressed (GRL_KEY_K))
+        {
+            event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_UP);
+            lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
+            lrg_ui_event_free (event);
+        }
+
+        if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+            grl_input_is_key_pressed (GRL_KEY_J))
+        {
+            event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_DOWN);
+            lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
+            lrg_ui_event_free (event);
+        }
+
+        /* Forward R key for toggling risk/asset chart */
+        if (grl_input_is_key_pressed (GRL_KEY_R))
+        {
+            event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_R);
+            lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
+            lrg_ui_event_free (event);
+        }
+    }
+    else
+    {
+        /* Market view: handle navigation and buying locally */
+        guint max_items = NUM_AVAILABLE_INVESTMENTS;
+
+        /* Navigation: Up/Down (including vim keys) */
+        if (grl_input_is_key_pressed (GRL_KEY_UP) ||
+            grl_input_is_key_pressed (GRL_KEY_K))
+        {
+            if (self->selected_index > 0)
+            {
+                self->selected_index--;
+                /* Adjust scroll if needed */
+                if (self->selected_index < self->scroll_offset)
+                {
+                    self->scroll_offset = self->selected_index;
+                }
+            }
+        }
+
+        if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
+            grl_input_is_key_pressed (GRL_KEY_J))
+        {
+            if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
+            {
+                self->selected_index++;
+                /* Adjust scroll if needed */
+                if (self->selected_index >= self->scroll_offset + MAX_VISIBLE_ITEMS)
+                {
+                    self->scroll_offset = self->selected_index - MAX_VISIBLE_ITEMS + 1;
+                }
+            }
+        }
+
+        /* Tab also switches to Portfolio view in Market mode */
+        if (grl_input_is_key_pressed (GRL_KEY_TAB))
+        {
+            self->view_mode = VIEW_MODE_PORTFOLIO;
+            self->selected_index = 0;
+            self->scroll_offset = 0;
+            lp_log_info ("Switched to portfolio view");
+            return;
+        }
+
+        /* Enter to buy */
+        if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
+            grl_input_is_key_pressed (GRL_KEY_SPACE))
         {
             /* Buy selected investment */
             if (self->selected_index >= 0 &&
@@ -319,40 +380,6 @@ lp_state_investments_update (LrgGameState *state,
                 {
                     lp_log_info ("Cannot afford %s (cost: %.0f gold)",
                                  option->name, option->base_cost);
-                }
-            }
-        }
-        else
-        {
-            /* Sell selected investment */
-            GPtrArray *investments = lp_portfolio_get_investments (portfolio);
-            if (investments != NULL &&
-                self->selected_index >= 0 &&
-                self->selected_index < (gint)investments->len)
-            {
-                LpInvestment *investment = g_ptr_array_index (investments, self->selected_index);
-
-                if (lp_investment_can_sell (investment))
-                {
-                    LrgBigNumber *value = lp_investment_get_current_value (investment);
-                    const gchar *name = lp_investment_get_name (investment);
-                    guint new_count;
-
-                    lp_portfolio_add_gold (portfolio, value);
-                    lp_portfolio_remove_investment (portfolio, investment);
-                    lp_log_info ("Sold %s for %.0f gold",
-                                 name, lrg_big_number_to_double (value));
-
-                    /* Adjust selection if needed */
-                    new_count = lp_portfolio_get_investment_count (portfolio);
-                    if (new_count > 0 && self->selected_index >= (gint)new_count)
-                    {
-                        self->selected_index = (gint)new_count - 1;
-                    }
-                }
-                else
-                {
-                    lp_log_info ("Cannot sell this investment right now");
                 }
             }
         }
@@ -390,7 +417,7 @@ lp_state_investments_draw (LrgGameState *state)
     gint list_y, item_h;
     gchar str_buf[128];
     guint i, idx;
-    guint count, visible_count;
+    guint visible_count;
 
     /* Reset label pool for this frame */
     reset_label_pool (self);
@@ -448,70 +475,23 @@ lp_state_investments_draw (LrgGameState *state)
                         self->view_mode == VIEW_MODE_MARKET ? tab_active_color : tab_inactive_color);
     draw_label (get_pool_label (self), "Market", panel_x + 210, panel_y + 17, 18, text_color);
 
-    /* Draw column headers */
-    draw_label (get_pool_label (self), "Name", panel_x + 20, panel_y + 65, 16, dim_color);
-    draw_label (get_pool_label (self), "Type", panel_x + 300, panel_y + 65, 16, dim_color);
-    draw_label (get_pool_label (self), "Value", panel_x + 450, panel_y + 65, 16, dim_color);
-
     if (self->view_mode == VIEW_MODE_PORTFOLIO)
     {
-        GPtrArray *investments;
-        draw_label (get_pool_label (self), "Return", panel_x + 580, panel_y + 65, 16, dim_color);
-
-        /* Draw owned investments */
-        investments = (portfolio != NULL) ? lp_portfolio_get_investments (portfolio) : NULL;
-        count = (investments != NULL) ? investments->len : 0;
-
-        if (count == 0)
-        {
-            draw_label (get_pool_label (self), "No investments owned. Press TAB to browse market.",
-                        panel_x + 50, list_y + 50, 18, dim_color);
-        }
-        else
-        {
-            visible_count = MIN (count - self->scroll_offset, MAX_VISIBLE_ITEMS);
-            for (i = 0; i < visible_count; i++)
-            {
-                LpInvestment *inv;
-                gint item_y;
-                gboolean is_selected;
-                LrgBigNumber *value;
-                gdouble ret_pct;
-
-                idx = self->scroll_offset + i;
-                inv = g_ptr_array_index (investments, idx);
-                item_y = list_y + (i * item_h);
-                is_selected = ((gint)idx == self->selected_index);
-
-                /* Draw selection highlight */
-                if (is_selected)
-                {
-                    grl_draw_rectangle (panel_x + 10, item_y - 3,
-                                        panel_w - 20, item_h - 2, selected_color);
-                }
-
-                /* Draw investment details */
-                draw_label (get_pool_label (self), lp_investment_get_name (inv),
-                            panel_x + 20, item_y, 16,
-                            is_selected ? gold_color : text_color);
-
-                draw_label (get_pool_label (self), asset_class_to_string (lp_investment_get_asset_class (inv)),
-                            panel_x + 300, item_y, 16, text_color);
-
-                value = lp_investment_get_current_value (inv);
-                g_snprintf (str_buf, sizeof (str_buf), "%.0f gp",
-                            lrg_big_number_to_double (value));
-                draw_label (get_pool_label (self), str_buf, panel_x + 450, item_y, 16, gold_color);
-
-                ret_pct = lp_investment_get_return_percentage (inv);
-                g_snprintf (str_buf, sizeof (str_buf), "%+.1f%%", ret_pct);
-                draw_label (get_pool_label (self), str_buf, panel_x + 580, item_y, 16,
-                            ret_pct >= 0 ? text_color : dim_color);
-            }
-        }
+        /*
+         * Draw portfolio screen widget with charts.
+         * The widget handles List/Allocation/Performance views internally.
+         */
+        lrg_widget_set_position (LRG_WIDGET (self->portfolio_screen),
+                                  (gfloat)(panel_x + 10), (gfloat)(panel_y + 60));
+        lrg_widget_set_size (LRG_WIDGET (self->portfolio_screen),
+                              (gfloat)(panel_w - 20), (gfloat)(panel_h - 100));
+        lrg_widget_draw (LRG_WIDGET (self->portfolio_screen));
     }
     else
     {
+        /* Draw column headers for Market view */
+        draw_label (get_pool_label (self), "Name", panel_x + 20, panel_y + 65, 16, dim_color);
+        draw_label (get_pool_label (self), "Type", panel_x + 300, panel_y + 65, 16, dim_color);
         draw_label (get_pool_label (self), "Cost", panel_x + 450, panel_y + 65, 16, dim_color);
 
         /* Draw available investments */
@@ -565,8 +545,16 @@ lp_state_investments_draw (LrgGameState *state)
     }
 
     /* Draw instructions */
-    draw_label (get_pool_label (self), "[UP/DOWN] Select    [TAB] Switch View    [ENTER] Buy/Sell    [ESC] Back",
-                panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
+    if (self->view_mode == VIEW_MODE_MARKET)
+    {
+        draw_label (get_pool_label (self), "[UP/DOWN] Select    [ENTER] Buy    [H/L] Switch to Portfolio    [ESC] Back",
+                    panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
+    }
+    else
+    {
+        draw_label (get_pool_label (self), "[TAB] Change View    [H/L] Switch to Market    [ESC] Back",
+                    panel_x + 20, panel_y + panel_h - 35, 14, dim_color);
+    }
 
     /* Malachar hint */
     draw_label (get_pool_label (self), "\"Choose wisely, my lord. These assets will generate wealth while you slumber...\"",
@@ -611,6 +599,9 @@ lp_state_investments_init (LpStateInvestments *self)
     self->view_mode = VIEW_MODE_PORTFOLIO;
     self->selected_index = 0;
     self->scroll_offset = 0;
+
+    /* Create portfolio screen widget with charts */
+    self->portfolio_screen = lp_screen_portfolio_new ();
 
     /* Create labels */
     self->label_title = lrg_label_new (NULL);

@@ -173,12 +173,15 @@ rebuild_investment_list (LpScreenPortfolio *self)
  * on_portfolio_changed:
  *
  * Signal handler for portfolio investment changes.
+ * Called when investment-added or investment-removed signals are emitted.
  */
 static void
 on_portfolio_changed (LpPortfolio       *portfolio,
+                      LpInvestment      *investment,
                       LpScreenPortfolio *self)
 {
     (void)portfolio;
+    (void)investment;
 
     rebuild_investment_list (self);
 
@@ -610,7 +613,7 @@ lp_screen_portfolio_draw (LrgWidget *widget)
                 const gchar *name;
                 LpAssetClass asset_class;
                 const GrlColor *class_color;
-                g_autoptr(LrgBigNumber) value = NULL;
+                LrgBigNumber *value;  /* transfer none from getter */
                 g_autofree gchar *value_str = NULL;
 
                 /* Draw selection highlight */

@@ -303,10 +303,10 @@ lp_state_wake_draw (LrgGameState *state)
         guint series_count;
 
         /* Position chart on right side of screen */
-        chart_w = 300;
-        chart_h = 180;
-        chart_x = center_x + 60;
-        chart_y = portfolio_y - 20;
+        chart_w = 450;
+        chart_h = 280;
+        chart_x = center_x + 40;
+        chart_y = portfolio_y - 40;
 
         series_count = lrg_chart_get_series_count (LRG_CHART (self->slumber_chart));
         if (series_count > 0)
