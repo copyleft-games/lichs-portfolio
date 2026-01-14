@@ -523,7 +523,10 @@ lp_tutorial_sequences_check_condition (const gchar *condition_id,
     LpPortfolio *portfolio;
 
     g_return_val_if_fail (condition_id != NULL, FALSE);
-    g_return_val_if_fail (self != NULL && self->game != NULL, FALSE);
+
+    /* Gracefully handle NULL context - can happen if called without proper setup */
+    if (self == NULL || self->game == NULL)
+        return FALSE;
 
     data = lp_game_get_game_data (self->game);
     if (data == NULL)
