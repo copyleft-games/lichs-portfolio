@@ -86,6 +86,7 @@ GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
 # Phase 7: Save
 GAME_OBJECTS += $(OBJDIR)/src/save/lp-save-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-gameplay-settings.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-portfolio-history.o
 
 # Phase 8: Steam Integration
 GAME_OBJECTS += $(OBJDIR)/src/steam/lp-steam-bridge.o
