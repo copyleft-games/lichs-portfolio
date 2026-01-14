@@ -16,6 +16,7 @@
 #include "../core/lp-game-data.h"
 #include "../investment/lp-portfolio.h"
 #include "../agent/lp-agent-manager.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -152,8 +153,8 @@ lp_state_analyze_update (LrgGameState *state,
             LRG_GAME_STATE (lp_state_slumber_new ()));
     }
 
-    /* ESC to open pause menu */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* ESC/B/Start to open pause menu */
+    if (LP_INPUT_CANCEL_PRESSED () || LP_INPUT_START_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;

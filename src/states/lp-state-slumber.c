@@ -11,6 +11,7 @@
 #include "lp-state-simulating.h"
 #include "../core/lp-game.h"
 /* #include "../tutorial/lp-tutorial-sequences.h" */
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -135,17 +136,15 @@ lp_state_slumber_update (LrgGameState *state,
 
     (void)delta;
 
-    /* Up to increase years (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_K))
+    /* Up to increase years (including vim keys and gamepad D-pad) */
+    if (LP_INPUT_NAV_UP_PRESSED ())
     {
         if (self->slumber_years < MAX_SLUMBER_YEARS)
             self->slumber_years += 10;
     }
 
-    /* Down to decrease years (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_J))
+    /* Down to decrease years (including vim keys and gamepad D-pad) */
+    if (LP_INPUT_NAV_DOWN_PRESSED ())
     {
         if (self->slumber_years > MIN_SLUMBER_YEARS)
         {
@@ -156,9 +155,8 @@ lp_state_slumber_update (LrgGameState *state,
         }
     }
 
-    /* Enter to confirm and begin slumber */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    /* Enter/A button to confirm and begin slumber */
+    if (LP_INPUT_CONFIRM_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;
@@ -178,8 +176,8 @@ lp_state_slumber_update (LrgGameState *state,
             LRG_GAME_STATE (simulating));
     }
 
-    /* Escape to cancel */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* Escape/B button to cancel */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;

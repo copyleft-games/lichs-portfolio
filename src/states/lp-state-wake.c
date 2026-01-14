@@ -17,6 +17,7 @@
 /* #include "../tutorial/lp-tutorial-sequences.h" */
 #include "lp-state-analyze.h"
 #include "../ui/lp-theme.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -140,9 +141,8 @@ lp_state_wake_update (LrgGameState *state,
 {
     (void)delta;
 
-    /* Check for input to continue */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    /* Check for input to continue (Enter/Space/A button) */
+    if (LP_INPUT_CONFIRM_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;
@@ -157,8 +157,8 @@ lp_state_wake_update (LrgGameState *state,
             LRG_GAME_STATE (lp_state_analyze_new ()));
     }
 
-    /* ESC to quit */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* ESC/B button to quit */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
         LpGame *game = lp_game_get_from_state (state);
         lrg_game_template_quit (LRG_GAME_TEMPLATE (game));

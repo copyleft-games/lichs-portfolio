@@ -14,6 +14,7 @@
 #include "../agent/lp-agent-manager.h"
 #include "../agent/lp-agent.h"
 #include "../agent/lp-agent-individual.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -230,9 +231,8 @@ lp_state_agents_update (LrgGameState *state,
         max_items = 3; /* Number of recruit options */
     }
 
-    /* Navigation: Up/Down (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_K))
+    /* Navigation: Up/Down (including vim keys and gamepad D-pad) */
+    if (LP_INPUT_NAV_UP_PRESSED ())
     {
         if (self->selected_index > 0)
         {
@@ -244,8 +244,7 @@ lp_state_agents_update (LrgGameState *state,
         }
     }
 
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_J))
+    if (LP_INPUT_NAV_DOWN_PRESSED ())
     {
         if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
         {
@@ -257,10 +256,12 @@ lp_state_agents_update (LrgGameState *state,
         }
     }
 
-    /* Tab/H/L to switch views */
+    /* Tab/H/L/LB/RB to switch views */
     if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
         grl_input_is_key_pressed (GRL_KEY_H) ||
-        grl_input_is_key_pressed (GRL_KEY_L))
+        grl_input_is_key_pressed (GRL_KEY_L) ||
+        LP_INPUT_TAB_NEXT_PRESSED () ||
+        LP_INPUT_TAB_PREV_PRESSED ())
     {
         if (self->view_mode == VIEW_MODE_AGENTS)
         {
@@ -276,9 +277,8 @@ lp_state_agents_update (LrgGameState *state,
                      self->view_mode == VIEW_MODE_AGENTS ? "agents" : "recruit");
     }
 
-    /* Enter to recruit or view details */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    /* Enter/A button to recruit or view details */
+    if (LP_INPUT_CONFIRM_PRESSED ())
     {
         if (self->view_mode == VIEW_MODE_RECRUIT)
         {
@@ -320,8 +320,8 @@ lp_state_agents_update (LrgGameState *state,
         }
     }
 
-    /* ESC to return to analyze */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* ESC/B button to return to analyze */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
         lp_log_info ("Returning to analyze state");
 

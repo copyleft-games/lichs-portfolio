@@ -12,6 +12,7 @@
 #include "lp-state-settings.h"
 #include "../core/lp-game.h"
 #include "../save/lp-save-manager.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -224,9 +225,8 @@ lp_state_main_menu_update (LrgGameState *state,
 
     /* Handle input in update since we poll input each frame */
 
-    /* Navigate up (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_K))
+    /* Navigate up (keyboard, vim keys, or gamepad D-pad) */
+    if (LP_INPUT_NAV_UP_PRESSED ())
     {
         self->selected_option--;
         if (self->selected_option < 0)
@@ -235,9 +235,8 @@ lp_state_main_menu_update (LrgGameState *state,
         }
     }
 
-    /* Navigate down (including vim keys) */
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_J))
+    /* Navigate down (keyboard, vim keys, or gamepad D-pad) */
+    if (LP_INPUT_NAV_DOWN_PRESSED ())
     {
         self->selected_option++;
         if (self->selected_option >= MENU_OPTION_COUNT)
@@ -246,9 +245,8 @@ lp_state_main_menu_update (LrgGameState *state,
         }
     }
 
-    /* Select option */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    /* Select option (keyboard Enter/Space or gamepad A button) */
+    if (LP_INPUT_CONFIRM_PRESSED ())
     {
         switch (self->selected_option)
         {

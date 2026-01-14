@@ -17,6 +17,7 @@
 #include "../investment/lp-investment-trade.h"
 #include "../investment/lp-investment-financial.h"
 #include "../ui/lp-screen-portfolio.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -247,9 +248,11 @@ lp_state_investments_update (LrgGameState *state,
 
     (void)delta;
 
-    /* H/L to switch between portfolio and market views at top level */
+    /* H/L or LB/RB to switch between portfolio and market views at top level */
     if (grl_input_is_key_pressed (GRL_KEY_H) ||
-        grl_input_is_key_pressed (GRL_KEY_L))
+        grl_input_is_key_pressed (GRL_KEY_L) ||
+        LP_INPUT_TAB_PREV_PRESSED () ||
+        LP_INPUT_TAB_NEXT_PRESSED ())
     {
         if (self->view_mode == VIEW_MODE_PORTFOLIO)
         {
@@ -283,9 +286,10 @@ lp_state_investments_update (LrgGameState *state,
             lp_screen_portfolio_set_view_mode (self->portfolio_screen, mode);
         }
 
-        /* Forward navigation keys */
+        /* Forward navigation keys (keyboard and gamepad) */
         if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-            grl_input_is_key_pressed (GRL_KEY_K))
+            grl_input_is_key_pressed (GRL_KEY_K) ||
+            LP_GAMEPAD_NAV_UP_PRESSED ())
         {
             event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_UP);
             lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
@@ -293,15 +297,17 @@ lp_state_investments_update (LrgGameState *state,
         }
 
         if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-            grl_input_is_key_pressed (GRL_KEY_J))
+            grl_input_is_key_pressed (GRL_KEY_J) ||
+            LP_GAMEPAD_NAV_DOWN_PRESSED ())
         {
             event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_DOWN);
             lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
             lrg_ui_event_free (event);
         }
 
-        /* Forward R key for toggling risk/asset chart */
-        if (grl_input_is_key_pressed (GRL_KEY_R))
+        /* Forward R key or Y button for toggling risk/asset chart */
+        if (grl_input_is_key_pressed (GRL_KEY_R) ||
+            LP_GAMEPAD_TOGGLE_PRESSED ())
         {
             event = lrg_ui_event_new_key (LRG_UI_EVENT_KEY_DOWN, GRL_KEY_R);
             lrg_widget_handle_event (LRG_WIDGET (self->portfolio_screen), event);
@@ -313,9 +319,8 @@ lp_state_investments_update (LrgGameState *state,
         /* Market view: handle navigation and buying locally */
         guint max_items = NUM_AVAILABLE_INVESTMENTS;
 
-        /* Navigation: Up/Down (including vim keys) */
-        if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-            grl_input_is_key_pressed (GRL_KEY_K))
+        /* Navigation: Up/Down (including vim keys and gamepad D-pad) */
+        if (LP_INPUT_NAV_UP_PRESSED ())
         {
             if (self->selected_index > 0)
             {
@@ -328,8 +333,7 @@ lp_state_investments_update (LrgGameState *state,
             }
         }
 
-        if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-            grl_input_is_key_pressed (GRL_KEY_J))
+        if (LP_INPUT_NAV_DOWN_PRESSED ())
         {
             if (max_items > 0 && self->selected_index < (gint)(max_items - 1))
             {
@@ -352,9 +356,8 @@ lp_state_investments_update (LrgGameState *state,
             return;
         }
 
-        /* Enter to buy */
-        if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-            grl_input_is_key_pressed (GRL_KEY_SPACE))
+        /* Enter/Space or A button to buy */
+        if (LP_INPUT_CONFIRM_PRESSED ())
         {
             /* Buy selected investment */
             if (self->selected_index >= 0 &&
@@ -385,8 +388,8 @@ lp_state_investments_update (LrgGameState *state,
         }
     }
 
-    /* ESC to return to analyze */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* ESC or B button to return to analyze */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
         lp_log_info ("Returning to analyze state");
 

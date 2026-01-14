@@ -14,6 +14,7 @@
 #include "../core/lp-game-data.h"
 #include "../save/lp-save-manager.h"
 #include "../ui/lp-theme.h"
+#include "../lp-input-helpers.h"
 
 /* Pause menu options */
 typedef enum
@@ -224,35 +225,34 @@ lp_state_pause_update (LrgGameState *state,
     manager = lrg_game_template_get_state_manager (LRG_GAME_TEMPLATE (game));
 
     /* Handle input via polling */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+
+    /* Resume game with Cancel (ESC or B button) */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
-        /* Resume game */
         lrg_game_state_manager_pop (manager);
         return;
     }
 
-    /* Navigation (arrows, WASD, or vim-style) */
-    if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-        grl_input_is_key_pressed (GRL_KEY_W) ||
-        grl_input_is_key_pressed (GRL_KEY_K))
+    /* Navigation up (arrows, WASD, vim-style, or gamepad D-pad) */
+    if (LP_INPUT_NAV_UP_PRESSED () ||
+        grl_input_is_key_pressed (GRL_KEY_W))
     {
         self->selected_option--;
         if (self->selected_option < 0)
             self->selected_option = PAUSE_OPTION_COUNT - 1;
     }
 
-    if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-        grl_input_is_key_pressed (GRL_KEY_S) ||
-        grl_input_is_key_pressed (GRL_KEY_J))
+    /* Navigation down (arrows, WASD, vim-style, or gamepad D-pad) */
+    if (LP_INPUT_NAV_DOWN_PRESSED () ||
+        grl_input_is_key_pressed (GRL_KEY_S))
     {
         self->selected_option++;
         if (self->selected_option >= PAUSE_OPTION_COUNT)
             self->selected_option = 0;
     }
 
-    /* Selection */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE))
+    /* Selection (Enter, Space, or gamepad A button) */
+    if (LP_INPUT_CONFIRM_PRESSED ())
     {
         switch (self->selected_option)
         {

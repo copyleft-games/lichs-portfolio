@@ -10,6 +10,7 @@
 #include "lp-state-settings.h"
 #include "../core/lp-game.h"
 #include "../core/lp-gameplay-settings.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <libregnum.h>
 
@@ -287,8 +288,8 @@ lp_state_settings_update (LrgGameState *state,
 
     option_count = get_option_count (self->current_tab);
 
-    /* Navigate tabs with TAB/H/L keys */
-    if (grl_input_is_key_pressed (GRL_KEY_TAB) ||
+    /* Navigate tabs with TAB/RB (next) or LB (previous) */
+    if (LP_INPUT_TAB_NEXT_PRESSED () ||
         grl_input_is_key_pressed (GRL_KEY_H) ||
         grl_input_is_key_pressed (GRL_KEY_L))
     {
@@ -300,11 +301,20 @@ lp_state_settings_update (LrgGameState *state,
         self->selected_option = 0;  /* Reset selection when changing tabs */
     }
 
-    /* Navigate options with UP/DOWN (including vim keys) */
+    if (LP_INPUT_TAB_PREV_PRESSED ())
+    {
+        self->current_tab--;
+        if (self->current_tab < 0)
+        {
+            self->current_tab = SETTINGS_TAB_COUNT - 1;
+        }
+        self->selected_option = 0;
+    }
+
+    /* Navigate options with UP/DOWN (including vim keys and gamepad D-pad) */
     if (option_count > 0)
     {
-        if (grl_input_is_key_pressed (GRL_KEY_UP) ||
-            grl_input_is_key_pressed (GRL_KEY_K))
+        if (LP_INPUT_NAV_UP_PRESSED ())
         {
             self->selected_option--;
             if (self->selected_option < 0)
@@ -313,8 +323,7 @@ lp_state_settings_update (LrgGameState *state,
             }
         }
 
-        if (grl_input_is_key_pressed (GRL_KEY_DOWN) ||
-            grl_input_is_key_pressed (GRL_KEY_J))
+        if (LP_INPUT_NAV_DOWN_PRESSED ())
         {
             self->selected_option++;
             if (self->selected_option >= option_count)
@@ -324,9 +333,8 @@ lp_state_settings_update (LrgGameState *state,
         }
     }
 
-    /* Change values with LEFT/RIGHT */
-    if (grl_input_is_key_pressed (GRL_KEY_LEFT) ||
-        grl_input_is_key_pressed (GRL_KEY_A))
+    /* Change values with LEFT/RIGHT (keyboard A/D or gamepad D-pad) */
+    if (LP_INPUT_VALUE_DEC_PRESSED ())
     {
         switch (self->current_tab)
         {
@@ -412,8 +420,7 @@ lp_state_settings_update (LrgGameState *state,
         }
     }
 
-    if (grl_input_is_key_pressed (GRL_KEY_RIGHT) ||
-        grl_input_is_key_pressed (GRL_KEY_D))
+    if (LP_INPUT_VALUE_INC_PRESSED ())
     {
         switch (self->current_tab)
         {
@@ -499,8 +506,8 @@ lp_state_settings_update (LrgGameState *state,
         }
     }
 
-    /* ESC to return to previous state */
-    if (grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* Cancel (ESC or B button) to return to previous state */
+    if (LP_INPUT_CANCEL_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;

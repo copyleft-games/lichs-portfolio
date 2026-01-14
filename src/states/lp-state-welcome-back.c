@@ -9,6 +9,7 @@
 
 #include "lp-state-welcome-back.h"
 #include "../core/lp-game.h"
+#include "../lp-input-helpers.h"
 #include <graylib.h>
 #include <math.h>
 
@@ -221,10 +222,8 @@ lp_state_welcome_back_update (LrgGameState *state,
         self->show_prompt = !self->show_prompt;
     }
 
-    /* Check for input to continue */
-    if (grl_input_is_key_pressed (GRL_KEY_ENTER) ||
-        grl_input_is_key_pressed (GRL_KEY_SPACE) ||
-        grl_input_is_key_pressed (GRL_KEY_ESCAPE))
+    /* Check for input to continue (Enter/Space/A/B buttons) */
+    if (LP_INPUT_CONFIRM_PRESSED () || LP_INPUT_CANCEL_PRESSED ())
     {
         LpGame *game;
         LrgGameStateManager *manager;
