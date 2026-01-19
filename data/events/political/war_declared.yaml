@@ -1,0 +1,33 @@
+# War Declared - Political Event
+# Major event with mixed effects
+
+id: event_war_declared
+name: "War Declared"
+type: political
+severity: major
+probability: 0.06
+
+description: "The drums of war echo across the land. Kingdoms marshal their forces, and the economy shifts to support the conflict."
+
+investment_effects:
+  property: 0.6  # War damage
+  trade: 0.4     # Routes disrupted
+  financial: 1.2 # War bonds popular
+
+duration_years: 0  # Variable, handled by war system
+
+# Regional effects
+region_effects:
+  war_zone: 0.3
+  supplier: 1.5
+  neutral: 1.0
+
+# Exposure effects
+exposure_change: -5  # War distracts mortals from investigations
+
+commentary: kingdom_collapse
+
+flavor:
+  - "Let them squabble. Rebuilding is always profitable."
+  - "Wars end. Debts endure."
+  - "The fog of war conceals many transactions."

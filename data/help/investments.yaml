@@ -1,0 +1,61 @@
+# Help content for investment concepts
+entries:
+  - id: investment_overview
+    title: "Investments"
+    description: "Investments are the core of your portfolio. Each investment generates returns over time, but also carries risk and contributes to your exposure level. A well-diversified portfolio balances high returns against manageable risk."
+    hint: "Hold multiple investment types to unlock synergy bonuses."
+    category: investments
+
+  - id: asset_class_property
+    title: "Property Investments"
+    description: "Real estate holdings such as farmland, manors, mines, and warehouses. Property investments provide steady, reliable returns and are resistant to economic downturns. However, they can be affected by regional instability and require significant upfront capital."
+    hint: "Properties in stable regions provide the safest returns."
+    category: investments
+
+  - id: asset_class_trade
+    title: "Trade Investments"
+    description: "Mercantile ventures including trade routes, shipping operations, and guild partnerships. Trade investments offer higher returns than property but are more sensitive to political events and regional conflicts."
+    hint: "Trade routes benefit from peaceful relations between kingdoms."
+    category: investments
+
+  - id: asset_class_financial
+    title: "Financial Investments"
+    description: "Monetary instruments such as bonds, loans, and banking partnerships. Financial investments provide predictable returns through interest but are vulnerable to currency devaluation and economic crises."
+    hint: "Moneylending offers high returns but attracts attention."
+    category: investments
+
+  - id: asset_class_magical
+    title: "Magical Investments"
+    description: "Arcane ventures including enchantment workshops, ley line harvesting, and artifact trade. These investments offer exceptional returns but are highly volatile and significantly increase your exposure to detection."
+    hint: "Magical investments are risky but unlock powerful synergies."
+    category: investments
+
+  - id: asset_class_political
+    title: "Political Investments"
+    description: "Influence-based assets such as court positions, noble titles, and spy networks. Political investments provide both returns and useful intelligence, but they require careful management as politics shift."
+    hint: "Political investments provide early warning of major events."
+    category: investments
+
+  - id: asset_class_dark
+    title: "Dark Investments"
+    description: "Forbidden ventures that tap into necromantic and unholy resources. These investments offer immense power but carry extreme risk and massive exposure increases. Only the most confident lich investors should consider these."
+    hint: "Dark investments can trigger crusades if detected."
+    category: investments
+
+  - id: risk_level
+    title: "Risk Level"
+    description: "Risk indicates how volatile an investment's returns may be. Low risk means stable but modest returns, while Extreme risk investments can yield massive profits or devastating losses. Risk also affects how investments respond to world events."
+    hint: "Diversify across risk levels to smooth out returns."
+    category: investments
+
+  - id: return_rate
+    title: "Return Rate"
+    description: "The percentage of an investment's value it generates as profit each year. A 5% return on 10,000 gold yields 500 gold annually. Returns compound over time, making early investments especially valuable."
+    hint: "Higher returns often come with higher risk."
+    category: investments
+
+  - id: synergy
+    title: "Investment Synergies"
+    description: "When you own complementary investments, they generate synergy bonuses. For example, owning both farmland and a trade route creates an agricultural export synergy, boosting returns on both investments. Synergies reward diversification and strategic thinking."
+    hint: "Check the synergy panel to see potential combinations."
+    category: investments

@@ -1,0 +1,31 @@
+# Shipping Fleet Investment - Trade Class
+# Maritime trade with higher risk and returns
+
+id: trade_shipping
+name: "Merchant Fleet"
+description: "A fleet of trading vessels sailing between ports. Storms and pirates are risks, but the profits from overseas goods are unmatched."
+asset_class: trade
+risk_level: high
+base_return_rate: 0.15
+
+purchase_price:
+  min: 5000
+  max: 20000
+
+exposure_contribution: 18
+
+preferred_geography:
+  - coastal
+
+event_modifiers:
+  trade_boom: 2.0
+  naval_war: 0.3
+  storm_season: 0.6
+  piracy: 0.4
+  new_continent_discovered: 3.0
+  peaceful_relations: 1.5
+
+flavor:
+  - "Sails unfurl to capture winds and fortunes alike."
+  - "The sea takes its tithe, but rewards the patient."
+  - "From distant shores, treasures flow to ancient vaults."

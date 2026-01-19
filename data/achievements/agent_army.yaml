@@ -1,0 +1,9 @@
+# Many agents achievement
+id: agent_army
+name: "Legion of the Damned"
+description: "Have 20 agents active simultaneously"
+hidden: false
+points: 40
+progress:
+  target: 20
+  format: "agents"

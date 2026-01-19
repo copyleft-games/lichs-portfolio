@@ -1,0 +1,43 @@
+# Help content for agent mechanics
+entries:
+  - id: agent_overview
+    title: "Mortal Agents"
+    description: "Agents are mortals who serve your interests in the living world. They manage investments, gather intelligence, and protect your holdings from discovery. Loyal agents are essential for a lich's success."
+    hint: "Treat agents well - betrayal can be catastrophic."
+    category: agents
+
+  - id: agent_individual
+    title: "Individual Agents"
+    description: "Single mortal servants recruited for their skills. Individuals are easy to recruit and effective, but their usefulness is limited by their lifespan. When an individual dies, you lose their accumulated experience."
+    hint: "Train successors before valued agents grow old."
+    category: agents
+
+  - id: agent_family
+    title: "Family Bloodlines"
+    description: "Multi-generational servant families sworn to your service. Families provide continuity as skills and loyalty pass from parent to child. Over time, bloodlines develop hereditary traits that enhance their abilities."
+    hint: "Invest in family traits through the bloodline interface."
+    category: agents
+
+  - id: agent_cult
+    title: "Cults"
+    description: "Secretive organizations devoted to your worship. Cults provide many agents with shared purpose, but their religious fervor can attract unwanted attention. Cults are harder to control but harder to destroy."
+    hint: "Cults are powerful but significantly increase exposure."
+    category: agents
+
+  - id: agent_bound
+    title: "Bound Servants"
+    description: "Undead or magically bound entities that serve without question. Bound servants never betray you and never die of natural causes, but they require constant magical energy and are extremely suspicious to mortals."
+    hint: "Use bound servants only when secrecy is impossible."
+    category: agents
+
+  - id: agent_loyalty
+    title: "Agent Loyalty"
+    description: "Loyalty measures an agent's dedication to your service. High loyalty reduces betrayal risk and improves performance. Loyalty increases through fair treatment, generous pay, and successful missions."
+    hint: "Betrayal by a high-ranking agent can expose your entire network."
+    category: agents
+
+  - id: agent_traits
+    title: "Bloodline Traits"
+    description: "Family bloodlines can develop hereditary traits over generations. Traits like 'Merchant Blood' or 'Iron Will' provide bonuses to specific activities. Traits are inherited imperfectly and can mutate over time."
+    hint: "Selective breeding can strengthen desirable traits."
+    category: agents

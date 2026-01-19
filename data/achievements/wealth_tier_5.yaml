@@ -1,0 +1,9 @@
+# Extreme wealth achievement
+id: wealth_tier_5
+name: "Arcane Plutocrat"
+description: "Accumulate 10 billion gold in net worth"
+hidden: false
+points: 75
+progress:
+  target: 10000000000
+  format: "gold"

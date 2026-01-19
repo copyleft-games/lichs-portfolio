@@ -1,0 +1,9 @@
+# Kingdom-specific investment achievement
+id: kingdom_valdoria
+name: "Crown Jewel of Valdoria"
+description: "Own 5 major investments in Valdoria"
+hidden: false
+points: 20
+progress:
+  target: 5
+  format: "investments"

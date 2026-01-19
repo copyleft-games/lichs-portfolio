@@ -1,0 +1,6 @@
+# High exposure survival achievement
+id: exposure_survived
+name: "Dancing with Inquisitors"
+description: "Survive with exposure above 75 for 25 years"
+hidden: false
+points: 25

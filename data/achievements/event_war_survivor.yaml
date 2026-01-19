@@ -1,0 +1,6 @@
+# War survival achievement
+id: event_war_survivor
+name: "War Profiteer"
+description: "Maintain positive returns during a kingdom-wide war"
+hidden: false
+points: 25

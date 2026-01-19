@@ -1,0 +1,29 @@
+# Wild Magic Surge - Magical Event
+# Chaotic event with unpredictable effects
+
+id: event_wild_magic_surge
+name: "Wild Magic Surge"
+type: magical
+severity: moderate
+probability: 0.03
+
+description: "The ley lines have become unstable. Magic behaves unpredictably, affecting everything from crops to construction."
+
+investment_effects:
+  property: 0.8  # Random crop failures, structural issues
+  trade: 0.9
+  magical: 1.5   # Chaos benefits magical dealings
+  dark: 1.3
+
+duration_years: 2
+
+# Random effects
+random_effects:
+  - investment_destroyed
+  - investment_doubled
+  - new_resource_discovered
+
+flavor:
+  - "Chaos to mortals is opportunity to the prepared."
+  - "The weave trembles. We adjust our grip."
+  - "Wild magic hides many dark workings."

@@ -1,0 +1,42 @@
+# Help content for exposure mechanics
+entries:
+  - id: exposure_overview
+    title: "Exposure"
+    description: "Exposure measures how much attention your activities draw from mortal authorities. High exposure risks triggering investigations, inquisitions, or even crusades. Managing exposure is crucial to long-term survival."
+    hint: "Exposure decays slowly during slumber if you avoid high-profile investments."
+    category: exposure
+
+  - id: exposure_sources
+    title: "Exposure Sources"
+    description: "Exposure increases when you make investments that attract attention. Magical and dark investments add the most exposure, while mundane property adds little. Aggressive expansion and suspicious activity patterns also increase exposure."
+    hint: "Spread investments across regions to reduce local suspicion."
+    category: exposure
+
+  - id: exposure_threshold_safe
+    title: "Safe Zone (0-25)"
+    description: "At low exposure levels, mortals have no suspicion of your existence. You can operate freely and invest aggressively without fear of investigation. This is the ideal state for building your portfolio."
+    category: exposure
+
+  - id: exposure_threshold_cautious
+    title: "Cautious Zone (26-50)"
+    description: "Rumors are beginning to circulate. Local authorities may investigate unusual activities. Some investments may become harder to acquire, and random events may have slightly worse outcomes."
+    hint: "Consider reducing magical investments to lower exposure."
+    category: exposure
+
+  - id: exposure_threshold_dangerous
+    title: "Dangerous Zone (51-75)"
+    description: "Serious attention from religious and political authorities. Inquisitors may be dispatched to investigate. Investment returns may suffer as partners become nervous. Events are more likely to turn hostile."
+    hint: "Focus on low-exposure investments to reduce risk."
+    category: exposure
+
+  - id: exposure_threshold_critical
+    title: "Critical Zone (76-100)"
+    description: "Your existence is nearly confirmed. Crusades may be called, investments may be seized, and agents may be targeted. This is an emergency situation requiring immediate action to reduce exposure."
+    hint: "Consider sacrificing some investments to reduce exposure quickly."
+    category: exposure
+
+  - id: exposure_decay
+    title: "Exposure Decay"
+    description: "Exposure naturally decreases during slumber as mortals forget or dismiss rumors. The rate of decay depends on your phylactery upgrades. Avoiding high-exposure activities accelerates decay."
+    hint: "Long slumbers with low-exposure portfolios clear suspicion fastest."
+    category: exposure

@@ -1,0 +1,30 @@
+# Market Crash - Economic Event
+# Negative economic event that reduces portfolio value
+
+id: event_market_crash
+name: "Market Crash"
+type: economic
+severity: major
+probability: 0.04
+
+description: "Panic spreads through the markets. Merchants default on debts, trade routes collapse, and fortunes vanish overnight."
+
+investment_effects:
+  property: 0.7
+  trade: 0.4
+  financial: 0.5
+
+duration_years: 8
+
+triggers:
+  - recent_boom: true
+  - speculation_high: true
+
+commentary: investment_failure
+
+recovery_rate: 0.05  # Annual recovery toward baseline
+
+flavor:
+  - "Mortals weep for their lost gold. We simply wait."
+  - "Crashes create opportunities for those with patience."
+  - "The strong survive; the weak become... opportunities."

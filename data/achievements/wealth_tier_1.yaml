@@ -1,0 +1,12 @@
+# Wealth Tier Achievements - Milestone progression
+
+# 10,000 gold milestone
+---
+id: wealthy_merchant
+name: "Wealthy Merchant"
+description: "Accumulate 10,000 gold pieces"
+hidden: false
+points: 5
+progress:
+  target: 10000
+  format: "gold"

@@ -1,0 +1,9 @@
+# Time-based achievements
+id: decade_slumber
+name: "A Decade's Rest"
+description: "Complete a 10-year slumber in a single cycle"
+hidden: false
+points: 5
+progress:
+  target: 10
+  format: "years"

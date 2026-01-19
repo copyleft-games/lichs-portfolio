@@ -1,0 +1,9 @@
+# Long-term investment
+id: immortal_patience
+name: "Immortal Patience"
+description: "Hold a single investment for 1,000 years"
+hidden: false
+points: 75
+progress:
+  target: 1000
+  format: "years"

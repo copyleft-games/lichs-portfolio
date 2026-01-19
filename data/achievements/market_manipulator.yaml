@@ -1,0 +1,6 @@
+# Market influence achievement
+id: market_manipulator
+name: "Market Manipulator"
+description: "Trigger a market event through your actions"
+hidden: true
+points: 25

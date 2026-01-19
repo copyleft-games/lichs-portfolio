@@ -1,0 +1,9 @@
+# Prestige mastery achievement
+id: prestige_master
+name: "Eternal Recurrence"
+description: "Complete 25 prestige cycles"
+hidden: false
+points: 75
+progress:
+  target: 25
+  format: "cycles"

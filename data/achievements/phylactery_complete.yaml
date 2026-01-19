@@ -1,0 +1,6 @@
+# Phylactery completion achievement
+id: phylactery_complete
+name: "Apex Predator"
+description: "Unlock all phylactery upgrades"
+hidden: true
+points: 100

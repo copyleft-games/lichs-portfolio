@@ -1,0 +1,6 @@
+# Agent dynasty achievement
+id: bloodline_founder
+name: "Bloodline Founder"
+description: "Hire your first family-type agent"
+hidden: false
+points: 10

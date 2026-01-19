@@ -1,0 +1,9 @@
+# Trade specialization
+id: trade_magnate
+name: "Trade Magnate"
+description: "Own 10 trade investments simultaneously"
+hidden: false
+points: 20
+progress:
+  target: 10
+  format: "investments"

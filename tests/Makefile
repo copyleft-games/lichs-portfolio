@@ -87,6 +87,7 @@ GAME_OBJECTS += $(OBJDIR)/src/feedback/lp-slumber-visualization.o
 GAME_OBJECTS += $(OBJDIR)/src/save/lp-save-manager.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-gameplay-settings.o
 GAME_OBJECTS += $(OBJDIR)/src/core/lp-portfolio-history.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-statistics.o
 
 # Phase 8: Steam Integration
 GAME_OBJECTS += $(OBJDIR)/src/steam/lp-steam-bridge.o
@@ -110,6 +111,11 @@ GAME_OBJECTS += $(OBJDIR)/src/narrative/lp-malachar-voice.o
 GAME_OBJECTS += $(OBJDIR)/src/audio/lp-ambient-audio.o
 GAME_OBJECTS += $(OBJDIR)/src/audio/lp-ui-sounds.o
 GAME_OBJECTS += $(OBJDIR)/src/tutorial/lp-tutorial-sequences.o
+
+# Phase 10: Tooltips, Help System, and Event Chronicle
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-tooltip.o
+GAME_OBJECTS += $(OBJDIR)/src/ui/lp-help-system.o
+GAME_OBJECTS += $(OBJDIR)/src/core/lp-event-chronicle.o
 
 # =============================================================================
 # Test Sources
@@ -156,6 +162,11 @@ LINKED_TESTS += test-synergy.c
 LINKED_TESTS += test-trait.c
 LINKED_TESTS += test-megaproject.c
 LINKED_TESTS += test-integration.c
+LINKED_TESTS += test-statistics.c
+
+# Phase 11: Tooltips, Help System, and Event Chronicle tests
+LINKED_TESTS += test-help.c
+LINKED_TESTS += test-chronicle.c
 
 # =============================================================================
 # Test Binaries

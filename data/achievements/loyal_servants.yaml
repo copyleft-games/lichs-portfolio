@@ -1,0 +1,9 @@
+# Agent loyalty achievement
+id: loyal_servants
+name: "Loyal Servants"
+description: "Have 5 agents with maximum loyalty simultaneously"
+hidden: false
+points: 20
+progress:
+  target: 5
+  format: "agents"

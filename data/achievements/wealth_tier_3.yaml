@@ -1,0 +1,9 @@
+# 10,000,000 gold milestone
+id: tycoon
+name: "Tycoon"
+description: "Accumulate 10,000,000 gold pieces"
+hidden: false
+points: 25
+progress:
+  target: 10000000
+  format: "gold"

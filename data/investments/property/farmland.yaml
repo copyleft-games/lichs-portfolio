@@ -1,0 +1,37 @@
+# Farmland Investment - Property Class
+# Steady low-risk income from agricultural production
+
+id: property_farmland
+name: "Fertile Farmland"
+description: "Rich agricultural land producing grains and livestock. A reliable source of passive income that appreciates slowly with proper management."
+asset_class: property
+risk_level: low
+base_return_rate: 0.04
+
+# Purchase price range for procedural generation
+purchase_price:
+  min: 500
+  max: 2000
+
+# Exposure contribution (0-100)
+exposure_contribution: 5
+
+# Regional preferences (geographic bonuses)
+preferred_geography:
+  - inland
+  - coastal
+
+# Event vulnerabilities and resistances
+event_modifiers:
+  economic_boom: 1.2
+  economic_recession: 0.8
+  war: 0.5
+  plague: 0.6
+  drought: 0.4
+  flood: 0.3
+
+# Flavor text variations
+flavor:
+  - "Fields of golden wheat stretching to the horizon."
+  - "A prosperous estate with peasants bound for generations."
+  - "The breadbasket of the kingdom, paying tribute to unseen masters."

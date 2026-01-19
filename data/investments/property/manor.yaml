@@ -1,0 +1,31 @@
+# Manor Estate Investment - Property Class
+# Prestigious property generating rental income from tenants
+
+id: property_manor
+name: "Noble Manor"
+description: "A grand manor house with attached lands. Generates income through rents from tenant farmers and tradesmen. Status symbol among the mortal nobility."
+asset_class: property
+risk_level: low
+base_return_rate: 0.05
+
+purchase_price:
+  min: 2000
+  max: 8000
+
+exposure_contribution: 10
+
+preferred_geography:
+  - inland
+  - forest
+
+event_modifiers:
+  economic_boom: 1.3
+  economic_recession: 0.7
+  war: 0.6
+  peasant_revolt: 0.4
+  succession_crisis: 0.8
+
+flavor:
+  - "Stone walls that have sheltered generations of loyal servants."
+  - "A seat of power, quietly funding darker purposes."
+  - "The ancestral home of a family that serves without knowing whom."

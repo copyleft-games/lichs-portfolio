@@ -1,0 +1,6 @@
+# Plague survival achievement
+id: event_plague_survivor
+name: "Immune to Suffering"
+description: "Survive a plague event with minimal portfolio loss"
+hidden: false
+points: 20

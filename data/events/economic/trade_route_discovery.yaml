@@ -1,0 +1,29 @@
+# Trade Route Discovery - Economic Event
+# Major positive event for trade investments
+
+id: event_trade_route_discovery
+name: "New Trade Route Discovered"
+type: economic
+severity: major
+probability: 0.02
+
+description: "Explorers have charted a new passage to distant lands. The first merchants to exploit it will reap enormous profits."
+
+investment_effects:
+  property: 1.0
+  trade: 2.5
+  financial: 1.3
+
+duration_years: 20
+
+commentary: investment_success
+
+# Unlock new investment opportunities
+unlocks:
+  - trade_exotic_goods
+  - trade_new_continent
+
+flavor:
+  - "New lands mean new wealth, flowing to ancient vaults."
+  - "Let the explorers claim glory; we claim the profits."
+  - "Horizons expand, and so do our holdings."

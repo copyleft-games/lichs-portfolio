@@ -37,7 +37,7 @@ typedef enum
 /* Number of options per tab */
 #define GRAPHICS_OPTIONS 3
 #define AUDIO_OPTIONS    3
-#define GAMEPLAY_OPTIONS 3
+#define GAMEPLAY_OPTIONS 4
 #define CONTROLS_OPTIONS 0  /* Read-only */
 
 struct _LpStateSettings
@@ -61,6 +61,7 @@ struct _LpStateSettings
     gboolean auto_save;
     gboolean tutorials;
     gint  difficulty;          /* 0=Easy, 1=Normal, 2=Hard */
+    gint  game_speed;          /* 0=1x, 1=2x, 2=4x, 3=10x */
 
     /* UI Labels */
     LrgLabel  *label_title;
@@ -266,8 +267,9 @@ lp_state_settings_enter (LrgGameState *state)
     if (gameplay != NULL)
     {
         self->auto_save = lp_gameplay_settings_get_autosave_enabled (gameplay);
-        /* tutorials maps to show_notifications, difficulty not stored yet */
         self->tutorials = lp_gameplay_settings_get_show_notifications (gameplay);
+        self->difficulty = (gint)lp_gameplay_settings_get_difficulty (gameplay);
+        self->game_speed = (gint)lp_gameplay_settings_get_game_speed (gameplay);
     }
 }
 
@@ -411,7 +413,22 @@ lp_state_settings_update (LrgGameState *state,
             else if (self->selected_option == 2)  /* Difficulty */
             {
                 if (self->difficulty > 0)
+                {
+                    LpGameplaySettings *gp = get_gameplay_settings ();
                     self->difficulty--;
+                    if (gp != NULL)
+                        lp_gameplay_settings_set_difficulty (gp, (LpDifficulty)self->difficulty);
+                }
+            }
+            else if (self->selected_option == 3)  /* Game Speed */
+            {
+                if (self->game_speed > 0)
+                {
+                    LpGameplaySettings *gp = get_gameplay_settings ();
+                    self->game_speed--;
+                    if (gp != NULL)
+                        lp_gameplay_settings_set_game_speed (gp, (LpGameSpeed)self->game_speed);
+                }
             }
             break;
 
@@ -497,7 +514,22 @@ lp_state_settings_update (LrgGameState *state,
             else if (self->selected_option == 2)  /* Difficulty */
             {
                 if (self->difficulty < 2)
+                {
+                    LpGameplaySettings *gp = get_gameplay_settings ();
                     self->difficulty++;
+                    if (gp != NULL)
+                        lp_gameplay_settings_set_difficulty (gp, (LpDifficulty)self->difficulty);
+                }
+            }
+            else if (self->selected_option == 3)  /* Game Speed */
+            {
+                if (self->game_speed < 3)
+                {
+                    LpGameplaySettings *gp = get_gameplay_settings ();
+                    self->game_speed++;
+                    if (gp != NULL)
+                        lp_gameplay_settings_set_game_speed (gp, (LpGameSpeed)self->game_speed);
+                }
             }
             break;
 
@@ -585,6 +617,13 @@ lp_state_settings_draw (LrgGameState *state)
         "Easy",
         "Normal",
         "Hard"
+    };
+
+    const gchar *game_speeds[] = {
+        "1x (Normal)",
+        "2x (Fast)",
+        "4x (Faster)",
+        "10x (Fastest)"
     };
 
     /* Reset label pool for this frame */
@@ -691,6 +730,10 @@ lp_state_settings_draw (LrgGameState *state)
         draw_option (self, content_x, "Difficulty:", difficulties[self->difficulty],
                      content_y + 80, self->selected_option == 2,
                      text_color, selected_color, value_color);
+
+        draw_option (self, content_x, "Game Speed:", game_speeds[self->game_speed],
+                     content_y + 120, self->selected_option == 3,
+                     text_color, selected_color, value_color);
         break;
 
     case SETTINGS_TAB_CONTROLS:
@@ -778,6 +821,7 @@ lp_state_settings_init (LpStateSettings *self)
     self->auto_save = TRUE;
     self->tutorials = TRUE;
     self->difficulty = 1;  /* Normal */
+    self->game_speed = 0;  /* 1x Normal */
 
     /* Create labels */
     self->label_title = lrg_label_new (NULL);

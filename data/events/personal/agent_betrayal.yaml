@@ -1,0 +1,41 @@
+# Agent Betrayal - Personal Event
+# Agent turns against the lich
+
+id: event_agent_betrayal
+name: "Agent Betrays"
+type: personal
+severity: major
+probability: 0.02  # Low base, modified by loyalty
+
+description: "An agent has discovered too much—and chosen the wrong side. They now work to expose your operations to mortal authorities."
+
+# Agent effects
+agent_effects:
+  agent_lost: true
+  investments_exposed: 2  # Number of investments revealed
+
+# Exposure effects
+exposure_change: 25
+
+# Investment risk
+investment_effects:
+  all: 0.8  # All investments take a hit
+
+duration_years: 0  # Immediate, permanent exposure increase
+
+commentary: agent_betrayal
+
+# Prevention factors
+prevented_by:
+  - high_loyalty: 90
+  - knowledge_level_low: true
+
+# Countermeasures
+countermeasures:
+  - silence_traitor  # Dark option
+  - discredit_claims
+
+flavor:
+  - "Betrayal is the price of relying on mortals."
+  - "They learn too much and forget their place."
+  - "A lesson in why some knowledge should never be shared."

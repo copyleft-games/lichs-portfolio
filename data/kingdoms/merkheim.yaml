@@ -1,0 +1,37 @@
+# Merkheim - Merchant Republic
+# High trade, lower stability
+
+id: kingdom_merkheim
+name: "Merchant Republic of Merkheim"
+capital: "Merkport"
+government: republic
+
+description: "A powerful merchant republic ruled by a council of trading families. Wealth flows freely, but political intrigue is constant."
+
+base_stability: 50
+base_prosperity: 80
+base_military: 45
+
+regions:
+  - merkport_harbor
+  - island_holdings
+  - trade_quarter
+
+trade_modifiers:
+  all_trade: 1.4
+  property: 0.8
+
+succession: election
+noble_houses: 0  # Merchant families instead
+merchant_families: 8
+church_influence: low
+
+relations:
+  valdoria: neutral
+  corsania: rivalry
+  the_wastes: neutral
+
+flavor:
+  - "Where gold rules, the patient accumulate."
+  - "Politics change with the wind. Debts endure."
+  - "Let them elect their masters. We know who truly owns the republic."

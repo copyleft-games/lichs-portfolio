@@ -1,0 +1,30 @@
+# Kingdom Bonds Investment - Financial Class
+# Lending to the crown with guaranteed returns
+
+id: financial_bonds
+name: "Royal Bonds"
+description: "Bonds issued by the crown to fund military campaigns and public works. The kingdom's word is their bond—until it isn't."
+asset_class: financial
+risk_level: low
+base_return_rate: 0.04
+
+purchase_price:
+  min: 1000
+  max: 50000
+
+exposure_contribution: 8
+
+preferred_geography:
+  - any
+
+event_modifiers:
+  kingdom_prosperity: 1.2
+  kingdom_collapse: 0.1
+  war_victory: 1.3
+  war_defeat: 0.5
+  succession_crisis: 0.7
+
+flavor:
+  - "Crowns rise and fall, but debts endure."
+  - "Even kings must borrow from those with patience."
+  - "The throne's promise, secured by ancient agreements."

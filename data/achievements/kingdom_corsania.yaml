@@ -1,0 +1,9 @@
+# Kingdom-specific investment achievement
+id: kingdom_corsania
+name: "Admiral of Corsanian Trade"
+description: "Own 5 major investments in Corsania"
+hidden: false
+points: 20
+progress:
+  target: 5
+  format: "investments"

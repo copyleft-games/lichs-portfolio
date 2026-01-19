@@ -1,0 +1,9 @@
+# Ultimate wealth achievement
+id: wealth_tier_6
+name: "Dragon's Hoard"
+description: "Accumulate 100 billion gold in net worth"
+hidden: false
+points: 100
+progress:
+  target: 100000000000
+  format: "gold"

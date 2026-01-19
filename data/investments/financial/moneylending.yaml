@@ -1,0 +1,31 @@
+# Moneylending Operation - Financial Class
+# High-interest loans to merchants and nobles
+
+id: financial_moneylending
+name: "Lending House"
+description: "A network of moneylenders providing loans to merchants, nobles, and even minor royalty. Interest rates are generous—to the lender."
+asset_class: financial
+risk_level: medium
+base_return_rate: 0.12
+
+purchase_price:
+  min: 3000
+  max: 15000
+
+exposure_contribution: 20
+
+preferred_geography:
+  - coastal
+  - inland
+
+event_modifiers:
+  economic_boom: 1.4
+  economic_recession: 1.2  # More people need loans
+  default_wave: 0.4
+  usury_laws: 0.6
+  debt_collection_success: 1.5
+
+flavor:
+  - "Gold breeds gold for those who have the patience."
+  - "Desperation makes excellent debtors."
+  - "The interest compounds, as does the influence."

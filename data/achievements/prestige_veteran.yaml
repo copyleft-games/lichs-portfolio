@@ -1,0 +1,9 @@
+# Multiple prestige achievement
+id: prestige_veteran
+name: "Cycles of Eternity"
+description: "Complete 5 prestige cycles"
+hidden: false
+points: 30
+progress:
+  target: 5
+  format: "cycles"

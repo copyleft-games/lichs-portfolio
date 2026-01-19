@@ -1,0 +1,9 @@
+# Half century slumber
+id: half_century
+name: "Half a Century"
+description: "Complete a 50-year slumber in a single cycle"
+hidden: false
+points: 15
+progress:
+  target: 50
+  format: "years"

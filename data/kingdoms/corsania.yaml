@@ -1,0 +1,38 @@
+# Corsania - Naval Power
+# Strong maritime trade and military
+
+id: kingdom_corsania
+name: "Corsanian Empire"
+capital: "Port Corsana"
+government: empire
+
+description: "A maritime empire built on naval supremacy and colonial trade. Their fleets control the eastern seas and their colonies span continents."
+
+base_stability: 60
+base_prosperity: 75
+base_military: 80
+
+regions:
+  - imperial_core
+  - eastern_colonies
+  - naval_ports
+
+trade_modifiers:
+  shipping: 1.5
+  colonial_trade: 1.8
+  inland: 0.6
+
+succession: hereditary
+noble_houses: 6
+admiralty_influence: high
+church_influence: moderate
+
+relations:
+  valdoria: alliance
+  merkheim: rivalry
+  the_wastes: neutral
+
+flavor:
+  - "Their ships carry our investments to distant shores."
+  - "An empire built on salt water and ambition."
+  - "Colonial wealth flows home—and into older vaults."

@@ -1,0 +1,32 @@
+# Succession Crisis - Political Event
+# Instability affecting kingdom operations
+
+id: event_succession_crisis
+name: "Succession Crisis"
+type: political
+severity: moderate
+probability: 0.05
+
+description: "The throne sits empty or contested. Noble factions scheme and plot, while the kingdom's administration falters."
+
+investment_effects:
+  property: 0.8
+  trade: 0.7
+  financial: 0.6  # Royal bonds become risky
+
+duration_years: 3
+
+# Kingdom stability impact
+stability_change: -30
+
+commentary: kingdom_collapse
+
+# Opportunity effects
+opportunities:
+  - political_influence_cheaper
+  - noble_assets_distressed
+
+flavor:
+  - "Mortals fight over crowns. We outlast them all."
+  - "Crisis creates opportunity for those who see clearly."
+  - "New rulers need old advisors... and older financiers."

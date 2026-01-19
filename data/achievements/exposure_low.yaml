@@ -1,0 +1,6 @@
+# Stealth achievement
+id: exposure_low
+name: "Shadows Within Shadows"
+description: "Complete a 100-year slumber without exposure exceeding 25"
+hidden: false
+points: 30

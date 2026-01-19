@@ -25,6 +25,8 @@
 #define DEFAULT_AUTOSAVE_INTERVAL   5
 #define DEFAULT_PAUSE_ON_EVENTS     TRUE
 #define DEFAULT_SHOW_NOTIFICATIONS  TRUE
+#define DEFAULT_DIFFICULTY          LP_DIFFICULTY_NORMAL
+#define DEFAULT_GAME_SPEED          LP_GAME_SPEED_NORMAL
 
 /* Limits */
 #define MIN_AUTOSAVE_INTERVAL       1
@@ -41,6 +43,10 @@ struct _LpGameplaySettings
     /* Event settings */
     gboolean pause_on_events;
     gboolean show_notifications;
+
+    /* Difficulty and speed settings */
+    LpDifficulty difficulty;
+    LpGameSpeed  game_speed;
 };
 
 G_DEFINE_TYPE (LpGameplaySettings, lp_gameplay_settings, LRG_TYPE_SETTINGS_GROUP)
@@ -52,6 +58,8 @@ enum
     PROP_AUTOSAVE_INTERVAL,
     PROP_PAUSE_ON_EVENTS,
     PROP_SHOW_NOTIFICATIONS,
+    PROP_DIFFICULTY,
+    PROP_GAME_SPEED,
     N_PROPS
 };
 
@@ -91,6 +99,8 @@ lp_gameplay_settings_reset (LrgSettingsGroup *group)
     self->autosave_interval = DEFAULT_AUTOSAVE_INTERVAL;
     self->pause_on_events = DEFAULT_PAUSE_ON_EVENTS;
     self->show_notifications = DEFAULT_SHOW_NOTIFICATIONS;
+    self->difficulty = DEFAULT_DIFFICULTY;
+    self->game_speed = DEFAULT_GAME_SPEED;
 
     emit_changed (self, NULL);
 }
@@ -121,6 +131,10 @@ lp_gameplay_settings_serialize (LrgSettingsGroup  *group,
                            g_variant_new_boolean (self->pause_on_events));
     g_variant_builder_add (&builder, "{sv}", "show_notifications",
                            g_variant_new_boolean (self->show_notifications));
+    g_variant_builder_add (&builder, "{sv}", "difficulty",
+                           g_variant_new_int32 ((gint32)self->difficulty));
+    g_variant_builder_add (&builder, "{sv}", "game_speed",
+                           g_variant_new_int32 ((gint32)self->game_speed));
 
     return g_variant_builder_end (&builder);
 }
@@ -170,6 +184,22 @@ lp_gameplay_settings_deserialize (LrgSettingsGroup  *group,
         g_variant_unref (value);
     }
 
+    value = g_variant_lookup_value (data, "difficulty", G_VARIANT_TYPE_INT32);
+    if (value)
+    {
+        gint32 diff = g_variant_get_int32 (value);
+        self->difficulty = CLAMP (diff, LP_DIFFICULTY_EASY, LP_DIFFICULTY_HARD);
+        g_variant_unref (value);
+    }
+
+    value = g_variant_lookup_value (data, "game_speed", G_VARIANT_TYPE_INT32);
+    if (value)
+    {
+        gint32 speed = g_variant_get_int32 (value);
+        self->game_speed = CLAMP (speed, LP_GAME_SPEED_NORMAL, LP_GAME_SPEED_FASTEST);
+        g_variant_unref (value);
+    }
+
     return TRUE;
 }
 
@@ -199,6 +229,12 @@ lp_gameplay_settings_get_property (GObject    *object,
     case PROP_SHOW_NOTIFICATIONS:
         g_value_set_boolean (value, self->show_notifications);
         break;
+    case PROP_DIFFICULTY:
+        g_value_set_int (value, (gint)self->difficulty);
+        break;
+    case PROP_GAME_SPEED:
+        g_value_set_int (value, (gint)self->game_speed);
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
@@ -225,6 +261,12 @@ lp_gameplay_settings_set_property (GObject      *object,
         break;
     case PROP_SHOW_NOTIFICATIONS:
         lp_gameplay_settings_set_show_notifications (self, g_value_get_boolean (value));
+        break;
+    case PROP_DIFFICULTY:
+        lp_gameplay_settings_set_difficulty (self, (LpDifficulty)g_value_get_int (value));
+        break;
+    case PROP_GAME_SPEED:
+        lp_gameplay_settings_set_game_speed (self, (LpGameSpeed)g_value_get_int (value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -273,6 +315,20 @@ lp_gameplay_settings_class_init (LpGameplaySettingsClass *klass)
                               DEFAULT_SHOW_NOTIFICATIONS,
                               G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
+    properties[PROP_DIFFICULTY] =
+        g_param_spec_int ("difficulty", "Difficulty",
+                          "Game difficulty level (0=Easy, 1=Normal, 2=Hard)",
+                          LP_DIFFICULTY_EASY, LP_DIFFICULTY_HARD,
+                          DEFAULT_DIFFICULTY,
+                          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+    properties[PROP_GAME_SPEED] =
+        g_param_spec_int ("game-speed", "Game Speed",
+                          "Simulation speed multiplier (0=1x, 1=2x, 2=4x, 3=10x)",
+                          LP_GAME_SPEED_NORMAL, LP_GAME_SPEED_FASTEST,
+                          DEFAULT_GAME_SPEED,
+                          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
     g_object_class_install_properties (object_class, N_PROPS, properties);
 }
 
@@ -283,6 +339,8 @@ lp_gameplay_settings_init (LpGameplaySettings *self)
     self->autosave_interval = DEFAULT_AUTOSAVE_INTERVAL;
     self->pause_on_events = DEFAULT_PAUSE_ON_EVENTS;
     self->show_notifications = DEFAULT_SHOW_NOTIFICATIONS;
+    self->difficulty = DEFAULT_DIFFICULTY;
+    self->game_speed = DEFAULT_GAME_SPEED;
 }
 
 /* ==========================================================================
@@ -384,5 +442,71 @@ lp_gameplay_settings_set_show_notifications (LpGameplaySettings *self,
         self->show_notifications = show;
         g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SHOW_NOTIFICATIONS]);
         emit_changed (self, "show-notifications");
+    }
+}
+
+LpDifficulty
+lp_gameplay_settings_get_difficulty (LpGameplaySettings *self)
+{
+    g_return_val_if_fail (LP_IS_GAMEPLAY_SETTINGS (self), DEFAULT_DIFFICULTY);
+    return self->difficulty;
+}
+
+void
+lp_gameplay_settings_set_difficulty (LpGameplaySettings *self,
+                                     LpDifficulty        difficulty)
+{
+    g_return_if_fail (LP_IS_GAMEPLAY_SETTINGS (self));
+
+    difficulty = CLAMP (difficulty, LP_DIFFICULTY_EASY, LP_DIFFICULTY_HARD);
+
+    if (self->difficulty != difficulty)
+    {
+        self->difficulty = difficulty;
+        g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_DIFFICULTY]);
+        emit_changed (self, "difficulty");
+    }
+}
+
+LpGameSpeed
+lp_gameplay_settings_get_game_speed (LpGameplaySettings *self)
+{
+    g_return_val_if_fail (LP_IS_GAMEPLAY_SETTINGS (self), DEFAULT_GAME_SPEED);
+    return self->game_speed;
+}
+
+void
+lp_gameplay_settings_set_game_speed (LpGameplaySettings *self,
+                                     LpGameSpeed         speed)
+{
+    g_return_if_fail (LP_IS_GAMEPLAY_SETTINGS (self));
+
+    speed = CLAMP (speed, LP_GAME_SPEED_NORMAL, LP_GAME_SPEED_FASTEST);
+
+    if (self->game_speed != speed)
+    {
+        self->game_speed = speed;
+        g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_GAME_SPEED]);
+        emit_changed (self, "game-speed");
+    }
+}
+
+gdouble
+lp_gameplay_settings_get_speed_multiplier (LpGameplaySettings *self)
+{
+    g_return_val_if_fail (LP_IS_GAMEPLAY_SETTINGS (self), 1.0);
+
+    switch (self->game_speed)
+    {
+    case LP_GAME_SPEED_NORMAL:
+        return 1.0;
+    case LP_GAME_SPEED_FAST:
+        return 2.0;
+    case LP_GAME_SPEED_FASTER:
+        return 4.0;
+    case LP_GAME_SPEED_FASTEST:
+        return 10.0;
+    default:
+        return 1.0;
     }
 }

@@ -1,0 +1,6 @@
+# Perfect stealth achievement
+id: exposure_zero
+name: "The Invisible Hand"
+description: "Maintain 0 exposure for an entire 50-year slumber"
+hidden: true
+points: 50

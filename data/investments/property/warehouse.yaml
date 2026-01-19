@@ -1,0 +1,29 @@
+# Warehouse Investment - Property Class
+# Storage facilities for merchants
+
+id: property_warehouse
+name: "Merchant Warehouse"
+description: "Secure storage facilities in a port district. Merchants pay handsomely to protect their goods, and some cargo is best stored without too many questions."
+asset_class: property
+risk_level: low
+base_return_rate: 0.05
+
+purchase_price:
+  min: 1500
+  max: 5000
+
+exposure_contribution: 12
+
+preferred_geography:
+  - coastal
+
+event_modifiers:
+  trade_boom: 1.5
+  economic_recession: 0.6
+  harbor_fire: 0.2
+  piracy: 0.7
+
+flavor:
+  - "Shadows hide more than just barrels and crates."
+  - "The lifeblood of commerce flows through these walls."
+  - "What enters may not always be what leaves."

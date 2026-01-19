@@ -38,9 +38,12 @@ typedef struct _LpMegaproject           LpMegaproject;
 typedef struct _LpStrings               LpStrings;
 typedef struct _LpGameplaySettings      LpGameplaySettings;
 typedef struct _LpPortfolioHistory      LpPortfolioHistory;
+typedef struct _LpStatistics            LpStatistics;
+typedef struct _LpEventChronicle        LpEventChronicle;
 
 /* Boxed types */
 typedef struct _LpPortfolioSnapshot     LpPortfolioSnapshot;
+typedef struct _LpChronicleEntry        LpChronicleEntry;
 
 /* Derivable types: both instance and class */
 typedef struct _LpPrestigeManager       LpPrestigeManager;
@@ -122,6 +125,8 @@ typedef struct _LpScreenMegaprojects    LpScreenMegaprojects;
 typedef struct _LpDialogEvent           LpDialogEvent;
 typedef struct _LpWidgetExposureMeter   LpWidgetExposureMeter;
 typedef struct _LpWidgetSynergyIndicator LpWidgetSynergyIndicator;
+typedef struct _LpTooltip               LpTooltip;
+typedef struct _LpHelpSystem            LpHelpSystem;
 
 /* ==========================================================================
  * Feedback Types (src/feedback/)
@@ -147,6 +152,7 @@ typedef struct _LpStateSlumber          LpStateSlumber;
 typedef struct _LpStateSimulating       LpStateSimulating;
 typedef struct _LpStatePause            LpStatePause;
 typedef struct _LpStateSettings         LpStateSettings;
+typedef struct _LpStateSaveSlots        LpStateSaveSlots;
 typedef struct _LpStateFirstAwakening   LpStateFirstAwakening;
 
 /* ==========================================================================

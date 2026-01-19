@@ -1,0 +1,31 @@
+# Banking House - Financial Class
+# Major financial institution with broad exposure
+
+id: financial_bank
+name: "Banking House"
+description: "A proper banking institution handling deposits, transfers, and currency exchange. The foundation of modern commerce—and ancient power."
+asset_class: financial
+risk_level: medium
+base_return_rate: 0.08
+
+purchase_price:
+  min: 10000
+  max: 50000
+
+exposure_contribution: 25
+
+preferred_geography:
+  - coastal
+  - inland
+
+event_modifiers:
+  economic_boom: 1.6
+  economic_recession: 0.7
+  bank_run: 0.3
+  royal_deposits: 1.8
+  currency_debasement: 0.5
+
+flavor:
+  - "Vaults that have held secrets longer than the kingdoms above."
+  - "Where gold flows, power follows."
+  - "The true throne sits behind ledgers, not above them."

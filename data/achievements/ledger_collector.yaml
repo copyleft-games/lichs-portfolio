@@ -1,0 +1,9 @@
+# Ledger collection achievement
+id: ledger_collector
+name: "Keeper of Secrets"
+description: "Discover 50 ledger entries"
+hidden: false
+points: 30
+progress:
+  target: 50
+  format: "entries"

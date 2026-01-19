@@ -1,0 +1,6 @@
+# Recovery achievement
+id: phoenix_investor
+name: "Phoenix Investor"
+description: "Recover from losing 90% of your portfolio value"
+hidden: false
+points: 30

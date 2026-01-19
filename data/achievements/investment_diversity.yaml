@@ -1,0 +1,6 @@
+# Investment diversity achievements
+id: diversified_portfolio
+name: "Diversified Portfolio"
+description: "Own investments in all three standard asset classes"
+hidden: false
+points: 10

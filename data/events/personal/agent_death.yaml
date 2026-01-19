@@ -1,0 +1,32 @@
+# Agent Death - Personal Event
+# Loss of a mortal servant
+
+id: event_agent_death
+name: "Agent Dies"
+type: personal
+severity: minor
+probability: 0.10  # Per agent, checked annually
+
+description: "Time has claimed another mortal servant. Their knowledge and connections die with them—unless properly preserved."
+
+# Agent effects
+agent_effects:
+  loyalty_transfer: 0.5  # Half loyalty transfers to replacement
+  knowledge_lost: 0.3    # Some institutional knowledge lost
+
+# Investment effects from agent loss
+investment_efficiency: 0.9  # Temporary management disruption
+
+duration_years: 1
+
+commentary: agent_death
+
+# Mitigation from phylactery upgrades
+mitigated_by:
+  - knowledge_preservation
+  - bloodline_management
+
+flavor:
+  - "Another candle gutters out. The darkness remains."
+  - "Mortals are renewable resources."
+  - "Their service ends; ours continues."

@@ -1,0 +1,6 @@
+# Hidden achievement for controlling multiple kingdoms
+id: shadow_empire
+name: "Shadow Empire"
+description: "Own significant investments in 3 different kingdoms"
+hidden: true
+points: 35

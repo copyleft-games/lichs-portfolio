@@ -1,0 +1,30 @@
+# Roadside Inn Investment - Property Class
+# Consistent income from travelers
+
+id: property_inn
+name: "Roadside Inn"
+description: "A well-positioned inn on major trade routes. Travelers bring both coin and information. An excellent place to gather intelligence on kingdom affairs."
+asset_class: property
+risk_level: low
+base_return_rate: 0.06
+
+purchase_price:
+  min: 800
+  max: 3000
+
+exposure_contribution: 8
+
+preferred_geography:
+  - inland
+  - coastal
+
+event_modifiers:
+  trade_boom: 1.4
+  war: 0.5  # Travelers avoid war zones
+  plague: 0.3
+  religious_festival: 1.3
+
+flavor:
+  - "Weary travelers rest, never knowing who truly owns their beds."
+  - "Secrets flow as freely as the ale."
+  - "A crossroads of information and commerce."

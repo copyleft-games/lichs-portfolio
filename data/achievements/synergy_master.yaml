@@ -1,0 +1,9 @@
+# Synergy mastery achievement
+id: synergy_master
+name: "Web of Influence"
+description: "Have 10 active synergies simultaneously"
+hidden: false
+points: 35
+progress:
+  target: 10
+  format: "synergies"

@@ -29,6 +29,8 @@ SOURCES += core/lp-synergy-manager.c
 SOURCES += core/lp-ledger.c
 SOURCES += core/lp-gameplay-settings.c
 SOURCES += core/lp-portfolio-history.c
+SOURCES += core/lp-statistics.c
+SOURCES += core/lp-event-chronicle.c
 
 # Progression (Phase 5)
 SOURCES += core/lp-prestige-manager.c
@@ -72,6 +74,7 @@ SOURCES += states/lp-state-slumber.c
 SOURCES += states/lp-state-simulating.c
 SOURCES += states/lp-state-pause.c
 SOURCES += states/lp-state-settings.c
+SOURCES += states/lp-state-save-slots.c
 SOURCES += states/lp-state-welcome-back.c
 SOURCES += states/lp-state-investments.c
 SOURCES += states/lp-state-agents.c
@@ -88,6 +91,8 @@ SOURCES += ui/lp-screen-slumber.c
 SOURCES += ui/lp-screen-ledger.c
 SOURCES += ui/lp-screen-megaprojects.c
 SOURCES += ui/lp-dialog-event.c
+SOURCES += ui/lp-tooltip.c
+SOURCES += ui/lp-help-system.c
 
 # Feedback Systems (Phase 6.5)
 SOURCES += feedback/lp-floating-text.c
@@ -174,6 +179,10 @@ $(OBJDIR)/src/core/lp-ledger.o: core/lp-ledger.c core/lp-ledger.h \
 	lp-log.h lp-enums.h lp-types.h
 $(OBJDIR)/src/core/lp-gameplay-settings.o: core/lp-gameplay-settings.c \
 	core/lp-gameplay-settings.h lp-log.h lp-types.h
+$(OBJDIR)/src/core/lp-statistics.o: core/lp-statistics.c \
+	core/lp-statistics.h lp-log.h lp-types.h
+$(OBJDIR)/src/core/lp-event-chronicle.o: core/lp-event-chronicle.c \
+	core/lp-event-chronicle.h simulation/lp-event.h lp-log.h lp-enums.h lp-types.h
 
 # Progression (Phase 5)
 $(OBJDIR)/src/core/lp-prestige-manager.o: core/lp-prestige-manager.c \
@@ -265,6 +274,9 @@ $(OBJDIR)/src/states/lp-state-pause.o: states/lp-state-pause.c \
 	states/lp-state-pause.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-settings.o: states/lp-state-settings.c \
 	states/lp-state-settings.h core/lp-game.h lp-log.h lp-types.h
+$(OBJDIR)/src/states/lp-state-save-slots.o: states/lp-state-save-slots.c \
+	states/lp-state-save-slots.h states/lp-state-wake.h core/lp-game.h \
+	core/lp-game-data.h save/lp-save-manager.h lp-log.h lp-types.h
 $(OBJDIR)/src/states/lp-state-investments.o: states/lp-state-investments.c \
 	states/lp-state-investments.h core/lp-game.h core/lp-game-data.h \
 	investment/lp-portfolio.h investment/lp-investment.h \
@@ -303,6 +315,10 @@ $(OBJDIR)/src/ui/lp-screen-megaprojects.o: ui/lp-screen-megaprojects.c \
 	ui/lp-screen-megaprojects.h ui/lp-theme.h lp-log.h lp-types.h
 $(OBJDIR)/src/ui/lp-dialog-event.o: ui/lp-dialog-event.c \
 	ui/lp-dialog-event.h ui/lp-theme.h simulation/lp-event.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-tooltip.o: ui/lp-tooltip.c \
+	ui/lp-tooltip.h lp-log.h lp-types.h
+$(OBJDIR)/src/ui/lp-help-system.o: ui/lp-help-system.c \
+	ui/lp-help-system.h lp-log.h lp-types.h
 
 # Feedback Systems (Phase 6.5)
 $(OBJDIR)/src/feedback/lp-floating-text.o: feedback/lp-floating-text.c \

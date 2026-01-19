@@ -1,0 +1,6 @@
+# Survival achievements
+id: survivor
+name: "Survivor"
+description: "Survive a crusade without losing any investments"
+hidden: false
+points: 30

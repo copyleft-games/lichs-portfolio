@@ -1,0 +1,9 @@
+# Advanced dynasty achievement
+id: eternal_dynasty
+name: "Eternal Dynasty"
+description: "A single family bloodline reaches 10 generations"
+hidden: false
+points: 40
+progress:
+  target: 10
+  format: "generation"

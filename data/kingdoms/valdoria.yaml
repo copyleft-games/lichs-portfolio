@@ -1,0 +1,42 @@
+# Valdoria - Primary Starting Kingdom
+# Stable feudal monarchy with strong trade
+
+id: kingdom_valdoria
+name: "Kingdom of Valdoria"
+capital: "Valdheim"
+government: monarchy
+
+description: "A prosperous feudal kingdom with strong merchant traditions. The royal house has ruled for three centuries, maintaining stability through shrewd diplomacy."
+
+# Base statistics
+base_stability: 70
+base_prosperity: 65
+base_military: 60
+
+# Geographic composition
+regions:
+  - valdheim_heartland
+  - northern_reach
+  - coastal_valdoria
+  - southern_marches
+
+# Trade characteristics
+trade_modifiers:
+  coastal_bonus: 1.2
+  inland_penalty: 0.9
+
+# Political characteristics
+succession: primogeniture
+noble_houses: 12
+church_influence: moderate
+
+# Starting relations
+relations:
+  merkheim: neutral
+  corsania: alliance
+  the_wastes: war
+
+flavor:
+  - "Where the crown sits heavy, opportunity grows."
+  - "Three centuries of stable rule. A lich appreciates patience."
+  - "The merchants of Valdoria think themselves wealthy. They are merely custodians."

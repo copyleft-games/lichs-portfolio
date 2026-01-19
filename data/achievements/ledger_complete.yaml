@@ -1,0 +1,6 @@
+# Ledger completion achievement
+id: ledger_complete
+name: "The Complete Chronicle"
+description: "Discover all ledger entries"
+hidden: true
+points: 100

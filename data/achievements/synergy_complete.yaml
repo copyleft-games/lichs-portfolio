@@ -1,0 +1,6 @@
+# Full synergy achievement
+id: synergy_complete
+name: "Perfect Harmony"
+description: "Discover all investment synergies"
+hidden: true
+points: 50

@@ -1,0 +1,31 @@
+# Peace Treaty - Political Event
+# Positive event ending conflicts
+
+id: event_peace_treaty
+name: "Peace Treaty Signed"
+type: political
+severity: moderate
+probability: 0.04
+
+description: "After years of conflict, the warring parties have agreed to peace. Trade routes reopen and reconstruction begins."
+
+investment_effects:
+  property: 1.3
+  trade: 1.6
+  financial: 1.2
+
+duration_years: 10
+
+# Kingdom stability impact
+stability_change: 20
+
+# Prerequisite
+requires:
+  - active_war
+
+commentary: investment_success
+
+flavor:
+  - "Peace is profitable. For a time."
+  - "Let them celebrate. The debts remain."
+  - "Reconstruction contracts await their true owners."

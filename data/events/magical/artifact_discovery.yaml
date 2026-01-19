@@ -1,0 +1,35 @@
+# Artifact Discovery - Magical Event
+# Rare event with significant effects
+
+id: event_artifact_discovery
+name: "Ancient Artifact Discovered"
+type: magical
+severity: major
+probability: 0.02
+
+description: "Excavators have unearthed an artifact of considerable power. Its true nature remains unknown to mortals, but its presence shifts the magical currents."
+
+investment_effects:
+  property: 1.0
+  trade: 1.0
+  magical: 2.0
+  dark: 1.5
+
+duration_years: 0  # Permanent change
+
+# Phylactery effects
+phylactery_points_bonus: 50
+
+# Exposure effects
+exposure_change: 10  # Magical activity draws attention
+
+commentary: discovery
+
+# Unlock possibilities
+unlocks:
+  - magical_investment_tier_2
+
+flavor:
+  - "The earth remembers what mortals forgot. So do we."
+  - "Power calls to power across the centuries."
+  - "Let them wonder at its origins. We remember."

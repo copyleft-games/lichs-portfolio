@@ -1,0 +1,9 @@
+# Millennium achievement
+id: millennium
+name: "The Millennium"
+description: "Slumber for a total of 1,000 years across all cycles"
+hidden: false
+points: 50
+progress:
+  target: 1000
+  format: "years"

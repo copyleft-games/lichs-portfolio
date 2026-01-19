@@ -1,0 +1,6 @@
+# First prestige achievement
+id: prestige_first
+name: "The Great Reset"
+description: "Complete your first prestige cycle"
+hidden: false
+points: 15

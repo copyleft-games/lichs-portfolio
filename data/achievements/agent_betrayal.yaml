@@ -1,0 +1,9 @@
+# Agent betrayal achievement
+id: agent_betrayal
+name: "Trust No One"
+description: "Survive 5 agent betrayals"
+hidden: false
+points: 15
+progress:
+  target: 5
+  format: "betrayals"

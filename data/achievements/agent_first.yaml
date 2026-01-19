@@ -1,0 +1,6 @@
+# First agent achievement
+id: agent_first
+name: "The First Servant"
+description: "Recruit your first mortal agent"
+hidden: false
+points: 5

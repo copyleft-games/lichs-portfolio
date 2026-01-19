@@ -1,0 +1,9 @@
+# 100,000 gold milestone
+id: affluent_investor
+name: "Affluent Investor"
+description: "Accumulate 100,000 gold pieces"
+hidden: false
+points: 10
+progress:
+  target: 100000
+  format: "gold"

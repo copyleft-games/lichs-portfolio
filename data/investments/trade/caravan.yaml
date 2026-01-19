@@ -1,0 +1,31 @@
+# Trade Caravan Investment - Trade Class
+# Overland trade route with moderate risk
+
+id: trade_caravan
+name: "Caravan Route"
+description: "A protected caravan route connecting major cities. Guards and bribes keep the goods flowing, while exotic merchandise commands premium prices."
+asset_class: trade
+risk_level: medium
+base_return_rate: 0.10
+
+purchase_price:
+  min: 1000
+  max: 4000
+
+exposure_contribution: 12
+
+preferred_geography:
+  - inland
+  - desert
+
+event_modifiers:
+  trade_boom: 1.5
+  war: 0.4
+  banditry: 0.5
+  new_route_discovered: 1.8
+  peaceful_relations: 1.3
+
+flavor:
+  - "Camels and carts carrying wealth across the sands of time."
+  - "Each journey enriches those who never make the trip."
+  - "The old roads remember those who truly control the trade."

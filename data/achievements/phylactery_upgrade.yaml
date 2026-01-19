@@ -1,0 +1,9 @@
+# Phylactery upgrade achievement
+id: phylactery_upgrade
+name: "Phylactery Empowered"
+description: "Purchase 10 phylactery upgrades"
+hidden: false
+points: 20
+progress:
+  target: 10
+  format: "upgrades"

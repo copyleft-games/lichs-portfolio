@@ -1,0 +1,30 @@
+# Trade Monopoly Investment - Trade Class
+# Exclusive control over specific goods
+
+id: trade_monopoly
+name: "Spice Monopoly"
+description: "Exclusive rights to import rare spices from distant lands. The kingdom's nobles pay whatever is demanded for their exotic tastes."
+asset_class: trade
+risk_level: high
+base_return_rate: 0.18
+
+purchase_price:
+  min: 8000
+  max: 30000
+
+exposure_contribution: 25
+
+preferred_geography:
+  - coastal
+
+event_modifiers:
+  trade_boom: 1.8
+  new_supplier: 0.5  # Competition emerges
+  royal_favor: 2.0
+  monopoly_challenged: 0.4
+  war_with_supplier: 0.3
+
+flavor:
+  - "Kings bow to those who control their pleasures."
+  - "A kingdom's addiction becomes a lich's profit."
+  - "The rarest treasures command the greatest prices."

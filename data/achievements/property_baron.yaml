@@ -1,0 +1,9 @@
+# Property specialization
+id: property_baron
+name: "Property Baron"
+description: "Own 10 property investments simultaneously"
+hidden: false
+points: 20
+progress:
+  target: 10
+  format: "investments"

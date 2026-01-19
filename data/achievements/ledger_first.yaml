@@ -1,0 +1,6 @@
+# First ledger discovery
+id: ledger_first
+name: "Curious Mind"
+description: "Discover your first ledger entry"
+hidden: false
+points: 5

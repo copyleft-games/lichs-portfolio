@@ -1,0 +1,6 @@
+# Long-serving agent achievement
+id: agent_veteran
+name: "Faithful Unto Death"
+description: "Have an agent serve for 50 years"
+hidden: false
+points: 20

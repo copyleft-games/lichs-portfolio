@@ -1,0 +1,6 @@
+# Crusade survival achievement
+id: event_crusade
+name: "They Cannot Kill What Is Already Dead"
+description: "Survive a crusade specifically targeting undead"
+hidden: true
+points: 40

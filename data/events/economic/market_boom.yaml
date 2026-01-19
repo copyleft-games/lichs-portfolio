@@ -1,0 +1,32 @@
+# Market Boom - Economic Event
+# Positive economic event that increases returns
+
+id: event_market_boom
+name: "Market Boom"
+type: economic
+severity: moderate
+probability: 0.08
+
+description: "Trade flourishes and prosperity spreads. Merchants report record profits as demand outpaces supply."
+
+# Effects on investments (multipliers)
+investment_effects:
+  property: 1.2
+  trade: 1.5
+  financial: 1.3
+
+# Duration in years (0 = instant)
+duration_years: 5
+
+# Trigger conditions (optional)
+triggers:
+  - peaceful_years_minimum: 10
+  - kingdom_stability_minimum: 60
+
+# Commentary contexts triggered
+commentary: investment_success
+
+flavor:
+  - "The mortals celebrate their wealth, unaware of who truly benefits."
+  - "Prosperity flows upward to patient hands."
+  - "Let them build their fortunes upon foundations we control."

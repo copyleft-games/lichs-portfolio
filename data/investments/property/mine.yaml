@@ -1,0 +1,30 @@
+# Mining Operation Investment - Property Class
+# High-value extraction with moderate risk
+
+id: property_mine
+name: "Iron Mine"
+description: "A deep mine extracting iron ore for the kingdom's smiths. High initial returns that decline as veins are depleted, but new deposits can be discovered."
+asset_class: property
+risk_level: medium
+base_return_rate: 0.08
+
+purchase_price:
+  min: 3000
+  max: 12000
+
+exposure_contribution: 15
+
+preferred_geography:
+  - mountain
+
+event_modifiers:
+  economic_boom: 1.5
+  war: 1.3  # Wars increase demand for iron
+  cave_collapse: 0.3
+  labor_dispute: 0.6
+  new_vein_discovered: 2.0
+
+flavor:
+  - "Dark tunnels where men toil unseen, never knowing their true master."
+  - "The clang of picks echoes through mountains of hidden wealth."
+  - "From the earth's depths, the foundation of empires is extracted."

@@ -1,0 +1,30 @@
+# Insurance Syndicate - Financial Class
+# Profiting from others' fear of loss
+
+id: financial_insurance
+name: "Insurance Syndicate"
+description: "A consortium providing insurance to merchants against loss of cargo, fire, and other disasters. Premiums flow in; payouts are... managed carefully."
+asset_class: financial
+risk_level: medium
+base_return_rate: 0.09
+
+purchase_price:
+  min: 5000
+  max: 25000
+
+exposure_contribution: 15
+
+preferred_geography:
+  - coastal
+
+event_modifiers:
+  peaceful_times: 1.5  # Fewer payouts
+  disaster: 0.4
+  fraud_discovered: 0.6
+  new_routes_opened: 1.3
+  plague: 0.5
+
+flavor:
+  - "Fear is the greatest currency of all."
+  - "Others pay for protection; few know who truly protects."
+  - "When ships sink, someone always profits."

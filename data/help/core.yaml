@@ -1,0 +1,61 @@
+# Help content for core game mechanics
+entries:
+  - id: slumber_overview
+    title: "Slumber"
+    description: "Liches do not experience time as mortals do. During slumber, years or even decades pass while you rest in your phylactery. Your investments generate returns, agents carry out their duties, and the world changes around you."
+    hint: "Longer slumbers compound returns but risk missing opportunities."
+    category: core
+
+  - id: wake_cycle
+    title: "Wake/Slumber Cycle"
+    description: "Your existence follows a cycle of awakening and slumber. Upon waking, you review what happened during your rest, make investment decisions, issue orders to agents, and then return to slumber. This cycle is the heartbeat of your eternal strategy."
+    hint: "Plan your slumber duration based on world stability."
+    category: core
+
+  - id: phylactery
+    title: "Phylactery"
+    description: "Your phylactery is the vessel of your immortal soul. It can be upgraded to enhance your abilities, protect your investments, and extend your influence. Phylactery upgrades require prestige points earned from previous runs."
+    hint: "Phylactery upgrades persist across prestige cycles."
+    category: core
+
+  - id: prestige
+    title: "Prestige"
+    description: "After building sufficient power, you can choose to prestige - resetting your portfolio and starting anew with enhanced abilities. Prestige points are based on your accumulated wealth and achievements, and unlock permanent phylactery upgrades."
+    hint: "Prestige when growth slows to accelerate your next run."
+    category: core
+
+  - id: echoes
+    title: "Echoes"
+    description: "Echoes are memories of past runs that provide passive bonuses. Each prestige generates echoes based on your specialization. Focusing on specific strategies (trade, dark arts, etc.) unlocks increasingly powerful echo bonuses."
+    hint: "Specialize in one area or diversify across all echoes."
+    category: core
+
+  - id: portfolio
+    title: "Portfolio"
+    description: "Your portfolio is the collection of all your investments. Portfolio value is the sum of all investment values plus liquid gold. Managing portfolio diversity, risk balance, and regional spread is key to long-term growth."
+    hint: "A balanced portfolio weathers market events better."
+    category: core
+
+  - id: net_worth
+    title: "Net Worth"
+    description: "Net worth is your total financial power - portfolio value plus any other assets. Net worth is the primary measure of success and determines your prestige points when resetting."
+    hint: "Maximize net worth before prestiging for best returns."
+    category: core
+
+  - id: world_events
+    title: "World Events"
+    description: "The mortal world is in constant flux. Wars, plagues, succession crises, and economic shifts affect your investments differently. Some events are opportunities; others are threats. Anticipating and responding to events is crucial."
+    hint: "Political investments provide early warning of events."
+    category: core
+
+  - id: difficulty
+    title: "Difficulty Settings"
+    description: "Easy mode reduces exposure penalties and event severity. Normal provides the intended experience. Hard mode increases penalties and makes competitors more aggressive. Difficulty can be changed at any time."
+    hint: "Try Normal first to learn the mechanics."
+    category: core
+
+  - id: game_speed
+    title: "Game Speed"
+    description: "Simulation speed controls how quickly years pass during slumber visualization. Higher speeds are useful for experienced players who want to skip through familiar content. Speed can be changed at any time."
+    hint: "Slow down when major events occur to not miss details."
+    category: core

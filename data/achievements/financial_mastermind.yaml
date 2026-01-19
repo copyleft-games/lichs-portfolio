@@ -1,0 +1,9 @@
+# Financial specialization
+id: financial_mastermind
+name: "Financial Mastermind"
+description: "Own 10 financial investments simultaneously"
+hidden: false
+points: 20
+progress:
+  target: 10
+  format: "investments"

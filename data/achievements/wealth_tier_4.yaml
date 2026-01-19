@@ -1,0 +1,9 @@
+# 1,000,000,000 gold milestone
+id: financial_overlord
+name: "Financial Overlord"
+description: "Accumulate 1,000,000,000 gold pieces"
+hidden: false
+points: 50
+progress:
+  target: 1000000000
+  format: "gold"
