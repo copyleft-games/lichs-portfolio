@@ -399,6 +399,108 @@ def create_region_terrain(terrain_type, size=64):
     return img
 
 
+def create_controller_button(button_type, size=64):
+    """Create a controller button glyph icon."""
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    
+    center = size // 2
+    margin = size // 8
+    
+    # Button colors (Xbox style)
+    button_colors = {
+        'a': (106, 175, 80),    # Green
+        'b': (215, 85, 65),     # Red
+        'x': (85, 160, 210),    # Blue
+        'y': (245, 185, 55),    # Yellow
+        'lb': COLORS['secondary'],
+        'rb': COLORS['secondary'],
+        'lt': COLORS['secondary'],
+        'rt': COLORS['secondary'],
+        'dpad': COLORS['secondary'],
+        'start': COLORS['secondary'],
+        'back': COLORS['secondary'],
+        'stick_l': COLORS['secondary'],
+        'stick_r': COLORS['secondary'],
+    }
+    
+    color = button_colors.get(button_type, COLORS['secondary'])
+    
+    if button_type in ['a', 'b', 'x', 'y']:
+        # Face buttons - circles with letters
+        draw.ellipse([margin, margin, size - margin, size - margin], fill=color)
+        # Letter (would need font, use simple shape instead)
+        letter_size = size // 3
+        if button_type == 'a':
+            # A shape (triangle pointing up)
+            draw.polygon([
+                (center, margin + letter_size // 2),
+                (center - letter_size // 2, size - margin - letter_size // 2),
+                (center + letter_size // 2, size - margin - letter_size // 2),
+            ], fill=COLORS['background'])
+        elif button_type == 'b':
+            # B shape (two bumps)
+            draw.ellipse([center - letter_size // 2, center - letter_size // 2,
+                          center + letter_size // 2, center], fill=COLORS['background'])
+            draw.ellipse([center - letter_size // 2, center,
+                          center + letter_size // 2, center + letter_size // 2], fill=COLORS['background'])
+            draw.rectangle([center - letter_size // 2, center - letter_size // 2,
+                           center - letter_size // 4, center + letter_size // 2], fill=COLORS['background'])
+        elif button_type == 'x':
+            # X shape (cross)
+            lw = letter_size // 4
+            draw.line([(center - letter_size // 2, center - letter_size // 2),
+                       (center + letter_size // 2, center + letter_size // 2)], 
+                      fill=COLORS['background'], width=lw)
+            draw.line([(center + letter_size // 2, center - letter_size // 2),
+                       (center - letter_size // 2, center + letter_size // 2)], 
+                      fill=COLORS['background'], width=lw)
+        elif button_type == 'y':
+            # Y shape
+            lw = letter_size // 4
+            draw.line([(center - letter_size // 2, center - letter_size // 2),
+                       (center, center)], fill=COLORS['background'], width=lw)
+            draw.line([(center + letter_size // 2, center - letter_size // 2),
+                       (center, center)], fill=COLORS['background'], width=lw)
+            draw.line([(center, center),
+                       (center, center + letter_size // 2)], fill=COLORS['background'], width=lw)
+    
+    elif button_type in ['lb', 'rb']:
+        # Bumpers - horizontal pill shape
+        h = max(size // 4, 8)
+        y0 = center - h // 2
+        y1 = center + h // 2
+        draw.rounded_rectangle([margin, y0, size - margin, y1], radius=h // 2, fill=color)
+    
+    elif button_type in ['lt', 'rt']:
+        # Triggers - vertical pill shape
+        w = max(size // 3, 10)
+        x0 = center - w // 2
+        x1 = center + w // 2
+        draw.rounded_rectangle([x0, margin, x1, size - margin], radius=w // 2, fill=color)
+    
+    elif button_type == 'dpad':
+        # D-pad - cross shape
+        dpad_w = size // 4
+        draw.rectangle([center - dpad_w // 2, margin, center + dpad_w // 2, size - margin], fill=color)
+        draw.rectangle([margin, center - dpad_w // 2, size - margin, center + dpad_w // 2], fill=color)
+    
+    elif button_type in ['stick_l', 'stick_r']:
+        # Analog sticks - circle with dot
+        draw.ellipse([margin, margin, size - margin, size - margin], outline=color, width=3)
+        dot_r = size // 8
+        draw.ellipse([center - dot_r, center - dot_r, center + dot_r, center + dot_r], fill=color)
+    
+    elif button_type in ['start', 'back']:
+        # Menu buttons - small horizontal pill
+        h = max(size // 5, 6)
+        x0 = margin + size // 6
+        x1 = size - margin - size // 6
+        draw.rounded_rectangle([x0, center - h, x1, center + h], radius=h, fill=color)
+    
+    return img
+
+
 def main():
     """Generate all assets."""
     print("Generating assets for Lich's Portfolio...")
@@ -478,6 +580,17 @@ def main():
         tile = create_region_terrain(terrain, 64)
         tile.save(os.path.join(world_dir, f'terrain_{terrain}.png'))
         print(f"  Created terrain tile: {terrain}")
+    
+    # Controller button glyphs
+    glyphs_dir = os.path.join(ASSETS_DIR, 'textures', 'glyphs')
+    ensure_dir(glyphs_dir)
+    
+    button_types = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'dpad', 'start', 'back', 'stick_l', 'stick_r']
+    for btn in button_types:
+        for s in [32, 48, 64]:
+            glyph = create_controller_button(btn, s)
+            glyph.save(os.path.join(glyphs_dir, f'xbox_{btn}_{s}.png'))
+        print(f"  Created controller glyph: {btn}")
     
     # Create asset manifest
     manifest_path = os.path.join(ASSETS_DIR, 'manifest.yaml')

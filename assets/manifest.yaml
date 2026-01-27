@@ -41,20 +41,6 @@ textures:
     - terrain_mountain
     - terrain_forest
 
-# Asset generation info
-generated_textures: true  # Textures procedurally generated
-audio_external: true      # Audio from external sources
-
-licenses:
-  - file: licenses/kenney-ui-audio.txt
-    source: https://kenney.nl/assets/ui-audio
-    license: CC0
-    author: Kenney Vleugels (Kenney.nl)
-    files:
-      - audio/ui/click.ogg
-      - audio/ui/hover.ogg
-      - audio/ui/purchase.ogg
-      - audio/ui/sell.ogg
-      - audio/ui/achievement.ogg
-      - audio/ui/event.ogg
-      - audio/ui/error.ogg
+# All assets are procedurally generated
+# No external licenses required
+licenses: []
