@@ -1,491 +1,236 @@
-/* lp-ambient-audio.c - Dark Fantasy Ambient Audio Generator
+/* lp-ambient-audio.c
  *
- * Copyright 2025 Zach Podbielniak
+ * Copyright 2026 Zach Podbielniak
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-#define LP_LOG_DOMAIN LP_LOG_DOMAIN_CORE
-#include "../lp-log.h"
 
 #include "lp-ambient-audio.h"
 #include <math.h>
 
-/* Audio constants */
-#define DEFAULT_SAMPLE_RATE     44100
-#define DEFAULT_CHANNELS        2
-#define DEFAULT_BASE_FREQ       55.0f  /* A1 - dark, low drone */
-#define LFO_RATE                0.1f   /* Slow "breathing" rate */
-#define FADE_DURATION           2.0f   /* Fade in/out duration in seconds */
+/* Number of oscillators for additive synthesis */
+#define NUM_OSCILLATORS 6
+
+/* LFO (Low Frequency Oscillator) for modulation */
+#define NUM_LFOS 3
 
 struct _LpAmbientAudio
 {
     LrgProceduralAudio parent_instance;
 
-    /* Synthesis parameters */
-    gfloat    base_frequency;
-    gfloat    intensity;
-    gfloat    tension;
-    gboolean  wind_enabled;
+    LpAmbientMood mood;
+    LpAmbientMood target_mood;
+    gfloat        mood_blend;        /* 0.0 = current, 1.0 = target */
 
-    /* Oscillator phases (0.0 to 1.0) */
-    gfloat    phase_base;
-    gfloat    phase_harm2;
-    gfloat    phase_harm3;
-    gfloat    phase_harm5;
-    gfloat    phase_lfo;
+    /* Oscillator state */
+    gfloat osc_phase[NUM_OSCILLATORS];
+    gfloat osc_freq[NUM_OSCILLATORS];
 
-    /* LFO and envelope state */
-    gfloat    lfo_value;
-    gfloat    envelope;
-    gfloat    target_envelope;
+    /* LFO state for modulation */
+    gfloat lfo_phase[NUM_LFOS];
+    gfloat lfo_freq[NUM_LFOS];
 
-    /* Wind noise state */
-    gfloat    wind_phase;
-    gfloat    wind_filter_state;
-
-    /* Playback state */
-    gboolean  is_fading;
-    gfloat    fade_timer;
+    /* Filter state (simple low-pass) */
+    gfloat filter_state_l;
+    gfloat filter_state_r;
 };
 
-G_DEFINE_FINAL_TYPE (LpAmbientAudio, lp_ambient_audio, LRG_TYPE_PROCEDURAL_AUDIO)
+G_DEFINE_TYPE (LpAmbientAudio, lp_ambient_audio, LRG_TYPE_PROCEDURAL_AUDIO)
 
-static LpAmbientAudio *default_ambient = NULL;
+/* Frequency ratios for different moods (relative to base frequency) */
+static const gfloat MOOD_FREQS[4][NUM_OSCILLATORS] = {
+    /* NEUTRAL - minor chord drone */
+    { 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 5.0f },
+    /* TENSION - dissonant intervals */
+    { 1.0f, 1.06f, 1.5f, 2.12f, 3.0f, 4.24f },
+    /* TRIUMPH - major chord, brighter */
+    { 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f },
+    /* SLUMBER - very low, sparse */
+    { 0.5f, 1.0f, 1.5f, 2.0f, 0.25f, 0.75f }
+};
 
-/* ==========================================================================
- * Private Helpers
- * ========================================================================== */
+/* Amplitude for each oscillator */
+static const gfloat OSC_AMPS[NUM_OSCILLATORS] = {
+    0.25f, 0.15f, 0.12f, 0.08f, 0.05f, 0.03f
+};
 
-static gfloat
-rand_float (void)
-{
-    /*
-     * Generate a random float between -1.0 and 1.0
-     * for noise generation.
-     */
-    return ((gfloat) g_random_int () / (gfloat) G_MAXUINT32) * 2.0f - 1.0f;
-}
-
-static gfloat
-low_pass_filter (gfloat input,
-                 gfloat *state,
-                 gfloat  alpha)
-{
-    /*
-     * Simple one-pole low-pass filter.
-     * alpha = dt / (RC + dt), where lower alpha = more filtering.
-     */
-    *state = *state + alpha * (input - *state);
-    return *state;
-}
-
-/* ==========================================================================
- * Audio Generation (Virtual Method Override)
- * ========================================================================== */
+/* Base frequency in Hz (very low for drone) */
+#define BASE_FREQ 55.0f  /* A1 */
 
 static void
-lp_ambient_audio_generate (LrgProceduralAudio *audio,
+lp_ambient_audio_generate (LrgProceduralAudio *procedural,
                            gfloat             *buffer,
                            gint                frame_count)
 {
-    LpAmbientAudio *self = LP_AMBIENT_AUDIO (audio);
-    guint sample_rate = lrg_procedural_audio_get_sample_rate (audio);
-    guint channels = lrg_procedural_audio_get_channels (audio);
-    gint i;
+    LpAmbientAudio *self = LP_AMBIENT_AUDIO (procedural);
+    guint channels;
+    guint sample_rate;
+    gint i, j;
+    gfloat sample_l, sample_r;
+    gfloat lfo_val[NUM_LFOS];
+    gfloat freq_mult;
+    const gfloat *current_freqs;
+    const gfloat *target_freqs;
+    gfloat blended_freq;
 
-    gfloat freq_base = self->base_frequency;
-    gfloat freq_harm2 = freq_base * 2.0f;    /* Octave */
-    gfloat freq_harm3 = freq_base * 3.0f;    /* Perfect fifth + octave */
-    gfloat freq_harm5 = freq_base * 5.0f;    /* Major third + 2 octaves */
+    channels = lrg_procedural_audio_get_channels (procedural);
+    sample_rate = lrg_procedural_audio_get_sample_rate (procedural);
 
-    /* Tension adds dissonance via detuning */
-    gfloat detune = 1.0f + self->tension * 0.02f;
+    current_freqs = MOOD_FREQS[self->mood];
+    target_freqs = MOOD_FREQS[self->target_mood];
 
-    /*
-     * Generate audio samples.
-     * The drone is created through additive synthesis:
-     * - Base sine at 55 Hz (A1)
-     * - Harmonics at 110 Hz, 165 Hz, 275 Hz
-     * - LFO modulates amplitude for "breathing"
-     * - Optional filtered noise for wind
-     */
     for (i = 0; i < frame_count; i++)
     {
-        gfloat sample = 0.0f;
-        gfloat lfo;
-        guint c;
-
-        /* Update LFO */
-        self->phase_lfo += LFO_RATE / sample_rate;
-        if (self->phase_lfo >= 1.0f)
-            self->phase_lfo -= 1.0f;
-        lfo = sinf (self->phase_lfo * 2.0f * G_PI);
-        self->lfo_value = 0.7f + 0.3f * lfo;  /* 0.7 to 1.0 range */
-
-        /* Base oscillator */
-        sample += sinf (self->phase_base * 2.0f * G_PI) * 0.5f;
-        self->phase_base += freq_base * detune / sample_rate;
-        if (self->phase_base >= 1.0f)
-            self->phase_base -= 1.0f;
-
-        /* 2nd harmonic (octave) - quieter */
-        sample += sinf (self->phase_harm2 * 2.0f * G_PI) * 0.2f;
-        self->phase_harm2 += freq_harm2 / sample_rate;
-        if (self->phase_harm2 >= 1.0f)
-            self->phase_harm2 -= 1.0f;
-
-        /* 3rd harmonic - even quieter */
-        sample += sinf (self->phase_harm3 * 2.0f * G_PI) * 0.1f;
-        self->phase_harm3 += freq_harm3 / sample_rate;
-        if (self->phase_harm3 >= 1.0f)
-            self->phase_harm3 -= 1.0f;
-
-        /* 5th harmonic - barely audible */
-        sample += sinf (self->phase_harm5 * 2.0f * G_PI) * 0.05f;
-        self->phase_harm5 += freq_harm5 / sample_rate;
-        if (self->phase_harm5 >= 1.0f)
-            self->phase_harm5 -= 1.0f;
-
-        /* Add tension-based dissonance (tritone at high tension) */
-        if (self->tension > 0.5f)
+        /* Update LFOs (very slow modulation) */
+        for (j = 0; j < NUM_LFOS; j++)
         {
-            gfloat tritone_freq = freq_base * 1.414f;  /* Tritone */
-            gfloat tritone_amp = (self->tension - 0.5f) * 0.2f;
-            sample += sinf (self->wind_phase * 2.0f * G_PI) * tritone_amp;
-            self->wind_phase += tritone_freq / sample_rate;
-            if (self->wind_phase >= 1.0f)
-                self->wind_phase -= 1.0f;
+            lfo_val[j] = sinf (self->lfo_phase[j] * 2.0f * G_PI);
+            self->lfo_phase[j] += self->lfo_freq[j] / (gfloat)sample_rate;
+            if (self->lfo_phase[j] >= 1.0f)
+                self->lfo_phase[j] -= 1.0f;
         }
 
-        /* Add wind noise if enabled */
-        if (self->wind_enabled)
+        /* Frequency modulation from LFO 0 */
+        freq_mult = 1.0f + lfo_val[0] * 0.02f;
+
+        /* Generate oscillators */
+        sample_l = 0.0f;
+        sample_r = 0.0f;
+
+        for (j = 0; j < NUM_OSCILLATORS; j++)
         {
-            gfloat noise = rand_float ();
-            gfloat filtered_noise = low_pass_filter (noise,
-                                                      &self->wind_filter_state,
-                                                      0.01f);
-            sample += filtered_noise * 0.1f;
+            gfloat osc_sample;
+            gfloat pan;
+
+            /* Blend frequency ratios between moods */
+            blended_freq = current_freqs[j] * (1.0f - self->mood_blend)
+                         + target_freqs[j] * self->mood_blend;
+
+            /* Calculate oscillator sample (sine wave) */
+            osc_sample = sinf (self->osc_phase[j] * 2.0f * G_PI);
+            osc_sample *= OSC_AMPS[j];
+
+            /* Slight amplitude modulation from LFO 1 */
+            osc_sample *= 1.0f + lfo_val[1] * 0.1f * (j % 2 == 0 ? 1.0f : -1.0f);
+
+            /* Stereo panning - spread oscillators across stereo field */
+            pan = (gfloat)j / (NUM_OSCILLATORS - 1) - 0.5f;
+            pan += lfo_val[2] * 0.1f;  /* Slow stereo movement */
+            pan = CLAMP (pan, -1.0f, 1.0f);
+
+            sample_l += osc_sample * (1.0f - pan) * 0.5f;
+            sample_r += osc_sample * (1.0f + pan) * 0.5f;
+
+            /* Update oscillator phase */
+            self->osc_phase[j] += (BASE_FREQ * blended_freq * freq_mult)
+                                 / (gfloat)sample_rate;
+            if (self->osc_phase[j] >= 1.0f)
+                self->osc_phase[j] -= 1.0f;
         }
 
-        /* Apply LFO modulation */
-        sample *= self->lfo_value;
+        /* Simple low-pass filter for smoother sound */
+        self->filter_state_l = self->filter_state_l * 0.95f + sample_l * 0.05f;
+        self->filter_state_r = self->filter_state_r * 0.95f + sample_r * 0.05f;
 
-        /* Apply intensity and envelope */
-        sample *= self->intensity * self->envelope;
+        sample_l = self->filter_state_l;
+        sample_r = self->filter_state_r;
 
-        /* Soft clipping to avoid harsh distortion */
-        if (sample > 0.8f)
-            sample = 0.8f + (sample - 0.8f) * 0.2f;
-        else if (sample < -0.8f)
-            sample = -0.8f + (sample + 0.8f) * 0.2f;
-
-        /* Output to all channels */
-        for (c = 0; c < channels; c++)
+        /* Output to buffer */
+        if (channels == 2)
         {
-            buffer[i * channels + c] = sample;
+            buffer[i * 2] = CLAMP (sample_l, -1.0f, 1.0f);
+            buffer[i * 2 + 1] = CLAMP (sample_r, -1.0f, 1.0f);
+        }
+        else
+        {
+            buffer[i] = CLAMP ((sample_l + sample_r) * 0.5f, -1.0f, 1.0f);
+        }
+
+        /* Slowly blend toward target mood */
+        if (self->mood_blend < 1.0f && self->mood != self->target_mood)
+        {
+            self->mood_blend += 0.00001f;  /* Very slow transition */
+            if (self->mood_blend >= 1.0f)
+            {
+                self->mood_blend = 0.0f;
+                self->mood = self->target_mood;
+            }
         }
     }
-}
-
-/* ==========================================================================
- * GObject Implementation
- * ========================================================================== */
-
-static void
-lp_ambient_audio_class_init (LpAmbientAudioClass *klass)
-{
-    LrgProceduralAudioClass *audio_class = LRG_PROCEDURAL_AUDIO_CLASS (klass);
-
-    /* Override the generate virtual method */
-    audio_class->generate = lp_ambient_audio_generate;
 }
 
 static void
 lp_ambient_audio_init (LpAmbientAudio *self)
 {
-    /* Initialize synthesis parameters */
-    self->base_frequency = DEFAULT_BASE_FREQ;
-    self->intensity = 0.5f;
-    self->tension = 0.0f;
-    self->wind_enabled = TRUE;
+    gint i;
 
-    /* Initialize oscillator phases */
-    self->phase_base = 0.0f;
-    self->phase_harm2 = 0.0f;
-    self->phase_harm3 = 0.0f;
-    self->phase_harm5 = 0.0f;
-    self->phase_lfo = 0.0f;
+    self->mood = LP_AMBIENT_MOOD_NEUTRAL;
+    self->target_mood = LP_AMBIENT_MOOD_NEUTRAL;
+    self->mood_blend = 0.0f;
 
-    /* Initialize state */
-    self->lfo_value = 1.0f;
-    self->envelope = 0.0f;
-    self->target_envelope = 0.0f;
-    self->wind_filter_state = 0.0f;
-    self->is_fading = FALSE;
-    self->fade_timer = 0.0f;
+    /* Initialize oscillator phases with slight offsets */
+    for (i = 0; i < NUM_OSCILLATORS; i++)
+    {
+        self->osc_phase[i] = (gfloat)i / NUM_OSCILLATORS;
+        self->osc_freq[i] = BASE_FREQ * MOOD_FREQS[0][i];
+    }
+
+    /* Initialize LFOs with very low frequencies */
+    self->lfo_phase[0] = 0.0f;
+    self->lfo_freq[0] = 0.05f;   /* 20 second cycle for pitch modulation */
+
+    self->lfo_phase[1] = 0.33f;
+    self->lfo_freq[1] = 0.08f;   /* 12.5 second cycle for amplitude */
+
+    self->lfo_phase[2] = 0.66f;
+    self->lfo_freq[2] = 0.03f;   /* 33 second cycle for stereo panning */
+
+    /* Initialize filter state */
+    self->filter_state_l = 0.0f;
+    self->filter_state_r = 0.0f;
 }
 
-/* ==========================================================================
- * Construction
- * ========================================================================== */
+static void
+lp_ambient_audio_class_init (LpAmbientAudioClass *klass)
+{
+    LrgProceduralAudioClass *procedural_class;
 
-/**
- * lp_ambient_audio_new:
- *
- * Creates a new ambient audio generator.
- * Uses default sample rate (44100) and stereo output.
- *
- * Returns: (transfer full) (nullable): A new #LpAmbientAudio
- */
+    procedural_class = LRG_PROCEDURAL_AUDIO_CLASS (klass);
+    procedural_class->generate = lp_ambient_audio_generate;
+}
+
 LpAmbientAudio *
 lp_ambient_audio_new (void)
 {
-    return g_object_new (LP_TYPE_AMBIENT_AUDIO,
-                         "sample-rate", DEFAULT_SAMPLE_RATE,
-                         "channels", DEFAULT_CHANNELS,
+    LpAmbientAudio *self;
+
+    self = g_object_new (LP_TYPE_AMBIENT_AUDIO,
+                         "sample-rate", 44100,
+                         "channels", 2,
                          NULL);
+
+    lrg_procedural_audio_set_name (LRG_PROCEDURAL_AUDIO (self),
+                                   "ambient-drone");
+
+    return self;
 }
 
-/**
- * lp_ambient_audio_get_default:
- *
- * Gets the default ambient audio instance.
- * Creates one if it doesn't exist.
- *
- * Returns: (transfer none) (nullable): The default #LpAmbientAudio
- */
-LpAmbientAudio *
-lp_ambient_audio_get_default (void)
+void
+lp_ambient_audio_set_mood (LpAmbientAudio *self,
+                            LpAmbientMood   mood)
 {
-    if (default_ambient == NULL)
+    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
+
+    if (mood != self->mood && mood != self->target_mood)
     {
-        default_ambient = lp_ambient_audio_new ();
-        if (default_ambient != NULL)
-        {
-            lrg_procedural_audio_set_name (
-                LRG_PROCEDURAL_AUDIO (default_ambient),
-                "lp-ambient-drone");
-        }
+        self->target_mood = mood;
+        self->mood_blend = 0.0f;
     }
-
-    return default_ambient;
 }
 
-/* ==========================================================================
- * Audio Control
- * ========================================================================== */
-
-/**
- * lp_ambient_audio_start:
- * @self: an #LpAmbientAudio
- *
- * Starts ambient audio playback.
- * The audio will fade in over 2 seconds.
- */
-void
-lp_ambient_audio_start (LpAmbientAudio *self)
+LpAmbientMood
+lp_ambient_audio_get_mood (LpAmbientAudio *self)
 {
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->target_envelope = 1.0f;
-    self->is_fading = TRUE;
-    self->fade_timer = FADE_DURATION;
-
-    lrg_procedural_audio_play (LRG_PROCEDURAL_AUDIO (self));
-    lp_log_debug ("Ambient audio started");
-}
-
-/**
- * lp_ambient_audio_stop:
- * @self: an #LpAmbientAudio
- *
- * Stops ambient audio playback.
- * The audio will fade out over 2 seconds.
- */
-void
-lp_ambient_audio_stop (LpAmbientAudio *self)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->target_envelope = 0.0f;
-    self->is_fading = TRUE;
-    self->fade_timer = FADE_DURATION;
-
-    lp_log_debug ("Ambient audio stopping");
-}
-
-/**
- * lp_ambient_audio_update:
- * @self: an #LpAmbientAudio
- * @delta: time since last update in seconds
- *
- * Updates the audio generator. Must be called each frame
- * while audio is playing.
- */
-void
-lp_ambient_audio_update (LpAmbientAudio *self,
-                          gfloat          delta)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    /* Handle fade in/out */
-    if (self->is_fading && self->fade_timer > 0.0f)
-    {
-        gfloat t = 1.0f - (self->fade_timer / FADE_DURATION);
-
-        /* Smooth interpolation */
-        self->envelope = self->envelope +
-            (self->target_envelope - self->envelope) * t;
-
-        self->fade_timer -= delta;
-
-        if (self->fade_timer <= 0.0f)
-        {
-            self->envelope = self->target_envelope;
-            self->is_fading = FALSE;
-
-            /* Stop playback if faded out completely */
-            if (self->envelope <= 0.0f)
-            {
-                lrg_procedural_audio_stop (LRG_PROCEDURAL_AUDIO (self));
-                lp_log_debug ("Ambient audio stopped");
-            }
-        }
-    }
-
-    /* Call base class update to generate samples */
-    lrg_procedural_audio_update (LRG_PROCEDURAL_AUDIO (self));
-}
-
-/* ==========================================================================
- * Parameters
- * ========================================================================== */
-
-/**
- * lp_ambient_audio_set_intensity:
- * @self: an #LpAmbientAudio
- * @intensity: intensity level (0.0 to 1.0)
- *
- * Sets the drone intensity (overall amplitude).
- */
-void
-lp_ambient_audio_set_intensity (LpAmbientAudio *self,
-                                 gfloat          intensity)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->intensity = CLAMP (intensity, 0.0f, 1.0f);
-}
-
-/**
- * lp_ambient_audio_get_intensity:
- * @self: an #LpAmbientAudio
- *
- * Gets the current drone intensity.
- *
- * Returns: intensity level (0.0 to 1.0)
- */
-gfloat
-lp_ambient_audio_get_intensity (LpAmbientAudio *self)
-{
-    g_return_val_if_fail (LP_IS_AMBIENT_AUDIO (self), 0.0f);
-
-    return self->intensity;
-}
-
-/**
- * lp_ambient_audio_set_wind_enabled:
- * @self: an #LpAmbientAudio
- * @enabled: whether to enable wind noise layer
- *
- * Enables or disables the "crypt wind" noise layer.
- */
-void
-lp_ambient_audio_set_wind_enabled (LpAmbientAudio *self,
-                                    gboolean        enabled)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->wind_enabled = enabled;
-}
-
-/**
- * lp_ambient_audio_get_wind_enabled:
- * @self: an #LpAmbientAudio
- *
- * Gets whether wind noise is enabled.
- *
- * Returns: %TRUE if wind noise is enabled
- */
-gboolean
-lp_ambient_audio_get_wind_enabled (LpAmbientAudio *self)
-{
-    g_return_val_if_fail (LP_IS_AMBIENT_AUDIO (self), FALSE);
-
-    return self->wind_enabled;
-}
-
-/**
- * lp_ambient_audio_set_tension:
- * @self: an #LpAmbientAudio
- * @tension: tension level (0.0 to 1.0)
- *
- * Sets the tension level. Higher tension adds dissonance
- * and darker tones, appropriate for dangerous events.
- */
-void
-lp_ambient_audio_set_tension (LpAmbientAudio *self,
-                               gfloat          tension)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->tension = CLAMP (tension, 0.0f, 1.0f);
-}
-
-/**
- * lp_ambient_audio_get_tension:
- * @self: an #LpAmbientAudio
- *
- * Gets the current tension level.
- *
- * Returns: tension level (0.0 to 1.0)
- */
-gfloat
-lp_ambient_audio_get_tension (LpAmbientAudio *self)
-{
-    g_return_val_if_fail (LP_IS_AMBIENT_AUDIO (self), 0.0f);
-
-    return self->tension;
-}
-
-/**
- * lp_ambient_audio_set_base_frequency:
- * @self: an #LpAmbientAudio
- * @frequency: base frequency in Hz (default: 55.0)
- *
- * Sets the base drone frequency.
- */
-void
-lp_ambient_audio_set_base_frequency (LpAmbientAudio *self,
-                                      gfloat          frequency)
-{
-    g_return_if_fail (LP_IS_AMBIENT_AUDIO (self));
-
-    self->base_frequency = CLAMP (frequency, 20.0f, 200.0f);
-}
-
-/**
- * lp_ambient_audio_get_base_frequency:
- * @self: an #LpAmbientAudio
- *
- * Gets the base drone frequency.
- *
- * Returns: frequency in Hz
- */
-gfloat
-lp_ambient_audio_get_base_frequency (LpAmbientAudio *self)
-{
-    g_return_val_if_fail (LP_IS_AMBIENT_AUDIO (self), DEFAULT_BASE_FREQ);
-
-    return self->base_frequency;
+    g_return_val_if_fail (LP_IS_AMBIENT_AUDIO (self), LP_AMBIENT_MOOD_NEUTRAL);
+    return self->mood;
 }

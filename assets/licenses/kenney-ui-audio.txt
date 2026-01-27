@@ -1,0 +1,18 @@
+UI SFX Set
+Source: https://kenney.nl/assets/ui-audio
+Author: Kenney Vleugels (Kenney.nl)
+
+License: Creative Commons Zero (CC0)
+http://creativecommons.org/publicdomain/zero/1.0/
+
+You may use these assets in personal and commercial projects.
+Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+Files used in Lich's Portfolio:
+- click.ogg (from click1.ogg)
+- purchase.ogg (from switch37.ogg)
+- sell.ogg (from switch27.ogg)
+- achievement.ogg (from switch1.ogg)
+- event.ogg (from switch15.ogg)
+- error.ogg (from switch10.ogg)
+- hover.ogg (from rollover1.ogg)
