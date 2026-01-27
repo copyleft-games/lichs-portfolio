@@ -87,6 +87,15 @@ STEAM ?= 0
 # Steam App ID (use Spacewar test ID until real ID assigned)
 STEAM_APPID ?= 480
 
+# Enable MCP server for AI debugging (requires libregnum MCP support)
+# Usage: make MCP=1
+# Enables HTTP transport for Claude Code / Clawdbot / AI agent integration
+# Default port: 5005 (configurable via MCP_HTTP_PORT env var)
+MCP ?= 0
+
+# MCP HTTP port (only used when MCP=1)
+MCP_HTTP_PORT ?= 5005
+
 # =============================================================================
 # Compiler and Tools
 # =============================================================================
@@ -217,6 +226,26 @@ else
 endif
 
 # =============================================================================
+# MCP Server Configuration (for AI debugging)
+# =============================================================================
+
+ifeq ($(MCP),1)
+    # MCP requires libregnum to be built with MCP=1
+    MCP_GLIB_DIR := $(LIBREGNUM_DIR)/deps/mcp-glib
+    MCP_CFLAGS := -DLP_ENABLE_MCP=1 -DMCP_HTTP_PORT=$(MCP_HTTP_PORT)
+    MCP_CFLAGS += -I$(MCP_GLIB_DIR)/src
+    MCP_LIBS := -L$(MCP_GLIB_DIR)/build -lmcp-glib-1.0
+    # Also need libsoup for HTTP transport
+    MCP_SOUP_CFLAGS := $(shell $(PKG_CONFIG) --cflags libsoup-3.0 2>/dev/null)
+    MCP_SOUP_LIBS := $(shell $(PKG_CONFIG) --libs libsoup-3.0 2>/dev/null)
+    MCP_CFLAGS += $(MCP_SOUP_CFLAGS)
+    MCP_LIBS += $(MCP_SOUP_LIBS)
+else
+    MCP_CFLAGS :=
+    MCP_LIBS :=
+endif
+
+# =============================================================================
 # pkg-config Dependencies
 # =============================================================================
 
@@ -282,6 +311,7 @@ GAME_CFLAGS += $(LIBREGNUM_CFLAGS)
 GAME_CFLAGS += $(GLIB_CFLAGS) $(JSON_CFLAGS) $(YAML_CFLAGS)
 GAME_CFLAGS += $(DEX_CFLAGS)
 GAME_CFLAGS += $(STEAM_CFLAGS)
+GAME_CFLAGS += $(MCP_CFLAGS)
 
 # All linker flags for game
 GAME_LDFLAGS := $(OPT_LDFLAGS) $(LIBREGNUM_LDFLAGS)
@@ -291,6 +321,7 @@ GAME_LIBS := $(LIBREGNUM_LIBS)
 GAME_LIBS += $(GLIB_LIBS) $(JSON_LIBS) $(YAML_LIBS)
 GAME_LIBS += $(DEX_LIBS)
 GAME_LIBS += $(STEAM_LIBS)
+GAME_LIBS += $(MCP_LIBS)
 GAME_LIBS += $(PLATFORM_LIBS)
 
 # RPATH for development (find libregnum at runtime)
@@ -298,4 +329,7 @@ ifeq ($(TARGET_PLATFORM),linux)
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_LIBDIR)
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_DIR)/deps/graylib/build/lib
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_DIR)/deps/yaml-glib/build
+    ifeq ($(MCP),1)
+        GAME_LDFLAGS += -Wl,-rpath,$(MCP_GLIB_DIR)/build
+    endif
 endif
