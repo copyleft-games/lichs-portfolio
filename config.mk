@@ -217,6 +217,26 @@ else
 endif
 
 # =============================================================================
+# MCP (Model Context Protocol) Server - for AI debugging
+# =============================================================================
+
+# Enable MCP server for Claude Code integration
+MCP ?= 0
+
+ifeq ($(MCP),1)
+    MCP_GLIB_DIR := $(LIBREGNUM_DIR)/deps/mcp-glib
+    SOUP_CFLAGS := $(shell $(PKG_CONFIG) --cflags libsoup-3.0)
+    SOUP_LIBS := $(shell $(PKG_CONFIG) --libs libsoup-3.0)
+    LP_MCP_CFLAGS := -DLP_MCP=1 -DLRG_ENABLE_MCP=1 -I$(MCP_GLIB_DIR)/src $(SOUP_CFLAGS)
+    LP_MCP_LIBS := -L$(MCP_GLIB_DIR)/build -lmcp-glib-1.0 $(SOUP_LIBS)
+    LP_MCP_LDFLAGS := -Wl,-rpath,$(MCP_GLIB_DIR)/build
+else
+    LP_MCP_CFLAGS :=
+    LP_MCP_LIBS :=
+    LP_MCP_LDFLAGS :=
+endif
+
+# =============================================================================
 # pkg-config Dependencies
 # =============================================================================
 
@@ -282,15 +302,18 @@ GAME_CFLAGS += $(LIBREGNUM_CFLAGS)
 GAME_CFLAGS += $(GLIB_CFLAGS) $(JSON_CFLAGS) $(YAML_CFLAGS)
 GAME_CFLAGS += $(DEX_CFLAGS)
 GAME_CFLAGS += $(STEAM_CFLAGS)
+GAME_CFLAGS += $(LP_MCP_CFLAGS)
 
 # All linker flags for game
 GAME_LDFLAGS := $(OPT_LDFLAGS) $(LIBREGNUM_LDFLAGS)
+GAME_LDFLAGS += $(LP_MCP_LDFLAGS)
 
 # All libraries for game
 GAME_LIBS := $(LIBREGNUM_LIBS)
 GAME_LIBS += $(GLIB_LIBS) $(JSON_LIBS) $(YAML_LIBS)
 GAME_LIBS += $(DEX_LIBS)
 GAME_LIBS += $(STEAM_LIBS)
+GAME_LIBS += $(LP_MCP_LIBS)
 GAME_LIBS += $(PLATFORM_LIBS)
 
 # RPATH for development (find libregnum at runtime)

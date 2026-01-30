@@ -35,6 +35,7 @@ G_BEGIN_DECLS
 #define LP_LOG_DOMAIN_FEEDBACK      "LichsPortfolio-Feedback"
 #define LP_LOG_DOMAIN_ACHIEVEMENT   "LichsPortfolio-Achievement"
 #define LP_LOG_DOMAIN_STEAM         "LichsPortfolio-Steam"
+#define LP_LOG_DOMAIN_MCP           "LichsPortfolio-MCP"
 
 /* ==========================================================================
  * Logging Macros

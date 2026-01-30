@@ -24,7 +24,7 @@ all: deps game
 .PHONY: deps
 deps:
 	$(call print_status,"Building libregnum...")
-	@$(MAKE) --no-print-directory -C $(LIBREGNUM_DIR) DEBUG=$(DEBUG)
+	@$(MAKE) --no-print-directory -C $(LIBREGNUM_DIR) DEBUG=$(DEBUG) MCP=$(MCP)
 
 # =============================================================================
 # Game
@@ -33,7 +33,7 @@ deps:
 .PHONY: game
 game: | $(BUILDDIR)
 	$(call print_status,"Building $(PROGRAM_DISPLAY_NAME)...")
-	@$(MAKE) --no-print-directory -C src
+	@$(MAKE) --no-print-directory -C src MCP=$(MCP)
 
 # =============================================================================
 # Testing

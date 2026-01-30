@@ -10,13 +10,35 @@
 #include <glib.h>
 #include "core/lp-game.h"
 
+#ifdef LP_MCP
+#include "mcp/lp-mcp.h"
+#endif
+
 int
 main (int    argc,
       char **argv)
 {
     g_autoptr(LpGame) game = NULL;
+    gint result;
+
+#ifdef LP_MCP
+    {
+        g_autoptr(GError) error = NULL;
+
+        if (!lp_mcp_initialize (&error))
+        {
+            g_warning ("MCP server failed to start: %s", error->message);
+            /* Continue without MCP - it's optional */
+        }
+    }
+#endif
 
     game = lp_game_new ();
+    result = lrg_game_template_run (LRG_GAME_TEMPLATE (game), argc, argv);
 
-    return lrg_game_template_run (LRG_GAME_TEMPLATE (game), argc, argv);
+#ifdef LP_MCP
+    lp_mcp_shutdown ();
+#endif
+
+    return result;
 }

@@ -114,6 +114,12 @@ SOURCES += audio/lp-ambient-audio.c
 SOURCES += audio/lp-ui-sounds.c
 SOURCES += tutorial/lp-tutorial-sequences.c
 
+# MCP Integration (optional - build with MCP=1)
+ifeq ($(MCP),1)
+SOURCES += mcp/lp-mcp.c
+SOURCES += mcp/lp-mcp-game-tools.c
+endif
+
 # =============================================================================
 # Object Files
 # =============================================================================
@@ -150,6 +156,9 @@ $(OBJDIR)/src/%.o: %.c | $(OBJDIR)
 
 # Main entry point
 $(OBJDIR)/src/main.o: main.c core/lp-game.h
+ifeq ($(MCP),1)
+$(OBJDIR)/src/main.o: mcp/lp-mcp.h
+endif
 
 # Enumerations
 $(OBJDIR)/src/lp-enums.o: lp-enums.c lp-enums.h
@@ -354,6 +363,17 @@ $(OBJDIR)/src/tutorial/lp-tutorial-sequences.o: tutorial/lp-tutorial-sequences.c
 	tutorial/lp-tutorial-sequences.h core/lp-game.h core/lp-game-data.h \
 	investment/lp-portfolio.h lp-log.h lp-types.h
 
+# MCP Integration (Phase 10 - optional)
+ifeq ($(MCP),1)
+$(OBJDIR)/src/mcp/lp-mcp.o: mcp/lp-mcp.c mcp/lp-mcp.h mcp/lp-mcp-game-tools.h \
+	lp-log.h
+$(OBJDIR)/src/mcp/lp-mcp-game-tools.o: mcp/lp-mcp-game-tools.c \
+	mcp/lp-mcp-game-tools.h core/lp-game.h core/lp-game-data.h \
+	core/lp-exposure-manager.h core/lp-synergy-manager.h core/lp-phylactery.h \
+	investment/lp-portfolio.h investment/lp-investment.h \
+	agent/lp-agent-manager.h agent/lp-agent.h lp-enums.h lp-log.h
+endif
+
 # =============================================================================
 # Directory Creation
 # =============================================================================
@@ -373,6 +393,7 @@ $(OBJDIR):
 	@$(MKDIR_P) $(OBJDIR)/src/narrative
 	@$(MKDIR_P) $(OBJDIR)/src/audio
 	@$(MKDIR_P) $(OBJDIR)/src/tutorial
+	@$(MKDIR_P) $(OBJDIR)/src/mcp
 
 $(BINDIR_OUT):
 	@$(MKDIR_P) $@
