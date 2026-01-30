@@ -1,0 +1,218 @@
+# Brazilian Portuguese Locale for Lich's Portfolio
+#
+# Copyright 2026 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+code: pt-BR
+name: Português (Brasil)
+
+strings:
+  # ===========================================================================
+  # UI - General
+  # ===========================================================================
+  ui.portfolio: "Portfólio"
+  ui.agents: "Agentes"
+  ui.world_map: "Mapa-múndi"
+  ui.intelligence: "Inteligência"
+  ui.ledger: "Livro-razão"
+  ui.megaprojects: "Megaprojetos"
+  ui.slumber: "Entrar em sono"
+  ui.gold: "Ouro"
+  ui.year: "Ano"
+  ui.new_game: "Novo jogo"
+  ui.continue: "Continuar"
+  ui.settings: "Configurações"
+  ui.quit: "Sair"
+  ui.buy: "Comprar"
+  ui.sell: "Vender"
+  ui.confirm: "Confirmar"
+  ui.cancel: "Cancelar"
+  ui.back: "Voltar"
+  ui.close: "Fechar"
+  ui.yes: "Sim"
+  ui.no: "Não"
+
+  # ===========================================================================
+  # UI - Portfolio Screen
+  # ===========================================================================
+  ui.portfolio.title: "Portfólio de investimentos"
+  ui.portfolio.net_worth: "Patrimônio líquido"
+  ui.portfolio.available_gold: "Ouro disponível"
+  ui.portfolio.investments: "Investimentos"
+  ui.portfolio.returns: "Retornos anuais"
+  ui.portfolio.exposure: "Nível de exposição"
+  ui.portfolio.empty: "Nenhum investimento ainda. Visite o mercado para começar."
+
+  # ===========================================================================
+  # UI - Agent Screen
+  # ===========================================================================
+  ui.agents.title: "Rede de agentes"
+  ui.agents.hire: "Contratar agente"
+  ui.agents.dismiss: "Demitir"
+  ui.agents.loyalty: "Lealdade"
+  ui.agents.efficiency: "Eficiência"
+  ui.agents.age: "Idade"
+  ui.agents.empty: "Nenhum agente ao seu serviço."
+
+  # ===========================================================================
+  # UI - Slumber Screen
+  # ===========================================================================
+  ui.slumber.title: "Entrar em sono"
+  ui.slumber.duration: "Duração"
+  ui.slumber.dormant_orders: "Ordens dormentes"
+  ui.slumber.begin: "Começar sono"
+  ui.slumber.warning: "O tempo passará enquanto você dorme..."
+
+  # ===========================================================================
+  # Event Types
+  # ===========================================================================
+  event.type.economic: "Econômico"
+  event.type.political: "Político"
+  event.type.magical: "Mágico"
+  event.type.personal: "Pessoal"
+
+  # ===========================================================================
+  # Event - Kingdom Events
+  # ===========================================================================
+  event.kingdom_collapse.title: "Colapso do reino"
+  event.kingdom_collapse.desc: "%s caiu em caos e ruína."
+  event.kingdom_war.title: "Guerra declarada"
+  event.kingdom_war.desc: "%s declarou guerra contra %s."
+  event.kingdom_peace.title: "Tratado de paz"
+  event.kingdom_peace.desc: "Um tratado de paz foi assinado entre %s e %s."
+  event.kingdom_succession.title: "Sucessão real"
+  event.kingdom_succession.desc: "Um novo governante reivindicou o trono de %s."
+
+  # ===========================================================================
+  # Event - Agent Events
+  # ===========================================================================
+  event.agent_death.title: "Morte do agente"
+  event.agent_death.desc: "%s faleceu."
+  event.agent_betrayal.title: "Traição do agente"
+  event.agent_betrayal.desc: "%s traiu sua confiança."
+  event.agent_success.title: "Sucesso do agente"
+  event.agent_success.desc: "%s cumpriu sua missão."
+  event.agent_family.title: "Sucessão familiar"
+  event.agent_family.desc: "A linhagem %s continua através de um novo herdeiro."
+
+  # ===========================================================================
+  # Event - Investment Events
+  # ===========================================================================
+  event.investment_boom.title: "Boom de investimento"
+  event.investment_boom.desc: "Seu investimento em %s prosperou!"
+  event.investment_bust.title: "Falha de investimento"
+  event.investment_bust.desc: "Seu investimento em %s sofreu perdas."
+  event.trade_route.title: "Rota comercial estabelecida"
+  event.trade_route.desc: "Uma nova rota comercial foi aberta entre %s e %s."
+
+  # ===========================================================================
+  # Event - Discovery Events
+  # ===========================================================================
+  event.discovery.title: "Descoberta!"
+  event.discovery.desc: "Investigações revelaram evidências de sua existência."
+  event.crusade.title: "Cruzada declarada"
+  event.crusade.desc: "Uma cruzada foi declarada contra a ameaça morta-viva."
+  event.inquisition.title: "Inquisição"
+  event.inquisition.desc: "A Inquisição está investigando atividades incomuns."
+
+  # ===========================================================================
+  # Malachar Commentary
+  # ===========================================================================
+  malachar.greeting: "Ah, você despertou. Muito aconteceu em sua ausência..."
+  malachar.slumber: "Hora de descansar. O mundo continuará girando sem nós."
+  malachar.wake: "Bem-vindo de volta ao mundo acordado, meu eterno aprendiz."
+
+  malachar.kingdom_collapse: "Outro reino desmorona. Seus cofres, entretanto, permanecem intactos."
+  malachar.agent_death: "Mortais e suas breves velas... Pelo menos este deixou as contas em ordem."
+  malachar.competitor_defeat: "Menos um rival. Os séculos se tornam solitários, mas lucrativos."
+  malachar.discovery: "Eles procuram meu filactério. Que... adorável."
+  malachar.investment_success: "Ouro gera ouro. Os vivos nunca entendem juros compostos."
+  malachar.investment_failure: "Até imortais cometem erros. Felizmente, tenho tempo para me recuperar."
+  malachar.crusade: "Eles reúnem seus exércitos. Deixe-os se exaurirem contra as sombras."
+  malachar.prestige: "Mais um ciclo completo. Ficamos cada vez mais fortes."
+
+  malachar.tutorial_welcome: "Bem-vindo, meu eterno aprendiz. Deixe-me explicar como construiremos nosso império..."
+  malachar.tutorial_gold: "Ouro é a base de todo poder. Guarde-o bem."
+  malachar.tutorial_portfolio: "Seu portfólio é onde gerenciamos nossos investimentos. Vamos dar uma olhada?"
+  malachar.tutorial_slumber: "Como imortal, você experimenta o tempo de forma diferente. Entre em sono para avançar o tempo."
+
+  # ===========================================================================
+  # Asset Classes
+  # ===========================================================================
+  asset.property: "Propriedade"
+  asset.trade: "Comércio"
+  asset.financial: "Financeiro"
+  asset.magical: "Mágico"
+  asset.political: "Político"
+  asset.dark: "Obscuro"
+
+  asset.property.desc: "Terras e edifícios. Estável mas ilíquido."
+  asset.trade.desc: "Rotas comerciais e empreendimentos mercantis. Risco e retorno moderados."
+  asset.financial.desc: "Empréstimos, títulos e notas. Retornos variáveis."
+  asset.magical.desc: "Artefatos encantados e posses místicas. Volátil mas lucrativo."
+  asset.political.desc: "Influência e favores. Alto risco, alta recompensa."
+  asset.dark.desc: "Contratos de almas e negócios proibidos. Extremamente lucrativo mas perigoso."
+
+  # ===========================================================================
+  # Risk Levels
+  # ===========================================================================
+  risk.low: "Risco baixo"
+  risk.medium: "Risco médio"
+  risk.high: "Risco alto"
+  risk.extreme: "Risco extremo"
+
+  # ===========================================================================
+  # Achievements
+  # ===========================================================================
+  achievement.unlocked: "Conquista desbloqueada!"
+  achievement.first_million: "Primeiro milhão"
+  achievement.first_million.desc: "Alcançar 1.000.000 de peças de ouro"
+  achievement.century_investor: "Investidor centenário"
+  achievement.century_investor.desc: "Jogar por 100 anos"
+  achievement.dynasty: "Dinastia"
+  achievement.dynasty.desc: "Manter uma família de agentes por 5 gerações"
+  achievement.transcendence: "Transcendência"
+  achievement.transcendence.desc: "Completar seu primeiro ciclo de prestígio"
+  achievement.soul_trader: "Comerciante de almas"
+  achievement.soul_trader.desc: "Completar sua primeira troca de almas"
+
+  # ===========================================================================
+  # Tutorial
+  # ===========================================================================
+  tutorial.intro.title: "Bem-vindo"
+  tutorial.intro.step1: "Bem-vindo ao Lich's Portfolio. Você é Malachar o Imortal, um lich construindo um império financeiro através dos séculos."
+  tutorial.intro.step2: "Seu ouro é exibido aqui. Este é seu capital disponível para investimentos."
+  tutorial.intro.step3: "Clique em Portfólio para ver e gerenciar seus investimentos."
+
+  tutorial.investment.title: "Investimentos"
+  tutorial.investment.step1: "Este é seu portfólio. Aqui você pode ver todos os seus investimentos atuais."
+  tutorial.investment.step2: "Cada investimento tem características diferentes de risco e retorno."
+  tutorial.investment.step3: "Compre seu primeiro investimento para começar a construir seu império."
+
+  tutorial.slumber.title: "Sono"
+  tutorial.slumber.step1: "Como imortal, você experimenta o tempo de forma diferente. Entre em sono para avançar o tempo."
+  tutorial.slumber.step2: "Escolha quantos anos você quer dormir. Mais tempo significa mais retornos, mas também mais eventos."
+  tutorial.slumber.step3: "Configure ordens dormentes para automatizar ações enquanto você dorme."
+
+  # ===========================================================================
+  # Plurals
+  # ===========================================================================
+  year:
+    one: "%d ano"
+    other: "%d anos"
+
+  gold:
+    one: "%d peça de ouro"
+    other: "%d peças de ouro"
+
+  agent:
+    one: "%d agente"
+    other: "%d agentes"
+
+  investment:
+    one: "%d investimento"
+    other: "%d investimentos"
+
+  kingdom:
+    one: "%d reino"
+    other: "%d reinos"

@@ -1,0 +1,18 @@
+# UI Sound Bank Manifest - Lich's Portfolio
+#
+# Copyright 2026 Zach Podbielniak
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Sound effects from Kenney.nl UI SFX Set (CC0)
+# See assets/licenses/kenney-ui-audio.txt for license details.
+
+name: ui
+base_path: assets/audio/ui/
+sounds:
+  click: click.ogg
+  hover: hover.ogg
+  purchase: purchase.ogg
+  sell: sell.ogg
+  achievement: achievement.ogg
+  event: event.ogg
+  error: error.ogg

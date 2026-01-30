@@ -87,6 +87,15 @@ STEAM ?= 0
 # Steam App ID (use Spacewar test ID until real ID assigned)
 STEAM_APPID ?= 480
 
+# Enable MCP server for AI debugging (requires libregnum MCP support)
+# Usage: make MCP=1
+# Enables HTTP transport for Claude Code / Clawdbot / AI agent integration
+# Default port: 5005 (configurable via MCP_HTTP_PORT env var)
+MCP ?= 0
+
+# MCP HTTP port (only used when MCP=1)
+MCP_HTTP_PORT ?= 5005
+
 # =============================================================================
 # Compiler and Tools
 # =============================================================================
@@ -220,14 +229,13 @@ endif
 # MCP (Model Context Protocol) Server - for AI debugging
 # =============================================================================
 
-# Enable MCP server for Claude Code integration
-MCP ?= 0
-
 ifeq ($(MCP),1)
+    # MCP requires libregnum to be built with MCP=1
     MCP_GLIB_DIR := $(LIBREGNUM_DIR)/deps/mcp-glib
-    SOUP_CFLAGS := $(shell $(PKG_CONFIG) --cflags libsoup-3.0)
-    SOUP_LIBS := $(shell $(PKG_CONFIG) --libs libsoup-3.0)
-    LP_MCP_CFLAGS := -DLP_MCP=1 -DLRG_ENABLE_MCP=1 -I$(MCP_GLIB_DIR)/src $(SOUP_CFLAGS)
+    SOUP_CFLAGS := $(shell $(PKG_CONFIG) --cflags libsoup-3.0 2>/dev/null)
+    SOUP_LIBS := $(shell $(PKG_CONFIG) --libs libsoup-3.0 2>/dev/null)
+    LP_MCP_CFLAGS := -DLP_MCP=1 -DLRG_ENABLE_MCP=1 -DMCP_HTTP_PORT=$(MCP_HTTP_PORT)
+    LP_MCP_CFLAGS += -I$(MCP_GLIB_DIR)/src $(SOUP_CFLAGS)
     LP_MCP_LIBS := -L$(MCP_GLIB_DIR)/build -lmcp-glib-1.0 $(SOUP_LIBS)
     LP_MCP_LDFLAGS := -Wl,-rpath,$(MCP_GLIB_DIR)/build
 else
@@ -321,4 +329,7 @@ ifeq ($(TARGET_PLATFORM),linux)
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_LIBDIR)
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_DIR)/deps/graylib/build/lib
     GAME_LDFLAGS += -Wl,-rpath,$(LIBREGNUM_DIR)/deps/yaml-glib/build
+    ifeq ($(MCP),1)
+        GAME_LDFLAGS += -Wl,-rpath,$(MCP_GLIB_DIR)/build
+    endif
 endif

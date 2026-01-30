@@ -25,6 +25,10 @@
 #include <raylib.h>
 #include <math.h>
 
+#ifdef LP_ENABLE_MCP
+#include <stdlib.h>
+#endif
+
 /* Window configuration */
 #define WINDOW_WIDTH   1280
 #define WINDOW_HEIGHT  720
@@ -164,6 +168,45 @@ lp_game_real_pre_startup (LrgGameTemplate *template)
     /* Set game reference on tutorial sequences */
     lp_tutorial_sequences_set_game (lp_tutorial_sequences_get_default (), self);
 
+#ifdef LP_ENABLE_MCP
+    /*
+     * Initialize MCP server for AI debugging integration.
+     * Uses HTTP transport for external tool connectivity.
+     */
+    {
+        LrgMcpServer *mcp_server;
+        guint mcp_port = MCP_HTTP_PORT;
+        const gchar *port_env;
+        g_autoptr(GError) mcp_error = NULL;
+
+        /* Allow environment variable override for port */
+        port_env = g_getenv ("MCP_HTTP_PORT");
+        if (port_env != NULL)
+        {
+            gint64 parsed = g_ascii_strtoll (port_env, NULL, 10);
+            if (parsed > 0 && parsed <= 65535)
+                mcp_port = (guint)parsed;
+        }
+
+        mcp_server = lrg_mcp_server_get_default ();
+        lrg_mcp_server_set_server_name (mcp_server, "Lich's Portfolio");
+        lrg_mcp_server_set_transport_type (mcp_server, LRG_MCP_TRANSPORT_HTTP);
+        lrg_mcp_server_set_http_port (mcp_server, mcp_port);
+        lrg_mcp_server_register_default_providers (mcp_server);
+
+        if (lrg_mcp_server_start (mcp_server, &mcp_error))
+        {
+            lp_log_info ("MCP server started on HTTP port %u",
+                         lrg_mcp_server_get_actual_http_port (mcp_server));
+        }
+        else
+        {
+            lp_log_warning ("Failed to start MCP server: %s",
+                            mcp_error ? mcp_error->message : "unknown error");
+        }
+    }
+#endif /* LP_ENABLE_MCP */
+
     lp_log_info ("Pre-startup complete");
 }
 
@@ -219,6 +262,18 @@ lp_game_real_shutdown (LrgGameTemplate *template)
         lp_log_info ("Saving settings...");
         lrg_settings_save_default_path (settings, "lichs-portfolio", NULL);
     }
+
+#ifdef LP_ENABLE_MCP
+    /* Stop MCP server */
+    {
+        LrgMcpServer *mcp_server = lrg_mcp_server_get_default ();
+        if (lrg_mcp_server_is_running (mcp_server))
+        {
+            lp_log_info ("Stopping MCP server...");
+            lrg_mcp_server_stop (mcp_server);
+        }
+    }
+#endif /* LP_ENABLE_MCP */
 
     /* Clear current instance */
     if (current_game_instance == self)

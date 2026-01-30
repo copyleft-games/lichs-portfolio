@@ -131,6 +131,94 @@ Save games are stored in:
 - Linux: `~/.local/share/lichs-portfolio/saves/`
 - Windows: `%APPDATA%/lichs-portfolio/saves/`
 
+## MCP Server (AI Debugging Integration)
+
+The game can expose an MCP (Model Context Protocol) server for AI-assisted debugging
+and control. This allows external tools like Claude Code, Clawdbot, or custom AI agents
+to interact with the running game.
+
+### Building with MCP Support
+
+```bash
+# Build with MCP server enabled
+make MCP=1
+
+# Or with debug + MCP
+make DEBUG=1 MCP=1
+```
+
+This requires libregnum to also be built with MCP support (handled automatically).
+
+### Running with MCP
+
+When built with `MCP=1`, the game starts an HTTP server for MCP connections:
+
+```bash
+# Default port: 5005
+./build/release/lichs-portfolio
+
+# Custom port via environment variable
+MCP_HTTP_PORT=8080 ./build/release/lichs-portfolio
+```
+
+### Connecting to the MCP Server
+
+Use `mcp-remote-client` from mcp-glib to bridge stdio MCP clients to the HTTP server:
+
+```bash
+# Connect via mcp-remote-client
+mcp-remote-client --http http://localhost:5005/mcp
+```
+
+### Claude Desktop Configuration
+
+Add to your Claude Desktop config (`~/.config/claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lichs-portfolio": {
+      "command": "mcp-remote-client",
+      "args": ["--http", "http://localhost:5005/mcp"]
+    }
+  }
+}
+```
+
+### Clawdbot Configuration
+
+Add to your Clawdbot MCP servers config:
+
+```yaml
+mcp:
+  servers:
+    lichs-portfolio:
+      command: mcp-remote-client
+      args:
+        - --http
+        - http://localhost:5005/mcp
+```
+
+### Available MCP Tools
+
+When connected, the following tools are available:
+
+**Input Tools:**
+- `press_key`, `release_key`, `tap_key` - Keyboard control
+- `press_mouse_button`, `release_mouse_button` - Mouse buttons
+- `move_mouse_to`, `move_mouse_by` - Mouse movement
+- `press_gamepad_button`, `release_gamepad_button` - Gamepad buttons
+- `set_gamepad_axis` - Gamepad analog sticks
+
+**Engine Tools:**
+- `get_engine_info` - Engine state information
+- `pause_game`, `resume_game` - Control game loop
+- `take_screenshot` - Capture game screen
+
+**Debug Tools:**
+- `log_message` - Write to game log
+- `toggle_profiler` - Performance profiling
+
 ## Dependencies
 
 This project uses:

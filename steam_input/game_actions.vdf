@@ -1,0 +1,148 @@
+"In Game Actions"
+{
+    "actions"
+    {
+        "MenuControls"
+        {
+            "title"         "#SetMenuControls"
+            "StickPadGyro"
+            {
+                "Move"
+                {
+                    "title"         "#Action_Move"
+                    "input_mode"    "absolute_mouse"
+                }
+            }
+            "AnalogTrigger"
+            {
+            }
+            "Button"
+            {
+                "nav_up"
+                {
+                    "title"         "#Action_NavUp"
+                    "input_mode"    "button"
+                }
+                "nav_down"
+                {
+                    "title"         "#Action_NavDown"
+                    "input_mode"    "button"
+                }
+                "nav_left"
+                {
+                    "title"         "#Action_NavLeft"
+                    "input_mode"    "button"
+                }
+                "nav_right"
+                {
+                    "title"         "#Action_NavRight"
+                    "input_mode"    "button"
+                }
+                "confirm"
+                {
+                    "title"         "#Action_Confirm"
+                    "input_mode"    "button"
+                }
+                "cancel"
+                {
+                    "title"         "#Action_Cancel"
+                    "input_mode"    "button"
+                }
+                "tab_next"
+                {
+                    "title"         "#Action_TabNext"
+                    "input_mode"    "button"
+                }
+                "tab_prev"
+                {
+                    "title"         "#Action_TabPrev"
+                    "input_mode"    "button"
+                }
+                "toggle"
+                {
+                    "title"         "#Action_Toggle"
+                    "input_mode"    "button"
+                }
+                "pause"
+                {
+                    "title"         "#Action_Pause"
+                    "input_mode"    "button"
+                }
+            }
+        }
+        "GameControls"
+        {
+            "title"         "#SetGameControls"
+            "StickPadGyro"
+            {
+                "camera"
+                {
+                    "title"         "#Action_Camera"
+                    "input_mode"    "absolute_mouse"
+                }
+            }
+            "AnalogTrigger"
+            {
+            }
+            "Button"
+            {
+                "select"
+                {
+                    "title"         "#Action_Select"
+                    "input_mode"    "button"
+                }
+                "back"
+                {
+                    "title"         "#Action_Back"
+                    "input_mode"    "button"
+                }
+                "slumber"
+                {
+                    "title"         "#Action_Slumber"
+                    "input_mode"    "button"
+                }
+                "portfolio"
+                {
+                    "title"         "#Action_Portfolio"
+                    "input_mode"    "button"
+                }
+                "world_map"
+                {
+                    "title"         "#Action_WorldMap"
+                    "input_mode"    "button"
+                }
+                "agents"
+                {
+                    "title"         "#Action_Agents"
+                    "input_mode"    "button"
+                }
+            }
+        }
+    }
+    "localization"
+    {
+        "english"
+        {
+            "SetMenuControls"       "Menu Controls"
+            "SetGameControls"       "Game Controls"
+            "Action_Move"           "Navigate"
+            "Action_Camera"         "Camera"
+            "Action_NavUp"          "Navigate Up"
+            "Action_NavDown"        "Navigate Down"
+            "Action_NavLeft"        "Navigate Left"
+            "Action_NavRight"       "Navigate Right"
+            "Action_Confirm"        "Confirm"
+            "Action_Cancel"         "Cancel"
+            "Action_TabNext"        "Next Tab"
+            "Action_TabPrev"        "Previous Tab"
+            "Action_Toggle"         "Toggle"
+            "Action_Pause"          "Pause"
+            "Action_Select"         "Select"
+            "Action_Back"           "Back"
+            "Action_Slumber"        "Slumber Menu"
+            "Action_Portfolio"      "Portfolio"
+            "Action_WorldMap"       "World Map"
+            "Action_Agents"         "Agents"
+        }
+    }
+}
